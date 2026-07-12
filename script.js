@@ -114,6 +114,24 @@
   var form = document.getElementById("quoteForm");
   if (form) {
     var success = document.getElementById("formSuccess");
+    var isEN = (document.documentElement.lang || "nb").slice(0, 2) === "en";
+    var T = isEN
+      ? {
+          errName: "Please enter your name.",
+          errEmail: "Please enter your email address.",
+          errEmailInvalid: "Please enter a valid email address.",
+          errMsg: "Please tell us briefly what it's about.",
+          subject: "Quote request",
+          lName: "Name", lEmail: "Email", lPhone: "Phone", lService: "Service", lMessage: "Message"
+        }
+      : {
+          errName: "Vennligst skriv inn navnet ditt.",
+          errEmail: "Vennligst skriv inn e-postadressen din.",
+          errEmailInvalid: "Skriv inn en gyldig e-postadresse.",
+          errMsg: "Fortell oss kort hva det gjelder.",
+          subject: "Forespørsel om tilbud",
+          lName: "Navn", lEmail: "E-post", lPhone: "Telefon", lService: "Tjeneste", lMessage: "Melding"
+        };
 
     function showError(name, msg) {
       var el = form.querySelector('.field__error[data-for="' + name + '"]');
@@ -131,10 +149,10 @@
 
       clearError("navn"); clearError("epost"); clearError("melding");
 
-      if (!navn.value.trim()) { showError("navn", "Vennligst skriv inn navnet ditt."); ok = false; }
-      if (!epost.value.trim()) { showError("epost", "Vennligst skriv inn e-postadressen din."); ok = false; }
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost.value.trim())) { showError("epost", "Skriv inn en gyldig e-postadresse."); ok = false; }
-      if (!melding.value.trim()) { showError("melding", "Fortell oss kort hva det gjelder."); ok = false; }
+      if (!navn.value.trim()) { showError("navn", T.errName); ok = false; }
+      if (!epost.value.trim()) { showError("epost", T.errEmail); ok = false; }
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost.value.trim())) { showError("epost", T.errEmailInvalid); ok = false; }
+      if (!melding.value.trim()) { showError("melding", T.errMsg); ok = false; }
 
       if (!ok) {
         var firstErr = form.querySelector(".field__error.is-shown");
@@ -146,13 +164,13 @@
       }
 
       // Build a mailto so the static site can still deliver the request.
-      var subject = "Forespørsel om tilbud — " + navn.value.trim();
+      var subject = T.subject + " — " + navn.value.trim();
       var body =
-        "Navn: " + navn.value.trim() + "\n" +
-        "E-post: " + epost.value.trim() + "\n" +
-        "Telefon: " + (form.telefon.value.trim() || "—") + "\n" +
-        "Tjeneste: " + (form.tjeneste.value || "—") + "\n\n" +
-        "Melding:\n" + melding.value.trim() + "\n";
+        T.lName + ": " + navn.value.trim() + "\n" +
+        T.lEmail + ": " + epost.value.trim() + "\n" +
+        T.lPhone + ": " + (form.telefon.value.trim() || "—") + "\n" +
+        T.lService + ": " + (form.tjeneste.value || "—") + "\n\n" +
+        T.lMessage + ":\n" + melding.value.trim() + "\n";
       var href = "mailto:post@dekmar.no?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
 
       if (success) success.hidden = false;

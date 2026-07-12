@@ -5,10 +5,13 @@ Ny, kundevennlig one-pager for **Dekmar AS** — takentreprenør og blikkenslage
 Bygget som en enkel statisk side (HTML/CSS/JS, ingen byggesteg) med ekte prosjektbilder og innhold fra dekmar.no.
 
 ## Innhold
-- `index.html` — hele siden
+- `index.html` — norsk versjon (bokmål)
+- `index-en.html` — engelsk versjon
 - `styles.css` — stiler (navy + kobber, Barlow/Inter)
-- `script.js` — meny, scroll-avsløring, tellere, skjemavalidering
-- `img/` — bilder (tak, flate tak, blikkenslager, logo)
+- `script.js` — meny, scroll-avsløring, tellere, skjemavalidering (språkbevisst NO/EN)
+- `img/` — bilder (tak, flate tak, blikkenslager) + `dekmar-logo.png` (offisiell Dekmar-logo)
+
+Språkbytte (NO/EN) ligger i menyen på begge sidene. Dekmar-logoen brukes i header, footer og som favicon.
 
 ## Seksjoner
 Hero · nøkkeltall · tjenester (bento) · arbeidet vårt (galleri + referanser) · hvorfor oss · slik jobber vi · leverandører · vanlige spørsmål (FAQ) · kontaktskjema.
