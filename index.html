@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 
   <!-- Structured data for local SEO -->
   <script type="application/ld+json">
@@ -69,7 +69,7 @@
 
       <nav class="nav" id="nav" aria-label="Hovedmeny">
         <a class="nav__link" href="#tjenester">Tjenester</a>
-        <a class="nav__link" href="#arbeid">Arbeidet vårt</a>
+        <a class="nav__link" href="#arbeid">Referanser</a>
         <a class="nav__link" href="#hvorfor">Hvorfor oss</a>
         <a class="nav__link" href="#prosess">Slik jobber vi</a>
         <a class="nav__link" href="#faq">Spørsmål</a>
@@ -233,41 +233,44 @@
       </div>
     </section>
 
-    <!-- Work / photo gallery -->
+    <!-- Reference projects -->
     <section class="section section--alt" id="arbeid">
       <div class="container">
         <header class="section__head reveal">
-          <p class="eyebrow eyebrow--accent">Arbeidet vårt</p>
-          <h2 class="section__title">Se hva vi leverer</h2>
-          <p class="section__sub">Et lite utvalg av tak- og blikkenslagerarbeid utført av Dekmar i Oslo og Viken.</p>
+          <p class="eyebrow eyebrow--accent">Referanser</p>
+          <h2 class="section__title">Referanseprosjekter</h2>
+          <p class="section__sub">Utvalgte tak- og blikkenslagerprosjekter i Oslo og Viken. Klikk på et prosjekt for å se alle bildene.</p>
         </header>
 
-        <div class="gallery">
-          <figure class="proj reveal" data-tag="Skråtak">
-            <div class="proj__img"><img src="img/skratak-full.jpg" width="768" height="1024" loading="lazy" alt="Nytt skråtak med takstein" /></div>
-            <figcaption><strong>Skråtak</strong><span>Omtekking med takstein og shingel</span></figcaption>
-          </figure>
-          <figure class="proj reveal" data-tag="Flate tak">
-            <div class="proj__img"><img src="img/flate-tak-full.jpg" width="1024" height="768" loading="lazy" alt="Flatt tak med membran og isolasjon" /></div>
-            <figcaption><strong>Flate tak</strong><span>Membran og Rockwool-isolasjon</span></figcaption>
-          </figure>
-          <figure class="proj reveal" data-tag="Blikk">
-            <div class="proj__img"><img src="img/blikkenslager-full.jpg" width="1024" height="768" loading="lazy" alt="Blikkenslagerarbeid med nye beslag" /></div>
-            <figcaption><strong>Blikkenslager</strong><span>Nye renner, nedløp og beslag</span></figcaption>
-          </figure>
-        </div>
-
-        <div class="refs reveal">
-          <p class="refs__label">Utvalgte referanseprosjekter</p>
-          <ul class="refs__row">
-            <li>Frogner kirke</li>
-            <li>Kolbotn kirke</li>
-            <li>Bjøråsen skole</li>
-            <li>Åshallen</li>
-            <li>Darresgate 2</li>
-            <li>Ole Deviks vei 2–4–6</li>
-            <li>Jacob Aalls gate 14</li>
-          </ul>
+        <div class="projects">
+          <button class="proj-card reveal" type="button" data-project="frogner-kirke" data-name="Frogner kirke" data-count="30" aria-label="Se 30 bilder fra Frogner kirke">
+            <span class="proj-card__img"><img src="img/projects/frogner-kirke/01.jpg" width="1024" height="768" loading="lazy" alt="Frogner kirke — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>30</span></span>
+            <span class="proj-card__body"><strong>Frogner kirke</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
+          <button class="proj-card reveal" type="button" data-project="kolbotn-kirke" data-name="Kolbotn kirke" data-count="16" aria-label="Se 16 bilder fra Kolbotn kirke">
+            <span class="proj-card__img"><img src="img/projects/kolbotn-kirke/01.jpg" width="1024" height="768" loading="lazy" alt="Kolbotn kirke — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>16</span></span>
+            <span class="proj-card__body"><strong>Kolbotn kirke</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
+          <button class="proj-card reveal" type="button" data-project="bjorasen-skole" data-name="Bjøråsen skole" data-count="16" aria-label="Se 16 bilder fra Bjøråsen skole">
+            <span class="proj-card__img"><img src="img/projects/bjorasen-skole/01.jpg" width="1024" height="768" loading="lazy" alt="Bjøråsen skole — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>16</span></span>
+            <span class="proj-card__body"><strong>Bjøråsen skole</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
+          <button class="proj-card reveal" type="button" data-project="darresgate-2" data-name="Darresgate 2" data-count="24" aria-label="Se 24 bilder fra Darresgate 2">
+            <span class="proj-card__img"><img src="img/projects/darresgate-2/01.jpg" width="480" height="640" loading="lazy" alt="Darresgate 2 — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>24</span></span>
+            <span class="proj-card__body"><strong>Darresgate 2</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
+          <button class="proj-card reveal" type="button" data-project="ole-deviks-vei" data-name="Ole Deviks vei 2–4–6" data-count="12" aria-label="Se 12 bilder fra Ole Deviks vei 2-4-6">
+            <span class="proj-card__img"><img src="img/projects/ole-deviks-vei/01.jpg" width="1024" height="768" loading="lazy" alt="Ole Deviks vei 2-4-6 — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>12</span></span>
+            <span class="proj-card__body"><strong>Ole Deviks vei 2–4–6</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
+          <button class="proj-card reveal" type="button" data-project="jacob-aalls-gate-14" data-name="Jacob Aalls gate 14" data-count="24" aria-label="Se 24 bilder fra Jacob Aalls gate 14">
+            <span class="proj-card__img"><img src="img/projects/jacob-aalls-gate-14/01.jpg" width="1024" height="768" loading="lazy" alt="Jacob Aalls gate 14 — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>24</span></span>
+            <span class="proj-card__body"><strong>Jacob Aalls gate 14</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
+          <button class="proj-card reveal" type="button" data-project="ashallen" data-name="Åshallen" data-count="20" aria-label="Se 20 bilder fra Åshallen">
+            <span class="proj-card__img"><img src="img/projects/ashallen/01.jpg" width="1024" height="768" loading="lazy" alt="Åshallen — takarbeid" /><span class="proj-card__count"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>20</span></span>
+            <span class="proj-card__body"><strong>Åshallen</strong><span class="proj-card__view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+          </button>
         </div>
       </div>
     </section>
@@ -457,7 +460,7 @@
 
       <nav class="footer__col" aria-label="Selskap">
         <h4>Selskap</h4>
-        <a href="#arbeid">Arbeidet vårt</a>
+        <a href="#arbeid">Referanser</a>
         <a href="#hvorfor">Hvorfor oss</a>
         <a href="#prosess">Slik jobber vi</a>
         <a href="#faq">Spørsmål</a>
@@ -479,6 +482,6 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>

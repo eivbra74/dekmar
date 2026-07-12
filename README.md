@@ -14,7 +14,11 @@ Bygget som en enkel statisk side (HTML/CSS/JS, ingen byggesteg) med ekte prosjek
 Språkbytte (NO/EN) ligger i menyen på begge sidene. Dekmar-logoen brukes i header, footer og som favicon.
 
 ## Seksjoner
-Hero · nøkkeltall · tjenester (bento) · arbeidet vårt (galleri + referanser) · hvorfor oss · slik jobber vi · leverandører · vanlige spørsmål (FAQ) · kontaktskjema.
+Hero · nøkkeltall · tjenester (bento) · referanseprosjekter (7 prosjekter med bildegalleri/lightbox) · hvorfor oss · slik jobber vi · leverandører · vanlige spørsmål (FAQ) · kontaktskjema.
+
+## Referanseprosjekter
+7 prosjekter fra dekmar.no med alle prosjektbildene (142 bilder totalt) i `img/projects/<slug>/`:
+Frogner kirke (30) · Kolbotn kirke (16) · Bjøråsen skole (16) · Darresgate 2 (24) · Ole Deviks vei 2‑4‑6 (12) · Jacob Aalls gate 14 (24) · Åshallen (20). Klikk et prosjektkort for å åpne lightbox-galleri med piltaster, miniatyrstripe og teller.
 
 ## Kjør lokalt
 ```bash
