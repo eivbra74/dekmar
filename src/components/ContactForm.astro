@@ -1,0 +1,89 @@
+---
+// Skjemaet bruker Netlify Forms (fungerer automatisk ved deploy på Netlify).
+// Innsendinger dukker opp under «Forms» i Netlify-dashbordet og kan varsles på e-post.
+import { site } from '../data/site';
+---
+
+<form
+  class="contact-form"
+  name="kontakt"
+  method="POST"
+  data-netlify="true"
+  netlify-honeypot="bot-field"
+  action="/takk/"
+>
+  <input type="hidden" name="form-name" value="kontakt" />
+  <p class="hidden-field">
+    <label>Ikke fyll ut dette feltet: <input name="bot-field" /></label>
+  </p>
+
+  <div class="field">
+    <label for="navn">Ditt navn *</label>
+    <input id="navn" name="navn" type="text" required autocomplete="name" />
+  </div>
+
+  <div class="field">
+    <label for="epost">Din e-post *</label>
+    <input id="epost" name="epost" type="email" required autocomplete="email" />
+  </div>
+
+  <div class="field">
+    <label for="emne">Emne</label>
+    <input id="emne" name="emne" type="text" />
+  </div>
+
+  <div class="field">
+    <label for="melding">Din melding</label>
+    <textarea id="melding" name="melding" rows="6"></textarea>
+  </div>
+
+  <button class="btn btn--primary" type="submit">Send melding</button>
+  <p class="form-note">
+    Eller send en e-post direkte til <a href={`mailto:${site.email}`}>{site.email}</a>.
+  </p>
+</form>
+
+<style>
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .field label {
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .field input,
+  .field textarea {
+    font: inherit;
+    padding: 13px 15px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(204, 31, 42, 0.12);
+  }
+  .contact-form .btn {
+    align-self: flex-start;
+  }
+  .form-note {
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .hidden-field {
+    display: none;
+  }
+</style>

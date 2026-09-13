@@ -1,0 +1,126 @@
+---
+import { site } from '../data/site';
+import { services } from '../data/services';
+
+const year = new Date().getFullYear();
+const topServices = services.slice(0, 7);
+---
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="/images/brand/dekmar-logo.png" alt="Dekmar AS" width="140" height="70" />
+      <p>{site.tagline}. Takentreprenør og blikkenslager i {site.area}.</p>
+    </div>
+
+    <div>
+      <h4>Tjenester</h4>
+      <ul>
+        {topServices.map((s) => (
+          <li><a href={`/tjenester/${s.slug}/`}>{s.title}</a></li>
+        ))}
+        <li><a href="/tjenester/">Alle tjenester →</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Snarveier</h4>
+      <ul>
+        <li><a href="/referanser/">Referanser</a></li>
+        <li><a href="/samarbeidspartnere/">Samarbeidspartnere</a></li>
+        <li><a href="/om-oss/">Om oss</a></li>
+        <li><a href="/kontakt/">Kontakt</a></li>
+        <li><a href="/personvern/">Personvern</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Kontakt</h4>
+      <ul class="contact-list">
+        <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+        <li>
+          {site.contact.name}, {site.contact.role.toLowerCase()}<br />
+          <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a><br />
+          <a href={`tel:${site.contact.phoneHref}`}>{site.contact.phone}</a>
+        </li>
+        <li>{site.area}</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="container footer-bottom-inner">
+      <span>© {year} {site.name}. Alle rettigheter reservert.</span>
+      <a href="/personvern/">Personvern</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--dark);
+    color: #b9bfc9;
+    padding-top: clamp(48px, 7vw, 80px);
+  }
+  .footer-grid {
+    display: grid;
+    gap: 36px;
+    grid-template-columns: 1fr;
+    padding-bottom: 48px;
+  }
+  @media (min-width: 640px) {
+    .footer-grid {
+      grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+    }
+  }
+  .footer-brand img {
+    height: 54px;
+    width: auto;
+    margin-bottom: 16px;
+    filter: brightness(0) invert(1);
+  }
+  .footer-brand p {
+    max-width: 280px;
+    font-size: 0.95rem;
+  }
+  .site-footer h4 {
+    color: #fff;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .site-footer ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.95rem;
+  }
+  .site-footer a {
+    color: #c7ccd4;
+  }
+  .site-footer a:hover {
+    color: #fff;
+  }
+  .contact-list li {
+    line-height: 1.6;
+  }
+  .footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-block: 20px;
+    font-size: 0.85rem;
+  }
+  .footer-bottom-inner {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: #8a9099;
+  }
+  .footer-bottom-inner a {
+    color: #8a9099;
+  }
+</style>

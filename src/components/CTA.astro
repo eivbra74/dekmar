@@ -1,0 +1,54 @@
+---
+import { site } from '../data/site';
+interface Props {
+  title?: string;
+  text?: string;
+}
+const {
+  title = 'Trenger du hjelp med taket?',
+  text = 'Vi tilbyr gratis befaring med et påfølgende uforpliktende tilbud. Ta kontakt, så finner vi den beste løsningen for ditt prosjekt.',
+} = Astro.props;
+---
+
+<section class="section section--dark cta">
+  <div class="container cta-inner">
+    <div>
+      <span class="eyebrow">Gratis befaring</span>
+      <h2>{title}</h2>
+      <p class="lead">{text}</p>
+    </div>
+    <div class="cta-actions">
+      <a class="btn btn--primary" href="/kontakt/">Be om tilbud</a>
+      <a class="btn btn--outline-light" href={`tel:${site.contact.phoneHref}`}>
+        Ring {site.contact.phone}
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-inner {
+    display: grid;
+    gap: 30px;
+    align-items: center;
+  }
+  @media (min-width: 860px) {
+    .cta-inner {
+      grid-template-columns: 1.6fr 1fr;
+    }
+    .cta-actions {
+      justify-self: end;
+    }
+  }
+  .cta h2 {
+    margin-bottom: 0.3em;
+  }
+  .cta .lead {
+    margin-bottom: 0;
+  }
+  .cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+</style>

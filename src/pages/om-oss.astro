@@ -1,0 +1,86 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHero from '../components/PageHero.astro';
+import CTA from '../components/CTA.astro';
+import { site } from '../data/site';
+---
+
+<Layout
+  title="Om oss"
+  description="Dekmar AS utfører det meste innen tak, taktekking og blikkenslagerarbeid i Oslo og omegn – rehabilitering, nybygg og ombygging."
+>
+  <PageHero eyebrow="Om oss" title="Om Dekmar AS" />
+
+  <section class="section">
+    <div class="container om-grid">
+      <div class="om-body">
+        <h2>Dekmar AS</h2>
+        <p>
+          Dekmar AS utfører det meste innen tak, taktekking og blikkenslagerarbeider. Vi opererer i
+          hovedsak i Oslo og omegn, men er tilgjengelig for større oppdrag i hele Norge etter avtale.
+          Vi arbeider for det meste med rehabilitering av eksisterende tak, men utfører også jobber
+          med nybygg og ombygging av eneboliger, rekkehus, bygårder, forretningsgårder samt kommunale
+          bygg som idrettshaller, skoler og kirker.
+        </p>
+        <p>
+          Våre kunder er sameier, eiendomsselskap, private, entreprenører, det offentlige, arkitekter
+          og konsulenter.
+        </p>
+        <p>
+          Vårt kjennetegn er kvalitet på våre tjenester. Vi tilbyr komplette løsninger der alt er
+          inkludert i leveringen – med fast pris til avtalt tid. Vi benytter kun fast ansatte
+          håndverkere i vår bedrift, og har eget blikkenslagerverksted med egen serviceavdeling.
+        </p>
+      </div>
+
+      <ul class="om-usps">
+        {site.usps.map((u) => <li>{u}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <CTA />
+</Layout>
+
+<style>
+  .om-grid {
+    display: grid;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .om-grid {
+      grid-template-columns: 1.6fr 1fr;
+    }
+  }
+  .om-body {
+    max-width: 720px;
+    font-size: 1.05rem;
+  }
+  .om-usps {
+    list-style: none;
+    margin: 0;
+    padding: 26px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .om-usps li {
+    position: relative;
+    padding-left: 30px;
+    font-weight: 500;
+  }
+  .om-usps li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 12px;
+    height: 12px;
+    background: var(--brand);
+    border-radius: 3px;
+    transform: rotate(45deg);
+  }
+</style>

@@ -1,0 +1,63 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Gallery from '../../components/Gallery.astro';
+import CTA from '../../components/CTA.astro';
+import { references } from '../../data/references';
+
+export function getStaticPaths() {
+  return references.map((reference) => ({
+    params: { slug: reference.slug },
+    props: { reference },
+  }));
+}
+
+const { reference } = Astro.props;
+---
+
+<Layout
+  title={reference.title}
+  description={`${reference.title} – ${reference.summary} Takprosjekt utført av Dekmar AS.`}
+  image={reference.images[0]}
+>
+  <section class="page-hero">
+    <div class="container">
+      <nav class="crumbs" aria-label="Sti">
+        <a href="/referanser/">Referanser</a> <span aria-hidden="true">/</span> {reference.title}
+      </nav>
+      <h1>{reference.title}</h1>
+      <p class="lead">{reference.summary}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <Gallery images={reference.images} alt={reference.title} />
+      <p class="gallery-hint">Klikk på et bilde for å se det i full størrelse.</p>
+    </div>
+  </section>
+
+  <CTA />
+</Layout>
+
+<style>
+  .page-hero {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding-block: clamp(44px, 7vw, 76px);
+  }
+  .crumbs {
+    font-size: 0.9rem;
+    font-family: var(--font-head);
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .page-hero .lead {
+    margin-bottom: 0;
+  }
+  .gallery-hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin-top: 22px;
+  }
+</style>

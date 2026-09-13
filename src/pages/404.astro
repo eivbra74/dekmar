@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Siden finnes ikke" description="Fant ikke siden du lette etter.">
+  <section class="section notfound">
+    <div class="container">
+      <span class="eyebrow">404</span>
+      <h1>Denne siden fant vi ikke</h1>
+      <p class="lead">Siden kan ha blitt flyttet eller fjernet. Prøv en av lenkene under.</p>
+      <div class="nf-actions">
+        <a class="btn btn--primary" href="/">Til forsiden</a>
+        <a class="btn btn--ghost" href="/tjenester/">Tjenester</a>
+        <a class="btn btn--ghost" href="/kontakt/">Kontakt</a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .notfound .container {
+    max-width: 640px;
+  }
+  .nf-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 26px;
+  }
+</style>
