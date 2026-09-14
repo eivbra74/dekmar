@@ -1,0 +1,99 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../PageHero.astro';
+import CTA from '../CTA.astro';
+import { site } from '../../data/site';
+import type { Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+
+const copy = {
+  nb: {
+    eyebrow: 'Om oss',
+    title: 'Om Dekmar AS',
+    heading: 'Dekmar AS',
+    desc: 'Dekmar AS utfører det meste innen tak, taktekking og blikkenslagerarbeid i Oslo og omegn – rehabilitering, nybygg og ombygging.',
+    paragraphs: [
+      'Dekmar AS utfører det meste innen tak, taktekking og blikkenslagerarbeider. Vi opererer i hovedsak i Oslo og omegn, men er tilgjengelig for større oppdrag i hele Norge etter avtale. Vi arbeider for det meste med rehabilitering av eksisterende tak, men utfører også jobber med nybygg og ombygging av eneboliger, rekkehus, bygårder, forretningsgårder samt kommunale bygg som idrettshaller, skoler og kirker.',
+      'Våre kunder er sameier, eiendomsselskap, private, entreprenører, det offentlige, arkitekter og konsulenter.',
+      'Vårt kjennetegn er kvalitet på våre tjenester. Vi tilbyr komplette løsninger der alt er inkludert i leveringen – med fast pris til avtalt tid. Vi benytter kun fast ansatte håndverkere i vår bedrift, og har eget blikkenslagerverksted med egen serviceavdeling.',
+    ],
+  },
+  en: {
+    eyebrow: 'About us',
+    title: 'About Dekmar AS',
+    heading: 'Dekmar AS',
+    desc: 'Dekmar AS does most things within roofing and sheet metal work in Oslo and the surrounding area – rehabilitation, new builds and conversions.',
+    paragraphs: [
+      'Dekmar AS carries out most things within roofs, roofing and sheet metal work. We operate mainly in Oslo and the surrounding area, but are available for larger projects throughout Norway by arrangement. We work mostly with the rehabilitation of existing roofs, but also carry out work on new builds and the conversion of detached houses, terraced houses, apartment buildings and commercial buildings, as well as municipal buildings such as sports halls, schools and churches.',
+      'Our customers are jointly owned properties, property companies, private customers, contractors, the public sector, architects and consultants.',
+      'Our hallmark is the quality of our services. We offer complete solutions where everything is included in the delivery – at a fixed price and on the agreed schedule. We use only permanently employed craftsmen in our company, and we have our own sheet metal workshop with a dedicated service department.',
+    ],
+  },
+}[lang];
+---
+
+<Layout lang={lang} title={copy.title} description={copy.desc}>
+  <PageHero eyebrow={copy.eyebrow} title={copy.title} />
+
+  <section class="section">
+    <div class="container om-grid">
+      <div class="om-body">
+        <h2>{copy.heading}</h2>
+        {copy.paragraphs.map((p) => <p>{p}</p>)}
+      </div>
+
+      <ul class="om-usps">
+        {site.usps[lang].map((u) => <li>{u}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <CTA lang={lang} />
+</Layout>
+
+<style>
+  .om-grid {
+    display: grid;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .om-grid {
+      grid-template-columns: 1.6fr 1fr;
+    }
+  }
+  .om-body {
+    max-width: 720px;
+    font-size: 1.05rem;
+  }
+  .om-usps {
+    list-style: none;
+    margin: 0;
+    padding: 26px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .om-usps li {
+    position: relative;
+    padding-left: 30px;
+    font-weight: 500;
+  }
+  .om-usps li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 12px;
+    height: 12px;
+    background: var(--brand);
+    border-radius: 3px;
+    transform: rotate(45deg);
+  }
+</style>

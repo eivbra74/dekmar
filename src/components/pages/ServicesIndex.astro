@@ -1,0 +1,42 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../PageHero.astro';
+import ServiceCard from '../ServiceCard.astro';
+import CTA from '../CTA.astro';
+import { services } from '../../data/services';
+import type { Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+
+const copy = {
+  nb: {
+    title: 'Tjenester',
+    heading: 'Alt innen tak og blikkenslagerarbeid',
+    intro:
+      'Vi utfører alt innen takarbeid, takomlegging og reparasjoner samt ny taktekking. Vi har eget blikkenslagerverksted med egen serviceavdeling.',
+    desc: 'Dekmar AS leverer alt innen tak og blikkenslagerarbeid – taktekking, takrenner, omlegging av tak, flate tak, membraner, snøfangere, pipebeslag og mer.',
+  },
+  en: {
+    title: 'Services',
+    heading: 'Everything in roofing and sheet metal work',
+    intro:
+      'We do everything within roof work, re-roofing and repairs as well as new roofing. We have our own sheet metal workshop with a dedicated service department.',
+    desc: 'Dekmar AS delivers everything in roofing and sheet metal work – roofing, gutters, re-roofing, flat roofs, membranes, snow guards, chimney flashing and more.',
+  },
+}[lang];
+---
+
+<Layout lang={lang} title={copy.title} description={copy.desc}>
+  <PageHero eyebrow={copy.title} title={copy.heading} intro={copy.intro} />
+  <section class="section">
+    <div class="container">
+      <div class="grid grid--3">
+        {services.map((s) => <ServiceCard service={s} lang={lang} />)}
+      </div>
+    </div>
+  </section>
+  <CTA lang={lang} />
+</Layout>

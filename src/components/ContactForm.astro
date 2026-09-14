@@ -1,7 +1,14 @@
 ---
-// Skjemaet bruker Netlify Forms (fungerer automatisk ved deploy på Netlify).
-// Innsendinger dukker opp under «Forms» i Netlify-dashbordet og kan varsles på e-post.
+// Netlify Forms – fungerer automatisk ved deploy på Netlify.
 import { site } from '../data/site';
+import { useTranslations, localizePath, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const req = t('form.required');
 ---
 
 <form
@@ -10,36 +17,36 @@ import { site } from '../data/site';
   method="POST"
   data-netlify="true"
   netlify-honeypot="bot-field"
-  action="/takk/"
+  action={localizePath('/takk/', lang)}
 >
   <input type="hidden" name="form-name" value="kontakt" />
   <p class="hidden-field">
-    <label>Ikke fyll ut dette feltet: <input name="bot-field" /></label>
+    <label>{lang === 'en' ? 'Leave this field empty' : 'Ikke fyll ut dette feltet'}: <input name="bot-field" /></label>
   </p>
 
   <div class="field">
-    <label for="navn">Ditt navn *</label>
+    <label for="navn">{t('form.name')} {req}</label>
     <input id="navn" name="navn" type="text" required autocomplete="name" />
   </div>
 
   <div class="field">
-    <label for="epost">Din e-post *</label>
+    <label for="epost">{t('form.email')} {req}</label>
     <input id="epost" name="epost" type="email" required autocomplete="email" />
   </div>
 
   <div class="field">
-    <label for="emne">Emne</label>
+    <label for="emne">{t('form.subject')}</label>
     <input id="emne" name="emne" type="text" />
   </div>
 
   <div class="field">
-    <label for="melding">Din melding</label>
+    <label for="melding">{t('form.message')}</label>
     <textarea id="melding" name="melding" rows="6"></textarea>
   </div>
 
-  <button class="btn btn--primary" type="submit">Send melding</button>
+  <button class="btn btn--primary" type="submit">{t('cta.send')}</button>
   <p class="form-note">
-    Eller send en e-post direkte til <a href={`mailto:${site.email}`}>{site.email}</a>.
+    {t('form.or')} <a href={`mailto:${site.email}`}>{site.email}</a>.
   </p>
 </form>
 

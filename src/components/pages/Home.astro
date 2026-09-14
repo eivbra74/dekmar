@@ -1,0 +1,341 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CTA from '../CTA.astro';
+import ServiceCard from '../ServiceCard.astro';
+import { site } from '../../data/site';
+import { services } from '../../data/services';
+import { references } from '../../data/references';
+import { useTranslations, localizePath, type Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const L = (href: string) => localizePath(href, lang);
+
+const featured = services.filter((s) => ['skratak', 'flate-tak', 'blikkenslager'].includes(s.slug));
+const previewRefs = references.slice(0, 4);
+
+const copy = {
+  nb: {
+    heroEyebrow: `Takentreprenør & blikkenslager i ${site.area}`,
+    heroTitle: 'Velkommen til Dekmar AS',
+    aboutEyebrow: 'Om Dekmar AS',
+    aboutTitle: 'Kvalitet, faste priser og komplette løsninger',
+    aboutLead:
+      'Vi er en blikkenslager og takentreprenør som holder til i Oslo. Vårt kjennetegn er kvalitet på våre tjenester. Vi tilbyr komplette løsninger der alt er inkludert i leveringen – med fast pris til avtalt tid.',
+    aboutP:
+      'Vi utfører oppdrag for private, borettslag og eiendomsselskaper, samt sameier og offentlige etater. Vi arbeider primært i Oslo og Viken, men tar på oss oppdrag utenfor dette området etter avtale. Hvert tilbud utarbeides spesielt for det aktuelle prosjektet, slik at du får best mulig løsning til en markedsdyktig pris.',
+    aboutList: [
+      'Nytt tak: skråtak, flate tak, takstein, shingel, plater og belegg',
+      'Tradisjonelle og diffusjonsåpne løsninger',
+      'Alt i blikkenslagerarbeid',
+      'Membraner og belegg for flate tak, balkonger m.m.',
+      'Eget blikkenslagerverksted med egen serviceavdeling',
+    ],
+    servicesEyebrow: 'Tjenester',
+    servicesTitle: 'Alt innen tak og blikkenslagerarbeid',
+    servicesLead: 'Vi utfører alt innen takarbeid, takomlegging og reparasjoner samt ny taktekking.',
+    allServices: 'Alle tjenester',
+    refsEyebrow: 'Referanser',
+    refsTitle: 'Et utvalg av våre prosjekter',
+    refsLead:
+      'Vi arbeider med rehabilitering og nybygg – fra bygårder og næringsbygg til skoler, idrettshaller og kirker.',
+  },
+  en: {
+    heroEyebrow: `Roofing contractor & sheet metal worker in ${site.area}`,
+    heroTitle: 'Welcome to Dekmar AS',
+    aboutEyebrow: 'About Dekmar AS',
+    aboutTitle: 'Quality, fixed prices and complete solutions',
+    aboutLead:
+      'We are a sheet metal worker and roofing contractor based in Oslo. Our hallmark is the quality of our services. We offer complete solutions where everything is included in the delivery – at a fixed price and on the agreed schedule.',
+    aboutP:
+      'We carry out work for private customers, housing cooperatives and property companies, as well as jointly owned properties and public bodies. We work mainly in Oslo and Viken, but take on projects outside this area by arrangement. Every quote is prepared specifically for the project in question, so that you get the best possible solution at a competitive price.',
+    aboutList: [
+      'New roof: pitched roofs, flat roofs, tiles, shingles, sheets and coverings',
+      'Traditional and breathable solutions',
+      'All kinds of sheet metal work',
+      'Membranes and coverings for flat roofs, balconies, etc.',
+      'Our own sheet metal workshop with a dedicated service department',
+    ],
+    servicesEyebrow: 'Services',
+    servicesTitle: 'Everything in roofing and sheet metal work',
+    servicesLead: 'We do everything within roof work, re-roofing and repairs as well as new roofing.',
+    allServices: 'All services',
+    refsEyebrow: 'References',
+    refsTitle: 'A selection of our projects',
+    refsLead:
+      'We work with rehabilitation and new builds – from apartment buildings and commercial premises to schools, sports halls and churches.',
+  },
+}[lang];
+---
+
+<Layout lang={lang}>
+  <section class="hero">
+    <div class="hero__bg" style={`background-image:url(/images/brand/hero.jpg)`}></div>
+    <div class="hero__overlay"></div>
+    <div class="container hero__inner">
+      <span class="eyebrow hero__eyebrow">{copy.heroEyebrow}</span>
+      <h1>{copy.heroTitle}</h1>
+      <p class="hero__tagline">{site.tagline[lang]}</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href={L('/kontakt/')}>{t('cta.quote')}</a>
+        <a class="btn btn--light" href={L('/tjenester/')}>{t('cta.services')}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="usp-bar">
+    <div class="container usp-grid">
+      {site.usps[lang].map((u) => (
+        <div class="usp">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"/></svg>
+          <span>{u}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container intro-grid">
+      <div>
+        <span class="eyebrow">{copy.aboutEyebrow}</span>
+        <h2>{copy.aboutTitle}</h2>
+        <p class="lead">{copy.aboutLead}</p>
+        <p>{copy.aboutP}</p>
+        <a class="btn btn--ghost" href={L('/om-oss/')}>{t('cta.moreAbout')}</a>
+      </div>
+      <ul class="intro-list">
+        {copy.aboutList.map((li) => <li>{li}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">{copy.servicesEyebrow}</span>
+        <h2>{copy.servicesTitle}</h2>
+        <p class="lead">{copy.servicesLead}</p>
+      </div>
+      <div class="grid grid--3">
+        {featured.map((s) => <ServiceCard service={s} lang={lang} />)}
+      </div>
+
+      <div class="all-services">
+        <h3>{copy.allServices}</h3>
+        <ul class="chip-list">
+          {services.map((s) => (
+            <li><a class="chip" href={L(`/tjenester/${s.slug}/`)}>{s.title[lang]}</a></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">{copy.refsEyebrow}</span>
+        <h2>{copy.refsTitle}</h2>
+        <p class="lead">{copy.refsLead}</p>
+      </div>
+      <div class="grid grid--4 ref-grid">
+        {previewRefs.map((r) => (
+          <a class="ref-card" href={L(`/referanser/${r.slug}/`)}>
+            <img src={r.images[0]} alt={r.title} loading="lazy" decoding="async" />
+            <span class="ref-card__label">{r.title}</span>
+          </a>
+        ))}
+      </div>
+      <div class="center-btn">
+        <a class="btn btn--ghost" href={L('/referanser/')}>{t('cta.allReferences')}</a>
+      </div>
+    </div>
+  </section>
+
+  <CTA lang={lang} />
+</Layout>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: min(78vh, 640px);
+    display: flex;
+    align-items: center;
+    color: #fff;
+    overflow: hidden;
+  }
+  .hero__bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.03);
+  }
+  .hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, rgba(15, 17, 21, 0.82) 0%, rgba(15, 17, 21, 0.55) 55%, rgba(15, 17, 21, 0.35) 100%);
+  }
+  .hero__inner {
+    position: relative;
+    padding-block: 60px;
+    max-width: 720px;
+  }
+  .hero__eyebrow {
+    color: #ff8a91;
+  }
+  .hero h1 {
+    color: #fff;
+    margin-bottom: 0.15em;
+  }
+  .hero__tagline {
+    font-family: var(--font-head);
+    font-size: clamp(1.2rem, 2.6vw, 1.6rem);
+    font-weight: 500;
+    color: #e7e9ec;
+    margin-bottom: 1.4em;
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .usp-bar {
+    background: var(--brand);
+    color: #fff;
+  }
+  .usp-grid {
+    display: grid;
+    gap: 14px 30px;
+    grid-template-columns: 1fr;
+    padding-block: 22px;
+  }
+  @media (min-width: 720px) {
+    .usp-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1040px) {
+    .usp-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .usp {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 0.98rem;
+  }
+  .usp svg {
+    flex: none;
+  }
+
+  .intro-grid {
+    display: grid;
+    gap: 40px;
+    align-items: center;
+  }
+  @media (min-width: 900px) {
+    .intro-grid {
+      grid-template-columns: 1.5fr 1fr;
+    }
+  }
+  .intro-list {
+    list-style: none;
+    margin: 0;
+    padding: 26px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .intro-list li {
+    position: relative;
+    padding-left: 30px;
+    font-weight: 500;
+  }
+  .intro-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 12px;
+    height: 12px;
+    background: var(--brand);
+    border-radius: 3px;
+    transform: rotate(45deg);
+  }
+
+  .all-services {
+    margin-top: 52px;
+    text-align: center;
+  }
+  .all-services h3 {
+    margin-bottom: 18px;
+  }
+  .chip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+  .chip {
+    display: inline-block;
+    padding: 9px 16px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink);
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+  .chip:hover {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+    text-decoration: none;
+  }
+
+  .ref-card {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .ref-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .ref-card:hover img {
+    transform: scale(1.06);
+  }
+  .ref-card__label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 26px 16px 14px;
+    color: #fff;
+    font-family: var(--font-head);
+    font-weight: 600;
+    background: linear-gradient(transparent, rgba(15, 17, 21, 0.85));
+  }
+  .center-btn {
+    text-align: center;
+    margin-top: 38px;
+  }
+</style>

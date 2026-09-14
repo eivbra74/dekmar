@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { site } from '../../data/site';
+import { useTranslations, localizePath, type Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const copy = {
+  nb: {
+    title: 'Takk for henvendelsen',
+    heading: 'Takk for henvendelsen!',
+    lead: 'Vi har mottatt meldingen din og tar kontakt så snart som mulig. Haster det, kan du ringe oss på',
+  },
+  en: {
+    title: 'Thank you',
+    heading: 'Thank you for your message!',
+    lead: 'We have received your message and will get back to you as soon as possible. If it is urgent, you can call us on',
+  },
+}[lang];
+---
+
+<Layout lang={lang} title={copy.title} description={copy.title}>
+  <section class="section thanks">
+    <div class="container">
+      <div class="thanks-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h1>{copy.heading}</h1>
+      <p class="lead">
+        {copy.lead} <a href={`tel:${site.contact.phoneHref}`}>{site.contact.phone}</a>.
+      </p>
+      <a class="btn btn--primary" href={localizePath('/', lang)}>{t('cta.home')}</a>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .thanks {
+    text-align: center;
+  }
+  .thanks .container {
+    max-width: 620px;
+  }
+  .thanks-icon {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    background: rgba(204, 31, 42, 0.1);
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

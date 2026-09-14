@@ -1,26 +1,29 @@
 ---
 import { site } from '../data/site';
+import { useTranslations, localizePath, type Lang } from '../i18n/ui';
+
 interface Props {
+  lang: Lang;
   title?: string;
   text?: string;
 }
-const {
-  title = 'Trenger du hjelp med taket?',
-  text = 'Vi tilbyr gratis befaring med et påfølgende uforpliktende tilbud. Ta kontakt, så finner vi den beste løsningen for ditt prosjekt.',
-} = Astro.props;
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const title = Astro.props.title ?? t('cta.band.title');
+const text = Astro.props.text ?? t('cta.band.text');
 ---
 
 <section class="section section--dark cta">
   <div class="container cta-inner">
     <div>
-      <span class="eyebrow">Gratis befaring</span>
+      <span class="eyebrow">{t('cta.band.eyebrow')}</span>
       <h2>{title}</h2>
       <p class="lead">{text}</p>
     </div>
     <div class="cta-actions">
-      <a class="btn btn--primary" href="/kontakt/">Be om tilbud</a>
+      <a class="btn btn--primary" href={localizePath('/kontakt/', lang)}>{t('cta.quote')}</a>
       <a class="btn btn--outline-light" href={`tel:${site.contact.phoneHref}`}>
-        Ring {site.contact.phone}
+        {t('cta.call')} {site.contact.phone}
       </a>
     </div>
   </div>

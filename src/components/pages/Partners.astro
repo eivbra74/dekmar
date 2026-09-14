@@ -1,0 +1,79 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../PageHero.astro';
+import CTA from '../CTA.astro';
+import type { Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+
+const copy = {
+  nb: {
+    eyebrow: 'Samarbeidspartnere',
+    title: 'Vi tar hånd om hele prosjektet',
+    desc: 'Dekmar samarbeider med de fleste typer håndverksfirmaer og kan påta seg totalentrepriser eller formidle kontakt med andre dyktige håndverkere.',
+    lead: 'Dekmar samarbeider med de fleste typer håndverksfirmaer og kan påta oss totalentrepriser og/eller formidle kontakt med andre dyktige håndverkere.',
+    p: 'Vi samarbeider blant annet med malermester, murmester, glassmester, elektriker, rørlegger, snekker, tømmermestere, betong- og grunnarbeidere, anleggsgartner med flere.',
+    partners: ['Malermester', 'Murmester', 'Glassmester', 'Elektriker', 'Rørlegger', 'Snekker', 'Tømmermester', 'Betong- og grunnarbeider', 'Anleggsgartner'],
+  },
+  en: {
+    eyebrow: 'Partners',
+    title: 'We take care of the whole project',
+    desc: 'Dekmar collaborates with most types of trade companies and can take on turnkey projects or connect you with other skilled craftsmen.',
+    lead: 'Dekmar collaborates with most types of trade companies and can take on turnkey contracts and/or put you in touch with other skilled craftsmen.',
+    p: 'Among others, we work with painters, masons, glaziers, electricians, plumbers, carpenters, master joiners, concrete and groundwork contractors, landscape gardeners and more.',
+    partners: ['Painter', 'Mason', 'Glazier', 'Electrician', 'Plumber', 'Carpenter', 'Master joiner', 'Concrete & groundwork', 'Landscape gardener'],
+  },
+}[lang];
+---
+
+<Layout lang={lang} title={copy.eyebrow} description={copy.desc}>
+  <PageHero eyebrow={copy.eyebrow} title={copy.title} />
+
+  <section class="section">
+    <div class="container narrow">
+      <p class="lead">{copy.lead}</p>
+      <p>{copy.p}</p>
+
+      <ul class="partner-grid">
+        {copy.partners.map((p) => <li>{p}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <CTA lang={lang} />
+</Layout>
+
+<style>
+  .narrow {
+    max-width: 760px;
+  }
+  .narrow .lead {
+    color: var(--ink);
+    font-size: 1.2rem;
+  }
+  .partner-grid {
+    list-style: none;
+    margin: 34px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 640px) {
+    .partner-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .partner-grid li {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 0.98rem;
+  }
+</style>

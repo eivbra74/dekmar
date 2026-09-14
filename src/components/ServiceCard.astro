@@ -1,16 +1,20 @@
 ---
 import type { Service } from '../data/services';
+import { useTranslations, localizePath, type Lang } from '../i18n/ui';
+
 interface Props {
   service: Service;
+  lang: Lang;
 }
-const { service } = Astro.props;
-const href = `/tjenester/${service.slug}/`;
+const { service, lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localizePath(`/tjenester/${service.slug}/`, lang);
 ---
 
 <a class="service-card" href={href}>
   {service.image ? (
     <div class="service-card__media">
-      <img src={service.image} alt={service.title} loading="lazy" decoding="async" />
+      <img src={service.image} alt={service.title[lang]} loading="lazy" decoding="async" />
     </div>
   ) : (
     <div class="service-card__media service-card__media--placeholder" aria-hidden="true">
@@ -20,9 +24,9 @@ const href = `/tjenester/${service.slug}/`;
     </div>
   )}
   <div class="service-card__body">
-    <h3>{service.title}</h3>
-    <p>{service.intro}</p>
-    <span class="service-card__link">Les mer <span aria-hidden="true">→</span></span>
+    <h3>{service.title[lang]}</h3>
+    <p>{service.intro[lang]}</p>
+    <span class="service-card__link">{t('cta.readMore')} <span aria-hidden="true">→</span></span>
   </div>
 </a>
 

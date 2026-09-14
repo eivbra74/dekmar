@@ -1,6 +1,14 @@
 ---
 import { site } from '../data/site';
 import { services } from '../data/services';
+import { useTranslations, localizePath, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const L = (href: string) => localizePath(href, lang);
 
 const year = new Date().getFullYear();
 const topServices = services.slice(0, 7);
@@ -10,36 +18,36 @@ const topServices = services.slice(0, 7);
   <div class="container footer-grid">
     <div class="footer-brand">
       <img src="/images/brand/dekmar-logo.png" alt="Dekmar AS" width="140" height="70" />
-      <p>{site.tagline}. Takentreprenør og blikkenslager i {site.area}.</p>
+      <p>{site.tagline[lang]}. {t('footer.tagline')} {site.area}.</p>
     </div>
 
     <div>
-      <h4>Tjenester</h4>
+      <h4>{t('footer.services')}</h4>
       <ul>
         {topServices.map((s) => (
-          <li><a href={`/tjenester/${s.slug}/`}>{s.title}</a></li>
+          <li><a href={L(`/tjenester/${s.slug}/`)}>{s.title[lang]}</a></li>
         ))}
-        <li><a href="/tjenester/">Alle tjenester →</a></li>
+        <li><a href={L('/tjenester/')}>{t('cta.allServices')} →</a></li>
       </ul>
     </div>
 
     <div>
-      <h4>Snarveier</h4>
+      <h4>{t('footer.shortcuts')}</h4>
       <ul>
-        <li><a href="/referanser/">Referanser</a></li>
-        <li><a href="/samarbeidspartnere/">Samarbeidspartnere</a></li>
-        <li><a href="/om-oss/">Om oss</a></li>
-        <li><a href="/kontakt/">Kontakt</a></li>
-        <li><a href="/personvern/">Personvern</a></li>
+        <li><a href={L('/referanser/')}>{t('nav.references')}</a></li>
+        <li><a href={L('/samarbeidspartnere/')}>{t('nav.partners')}</a></li>
+        <li><a href={L('/om-oss/')}>{t('nav.about')}</a></li>
+        <li><a href={L('/kontakt/')}>{t('nav.contact')}</a></li>
+        <li><a href={L('/personvern/')}>{lang === 'en' ? 'Privacy' : 'Personvern'}</a></li>
       </ul>
     </div>
 
     <div>
-      <h4>Kontakt</h4>
+      <h4>{t('footer.contact')}</h4>
       <ul class="contact-list">
         <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
         <li>
-          {site.contact.name}, {site.contact.role.toLowerCase()}<br />
+          {site.contact.name}, {site.contact.role[lang].toLowerCase()}<br />
           <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a><br />
           <a href={`tel:${site.contact.phoneHref}`}>{site.contact.phone}</a>
         </li>
@@ -50,8 +58,8 @@ const topServices = services.slice(0, 7);
 
   <div class="footer-bottom">
     <div class="container footer-bottom-inner">
-      <span>© {year} {site.name}. Alle rettigheter reservert.</span>
-      <a href="/personvern/">Personvern</a>
+      <span>© {year} {site.name}. {t('footer.rights')}</span>
+      <a href={L('/personvern/')}>{lang === 'en' ? 'Privacy' : 'Personvern'}</a>
     </div>
   </div>
 </footer>

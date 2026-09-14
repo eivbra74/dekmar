@@ -1,0 +1,78 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../PageHero.astro';
+import { site } from '../../data/site';
+import type { Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const isEn = lang === 'en';
+
+const copy = {
+  nb: {
+    eyebrow: 'Personvern',
+    title: 'Personvernerklæring',
+    desc: 'Personvernerklæring for Dekmar AS – hvordan vi behandler personopplysninger.',
+    intro: `Denne personvernerklæringen forklarer hvordan ${site.name} samler inn og behandler personopplysninger når du besøker nettsiden vår eller tar kontakt med oss.`,
+    sections: [
+      { h: 'Behandlingsansvarlig', p: [`${site.name} er behandlingsansvarlig for personopplysningene som samles inn via denne nettsiden. Har du spørsmål om personvern, kan du kontakte oss på ${site.email}.`] },
+      { h: 'Hvilke opplysninger vi samler inn', p: ['Når du sender inn kontaktskjemaet, lagrer vi navn, e-postadresse og innholdet i meldingen din. Disse opplysningene bruker vi kun til å svare på henvendelsen og eventuelt følge opp et oppdrag. Vi ber deg om ikke å sende sensitive personopplysninger via skjemaet.'] },
+      { h: 'Hvorfor vi behandler opplysningene', p: ['Grunnlaget for behandlingen er å kunne besvare henvendelser og inngå eller gjennomføre en avtale om utførelse av arbeid. Vi selger ikke personopplysninger videre, og deler dem ikke med tredjeparter utover det som er nødvendig for å levere tjenesten (for eksempel vår leverandør av skjema- og driftstjenester).'] },
+      { h: 'Lagringstid', p: ['Vi oppbevarer henvendelser så lenge det er nødvendig for å følge opp saken, og sletter dem når de ikke lenger har noen hensikt. Opplysninger knyttet til et faktisk kundeforhold kan oppbevares så lenge regnskaps- og bokføringsregler krever det.'] },
+      { h: 'Informasjonskapsler (cookies)', p: ['Nettsiden bruker i utgangspunktet ikke informasjonskapsler til sporing eller markedsføring. Dersom vi tar i bruk analyseverktøy, vil dette bli oppdatert her.'] },
+      { h: 'Dine rettigheter', p: [`Du har rett til innsyn i, retting av og sletting av personopplysningene vi har om deg. Du kan også be om at behandlingen begrenses, og klage til Datatilsynet dersom du mener behandlingen er i strid med regelverket. Ta kontakt på ${site.email} for å benytte rettighetene dine.`] },
+    ],
+    note: 'Denne erklæringen kan bli oppdatert. Sist oppdatert: 2026.',
+  },
+  en: {
+    eyebrow: 'Privacy',
+    title: 'Privacy policy',
+    desc: 'Privacy policy for Dekmar AS – how we handle personal data.',
+    intro: `This privacy policy explains how ${site.name} collects and processes personal data when you visit our website or get in touch with us.`,
+    sections: [
+      { h: 'Data controller', p: [`${site.name} is the data controller for the personal data collected via this website. If you have questions about privacy, you can contact us at ${site.email}.`] },
+      { h: 'What data we collect', p: ['When you submit the contact form, we store your name, email address and the content of your message. We use this data only to respond to your enquiry and, where relevant, to follow up on a project. Please do not send sensitive personal data via the form.'] },
+      { h: 'Why we process the data', p: ['The basis for processing is to be able to respond to enquiries and to enter into or carry out an agreement for work. We do not sell personal data, and we do not share it with third parties beyond what is necessary to deliver the service (for example our provider of form and hosting services).'] },
+      { h: 'Retention period', p: ['We keep enquiries for as long as necessary to follow up the matter, and delete them when they no longer serve a purpose. Data relating to an actual customer relationship may be kept for as long as accounting and bookkeeping rules require.'] },
+      { h: 'Cookies', p: ['The website does not, in principle, use cookies for tracking or marketing. If we start using analytics tools, this will be updated here.'] },
+      { h: 'Your rights', p: [`You have the right to access, correct and delete the personal data we hold about you. You can also request that processing be restricted, and lodge a complaint with the Norwegian Data Protection Authority (Datatilsynet) if you believe the processing breaches the regulations. Contact us at ${site.email} to exercise your rights.`] },
+    ],
+    note: 'This policy may be updated. Last updated: 2026.',
+  },
+}[lang];
+---
+
+<Layout lang={lang} title={copy.title} description={copy.desc}>
+  <PageHero eyebrow={copy.eyebrow} title={copy.title} />
+
+  <section class="section">
+    <div class="container prose">
+      <p>{copy.intro}</p>
+      {copy.sections.map((s) => (
+        <>
+          <h2>{s.h}</h2>
+          {s.p.map((para) => <p>{para}</p>)}
+        </>
+      ))}
+      <p class="note">{copy.note}</p>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .prose {
+    max-width: 760px;
+    font-size: 1.05rem;
+  }
+  .prose h2 {
+    margin-top: 1.4em;
+    font-size: 1.4rem;
+  }
+  .note {
+    margin-top: 2em;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+</style>

@@ -1,54 +1,73 @@
 ---
-import { site } from '../data/site';
+import { navItems } from '../data/site';
 import { services } from '../data/services';
 import { references } from '../data/references';
+import { useTranslations, localizePath, alternatePath, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
 
 const path = Astro.url.pathname;
+// Normalisert sti uten /en-prefiks, for aktiv-markering
+const basePath = path.replace(/^\/en(\/|$)/, '/');
 const isActive = (href: string) =>
-  href === '/' ? path === '/' : path.startsWith(href);
+  href === '/' ? basePath === '/' : basePath.startsWith(href);
+
+const L = (href: string) => localizePath(href, lang);
+const otherLang: Lang = lang === 'en' ? 'nb' : 'en';
+const switchHref = alternatePath(path, otherLang);
 ---
 
 <header class="site-header" id="top">
   <div class="container header-inner">
-    <a class="brand" href="/" aria-label="Dekmar AS – forside">
+    <a class="brand" href={L('/')} aria-label="Dekmar AS">
       <img src="/images/brand/dekmar-logo.png" alt="Dekmar AS" width="120" height="60" />
     </a>
 
-    <button class="nav-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Meny">
+    <button class="nav-toggle" aria-expanded="false" aria-controls="main-nav" aria-label={t('nav.menu')}>
       <span></span><span></span><span></span>
     </button>
 
-    <nav class="main-nav" id="main-nav" aria-label="Hovedmeny">
+    <nav class="main-nav" id="main-nav" aria-label={t('nav.menu')}>
       <ul class="nav-list">
-        <li><a href="/" class:list={[{ active: isActive('/') }]}>Forside</a></li>
+        <li><a href={L('/')} class:list={[{ active: isActive('/') }]}>{t('nav.home')}</a></li>
 
         <li class="has-sub">
-          <a href="/tjenester/" class:list={[{ active: isActive('/tjenester') }]}>
-            Tjenester <span class="caret" aria-hidden="true"></span>
+          <a href={L('/tjenester/')} class:list={[{ active: isActive('/tjenester') }]}>
+            {t('nav.services')} <span class="caret" aria-hidden="true"></span>
           </a>
           <ul class="submenu">
             {services.map((s) => (
-              <li><a href={`/tjenester/${s.slug}/`}>{s.title}</a></li>
+              <li><a href={L(`/tjenester/${s.slug}/`)}>{s.title[lang]}</a></li>
             ))}
           </ul>
         </li>
 
         <li class="has-sub">
-          <a href="/referanser/" class:list={[{ active: isActive('/referanser') }]}>
-            Referanser <span class="caret" aria-hidden="true"></span>
+          <a href={L('/referanser/')} class:list={[{ active: isActive('/referanser') }]}>
+            {t('nav.references')} <span class="caret" aria-hidden="true"></span>
           </a>
           <ul class="submenu">
             {references.map((r) => (
-              <li><a href={`/referanser/${r.slug}/`}>{r.title}</a></li>
+              <li><a href={L(`/referanser/${r.slug}/`)}>{r.title}</a></li>
             ))}
           </ul>
         </li>
 
-        <li><a href="/samarbeidspartnere/" class:list={[{ active: isActive('/samarbeidspartnere') }]}>Samarbeidspartnere</a></li>
-        <li><a href="/om-oss/" class:list={[{ active: isActive('/om-oss') }]}>Om oss</a></li>
-        <li><a href="/kontakt/" class:list={[{ active: isActive('/kontakt') }]}>Kontakt</a></li>
+        <li><a href={L('/samarbeidspartnere/')} class:list={[{ active: isActive('/samarbeidspartnere') }]}>{t('nav.partners')}</a></li>
+        <li><a href={L('/om-oss/')} class:list={[{ active: isActive('/om-oss') }]}>{t('nav.about')}</a></li>
+        <li><a href={L('/kontakt/')} class:list={[{ active: isActive('/kontakt') }]}>{t('nav.contact')}</a></li>
       </ul>
-      <a class="btn btn--primary header-cta" href="/kontakt/">Be om tilbud</a>
+
+      <div class="header-actions">
+        <a class="lang-switch" href={switchHref} hreflang={otherLang} aria-label={t('lang.switch')}>
+          <span class="globe" aria-hidden="true">🌐</span> {t('lang.switch')}
+        </a>
+        <a class="btn btn--primary header-cta" href={L('/kontakt/')}>{t('cta.quote')}</a>
+      </div>
     </nav>
   </div>
 </header>
@@ -76,7 +95,7 @@ const isActive = (href: string) =>
   .main-nav {
     display: flex;
     align-items: center;
-    gap: 26px;
+    gap: 22px;
   }
   .nav-list {
     display: flex;
@@ -112,7 +131,6 @@ const isActive = (href: string) =>
     opacity: 0.6;
   }
 
-  /* Dropdown (desktop) */
   .has-sub {
     position: relative;
   }
@@ -153,6 +171,33 @@ const isActive = (href: string) =>
     text-decoration: none;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ink);
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .lang-switch:hover {
+    border-color: var(--ink);
+    text-decoration: none;
+  }
+  .globe {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
   .nav-toggle {
     display: none;
     flex-direction: column;
@@ -169,8 +214,7 @@ const isActive = (href: string) =>
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
-  /* Mobil */
-  @media (max-width: 980px) {
+  @media (max-width: 1100px) {
     .nav-toggle {
       display: flex;
     }
@@ -219,8 +263,16 @@ const isActive = (href: string) =>
     .has-sub.expanded .caret {
       transform: rotate(-135deg) translateY(2px);
     }
-    .header-cta {
+    .header-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
       margin-top: 22px;
+    }
+    .lang-switch {
+      justify-content: center;
+    }
+    .header-cta {
       justify-content: center;
     }
     body.nav-open {
@@ -237,11 +289,10 @@ const isActive = (href: string) =>
     toggle.setAttribute('aria-expanded', String(!!open));
     document.body.classList.toggle('nav-open', !!open);
   });
-  // Expand/collapse submenus on mobile
   document.querySelectorAll('.has-sub > a .caret').forEach((caret) => {
     const link = caret.closest('a');
     link?.addEventListener('click', (e) => {
-      if (window.matchMedia('(max-width: 980px)').matches) {
+      if (window.matchMedia('(max-width: 1100px)').matches) {
         e.preventDefault();
         link.parentElement?.classList.toggle('expanded');
       }

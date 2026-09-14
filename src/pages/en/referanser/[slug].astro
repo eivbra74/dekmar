@@ -1,6 +1,6 @@
 ---
-import ReferenceDetail from '../../components/pages/ReferenceDetail.astro';
-import { references } from '../../data/references';
+import ReferenceDetail from '../../../components/pages/ReferenceDetail.astro';
+import { references } from '../../../data/references';
 
 export function getStaticPaths() {
   return references.map((reference) => ({
@@ -11,4 +11,4 @@ export function getStaticPaths() {
 
 const { reference } = Astro.props;
 ---
-<ReferenceDetail lang="nb" reference={reference} />
+<ReferenceDetail lang="en" reference={reference} />

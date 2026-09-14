@@ -1,0 +1,64 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Gallery from '../Gallery.astro';
+import CTA from '../CTA.astro';
+import type { Reference } from '../../data/references';
+import { useTranslations, localizePath, type Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  reference: Reference;
+}
+const { lang, reference } = Astro.props;
+const t = useTranslations(lang);
+const L = (href: string) => localizePath(href, lang);
+---
+
+<Layout
+  lang={lang}
+  title={reference.title}
+  description={`${reference.title} – ${reference.summary[lang]}`}
+  image={reference.images[0]}
+>
+  <section class="page-hero">
+    <div class="container">
+      <nav class="crumbs" aria-label="breadcrumb">
+        <a href={L('/referanser/')}>{t('crumb.references')}</a> <span aria-hidden="true">/</span> {reference.title}
+      </nav>
+      <h1>{reference.title}</h1>
+      <p class="lead">{reference.summary[lang]}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <Gallery images={reference.images} alt={reference.title} />
+      <p class="gallery-hint">{t('ref.hint')}</p>
+    </div>
+  </section>
+
+  <CTA lang={lang} />
+</Layout>
+
+<style>
+  .page-hero {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding-block: clamp(44px, 7vw, 76px);
+  }
+  .crumbs {
+    font-size: 0.9rem;
+    font-family: var(--font-head);
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .page-hero .lead {
+    margin-bottom: 0;
+  }
+  .gallery-hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin-top: 22px;
+  }
+</style>

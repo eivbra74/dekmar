@@ -1,0 +1,181 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CTA from '../CTA.astro';
+import { services, type Service } from '../../data/services';
+import { useTranslations, localizePath, type Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  service: Service;
+}
+const { lang, service } = Astro.props;
+const t = useTranslations(lang);
+const L = (href: string) => localizePath(href, lang);
+
+const others = services.filter((s) => s.slug !== service.slug);
+const otherHeading = lang === 'en' ? 'Other services' : 'Andre tjenester';
+---
+
+<Layout lang={lang} title={service.title[lang]} description={service.intro[lang]} image={service.image}>
+  <section class="page-hero" class:list={[{ 'has-image': !!service.image }]}>
+    {service.image && (
+      <div class="page-hero__bg" style={`background-image:url(${service.image})`}></div>
+    )}
+    <div class="page-hero__overlay"></div>
+    <div class="container page-hero__inner">
+      <nav class="crumbs" aria-label="breadcrumb">
+        <a href={L('/tjenester/')}>{t('crumb.services')}</a> <span aria-hidden="true">/</span> {service.title[lang]}
+      </nav>
+      <h1>{service.title[lang]}</h1>
+      <p class="lead">{service.intro[lang]}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container service-layout">
+      <article class="service-body">
+        {service.body[lang].map((block) => (
+          <div class="block">
+            {block.heading && <h2>{block.heading}</h2>}
+            {block.paragraphs.map((p) => <p>{p}</p>)}
+          </div>
+        ))}
+
+        <div class="service-actions">
+          <a class="btn btn--primary" href={L('/kontakt/')}>{t('cta.quote')}</a>
+          <a class="btn btn--ghost" href={L('/tjenester/')}>{t('cta.allServices')}</a>
+        </div>
+      </article>
+
+      <aside class="service-aside">
+        <div class="aside-card">
+          <h3>{otherHeading}</h3>
+          <ul>
+            {others.map((s) => (
+              <li><a href={L(`/tjenester/${s.slug}/`)}>{s.title[lang]}</a></li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <CTA lang={lang} />
+</Layout>
+
+<style>
+  .page-hero {
+    position: relative;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding-block: clamp(48px, 8vw, 96px);
+    color: var(--ink);
+  }
+  .page-hero.has-image {
+    color: #fff;
+    border-bottom: 0;
+  }
+  .page-hero__bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+  }
+  .page-hero__overlay {
+    position: absolute;
+    inset: 0;
+  }
+  .has-image .page-hero__overlay {
+    background: linear-gradient(90deg, rgba(15, 17, 21, 0.86), rgba(15, 17, 21, 0.5));
+  }
+  .page-hero__inner {
+    position: relative;
+    max-width: 760px;
+  }
+  .has-image h1 {
+    color: #fff;
+  }
+  .has-image .lead {
+    color: #e7e9ec;
+  }
+  .crumbs {
+    font-size: 0.9rem;
+    font-family: var(--font-head);
+    font-weight: 500;
+    margin-bottom: 14px;
+    opacity: 0.85;
+  }
+  .has-image .crumbs,
+  .has-image .crumbs a {
+    color: #f0f1f3;
+  }
+  .lead {
+    margin-bottom: 0;
+  }
+
+  .service-layout {
+    display: grid;
+    gap: 44px;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .service-layout {
+      grid-template-columns: 1fr 300px;
+    }
+  }
+  .service-body {
+    max-width: 720px;
+    font-size: 1.05rem;
+  }
+  .block + .block {
+    margin-top: 8px;
+  }
+  .block h2 {
+    margin-top: 0.6em;
+  }
+  .service-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 32px;
+  }
+  .aside-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    position: sticky;
+    top: 96px;
+  }
+  .aside-card h3 {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 14px;
+  }
+  .aside-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .aside-card li {
+    border-bottom: 1px solid var(--line);
+  }
+  .aside-card li:last-child {
+    border-bottom: 0;
+  }
+  .aside-card a {
+    display: block;
+    padding: 11px 0;
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 0.97rem;
+  }
+  .aside-card a:hover {
+    color: var(--brand);
+    text-decoration: none;
+    padding-left: 6px;
+    transition: padding 0.15s ease;
+  }
+</style>

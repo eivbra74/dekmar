@@ -3,42 +3,56 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { site } from '../data/site';
+import { alternatePath, type Lang } from '../i18n/ui';
 
 interface Props {
+  lang?: Lang;
   title?: string;
   description?: string;
   image?: string;
 }
 
 const {
+  lang = 'nb',
   title,
-  description = site.description,
+  description,
   image = '/images/brand/hero.jpg',
 } = Astro.props;
 
-const pageTitle = title ? `${title} – ${site.name}` : `${site.name} – ${site.tagline}`;
+const desc = description ?? site.description[lang];
+const pageTitle = title ? `${title} – ${site.name}` : `${site.name} – ${site.tagline[lang]}`;
 const canonical = new URL(Astro.url.pathname, site.url).href;
 const ogImage = new URL(image, site.url).href;
+
+// hreflang-alternativer
+const nbHref = new URL(alternatePath(Astro.url.pathname, 'nb'), site.url).href;
+const enHref = new URL(alternatePath(Astro.url.pathname, 'en'), site.url).href;
+const htmlLang = lang === 'en' ? 'en' : 'nb';
+const ogLocale = lang === 'en' ? 'en_US' : 'nb_NO';
 ---
 
 <!doctype html>
-<html lang="nb">
+<html lang={htmlLang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="/images/brand/dekmar-logo.png" />
     <title>{pageTitle}</title>
-    <meta name="description" content={description} />
+    <meta name="description" content={desc} />
     <link rel="canonical" href={canonical} />
+
+    <link rel="alternate" hreflang="nb" href={nbHref} />
+    <link rel="alternate" hreflang="en" href={enHref} />
+    <link rel="alternate" hreflang="x-default" href={nbHref} />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={site.name} />
     <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={desc} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:locale" content="nb_NO" />
+    <meta property="og:locale" content={ogLocale} />
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- Fonts -->
@@ -56,7 +70,7 @@ const ogImage = new URL(image, site.url).href;
         '@context': 'https://schema.org',
         '@type': 'RoofingContractor',
         name: site.name,
-        description: site.description,
+        description: desc,
         image: ogImage,
         url: site.url,
         email: site.email,
@@ -71,11 +85,11 @@ const ogImage = new URL(image, site.url).href;
     />
   </head>
   <body>
-    <a class="skip-link" href="#main">Hopp til innhold</a>
-    <Header />
+    <a class="skip-link" href="#main">{lang === 'en' ? 'Skip to content' : 'Hopp til innhold'}</a>
+    <Header lang={lang} />
     <main id="main">
       <slot />
     </main>
-    <Footer />
+    <Footer lang={lang} />
   </body>
 </html>
