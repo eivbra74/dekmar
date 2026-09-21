@@ -3,6 +3,7 @@ import KsLayout from '../../../layouts/KsLayout.astro';
 import { ksUi, checklist, safetyRound } from '../../../data/ks';
 import { standardTemplates } from '../../../data/ksTemplates';
 import { standardArticles } from '../../../data/ksArticles';
+import { standardFdv } from '../../../data/ksFdv';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -11,7 +12,7 @@ import { standardArticles } from '../../../data/ksArticles';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv })} />
 </KsLayout>
 
 <style is:global>
@@ -186,6 +187,9 @@ import { standardArticles } from '../../../data/ksArticles';
   const STD_ARTICLES = KSD.standardArticles || [];
   let ARTICLES: any[] = [];
   let ARTICLES_SEEDED = false;
+  const STD_FDV = KSD.standardFdv || [];
+  let FDV: any[] = [];
+  let FDV_SEEDED = false;
   let TEMPLATES: any[] = [];
   let TEMPLATES_SEEDED = false;
   const STD_DEV_CATS = ['HMS', 'Kvalitet', 'Fremdrift', 'Materiell / leveranse', 'Skade / ulykke', 'Nestenulykke', 'Miljø', 'Annet'];
@@ -353,6 +357,18 @@ import { standardArticles } from '../../../data/ksArticles';
     handbooksTitle: { no: 'Håndbøker og styrende dokumenter', pl: 'Podręczniki i dokumenty nadrzędne', en: 'Handbooks and governing documents' },
     openDoc: { no: 'Åpne dokument', pl: 'Otwórz dokument', en: 'Open document' },
     revLabel: { no: 'Rev.', pl: 'Rew.', en: 'Rev.' },
+    fdvArchive: { no: 'FDV-arkiv', pl: 'Archiwum FDV', en: 'FDV archive' },
+    fdvIntro: { no: 'Produkter Dekmar bruker mest. Kjemikalier kan hentes rett inn i et prosjekts stoffkartotek.', pl: 'Najczęściej używane produkty. Substancje można dodać do rejestru w projekcie.', en: 'Products Dekmar uses most. Chemicals can be pulled into a project’s register.' },
+    newFdv: { no: '+ Nytt produkt', pl: '+ Nowy produkt', en: '+ New product' },
+    isChemical: { no: 'Kjemikalie (til stoffkartotek)', pl: 'Substancja (do rejestru)', en: 'Chemical (for register)' },
+    chemicalBadge: { no: 'Kjemikalie', pl: 'Substancja', en: 'Chemical' },
+    productName: { no: 'Produktnavn', pl: 'Nazwa produktu', en: 'Product name' },
+    fdvUrl: { no: 'FDV-/produktblad (lenke)', pl: 'Karta FDV/produktu (link)', en: 'FDV/product sheet (link)' },
+    unitLabel: { no: 'Enhet', pl: 'Jednostka', en: 'Unit' },
+    fromFdv: { no: 'Hent fra FDV-arkiv', pl: 'Dodaj z archiwum FDV', en: 'Add from FDV archive' },
+    addSelected: { no: 'Legg til valgte', pl: 'Dodaj wybrane', en: 'Add selected' },
+    fdvPickIntro: { no: 'Velg produkter som skal legges i stoffkartoteket for dette prosjektet:', pl: 'Wybierz produkty do rejestru w tym projekcie:', en: 'Choose products to add to this project’s register:' },
+    added: { no: 'Lagt til', pl: 'Dodano', en: 'Added' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -393,6 +409,7 @@ import { standardArticles } from '../../../data/ksArticles';
     logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>',
+    fdv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
     chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
@@ -401,6 +418,7 @@ import { standardArticles } from '../../../data/ksArticles';
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
     { id: 'documents', icon: 'documents', label: () => p('documents'), run: () => renderDocuments() },
+    { id: 'fdv', icon: 'fdv', label: () => p('fdvArchive'), run: () => renderFdv() },
     { id: 'templates', icon: 'templates', label: () => p('manageTemplates'), run: () => renderTemplates() },
     { id: 'archive', icon: 'archive', label: () => p('archive'), run: () => renderArchive() },
     { id: 'team', icon: 'team', label: () => p('team'), run: () => renderTeam() },
@@ -503,6 +521,27 @@ import { standardArticles } from '../../../data/ksArticles';
     }
     return raw;
   }
+  // ---------- FDV-arkiv (produktbibliotek) ----------
+  async function ensureFdv() {
+    if (!FDV_SEEDED) {
+      // insert kun manglende (behold brukerens redigeringer, f.eks. tillagte SDS-lenker)
+      const { data: existing } = await supabase.from('fdv_products').select('slug');
+      const have = new Set((existing || []).map((x: any) => x.slug).filter(Boolean));
+      const missing = STD_FDV.filter((f: any) => !have.has(f.slug));
+      if (missing.length) {
+        await supabase.from('fdv_products').insert(missing.map((f: any) => ({
+          slug: f.slug, name: f.name, supplier: f.supplier || null, category: f.category || null,
+          use_area: f.use_area || null, is_chemical: !!f.is_chemical, hazards: f.hazards || null,
+          signal_word: f.signal_word || null, unit: f.unit || null, notes: f.notes || null,
+          is_standard: true, sort: f.sort || 0,
+        })));
+      }
+      FDV_SEEDED = true;
+    }
+    const { data } = await supabase.from('fdv_products').select('*').order('category').order('sort').order('name');
+    FDV = data || [];
+  }
+
   function artTri(a: any, field: string): any {
     const raw = a?.[field];
     if (raw && typeof raw === 'object') return { no: raw.no || '', pl: raw.pl || '', en: raw.en || '' };
@@ -1203,6 +1242,12 @@ import { standardArticles } from '../../../data/ksArticles';
       <p class="p-muted">${esc(p('chemicalsIntro'))}</p>
       ${list ? `<ul class="p-list">${list}</ul>` : `<p class="p-muted">${esc(p('noChemicals'))}</p>`}
       <div class="p-actions">${rows && rows.length ? `<button class="btn btn--ghost" id="chem-export">${esc(p('exportRegister'))}</button>` : ''}</div>
+      <details class="p-new" id="chem-fdv"><summary>${esc(p('fromFdv'))}</summary>
+        <p class="p-muted">${esc(p('fdvPickIntro'))}</p>
+        <div id="fdv-pick"><p class="portal-loading">…</p></div>
+        <button class="btn btn--primary" id="fdv-add" type="button">${esc(p('addSelected'))}</button>
+        <span class="p-muted" id="fdv-msg" style="margin-left:10px"></span>
+      </details>
       <details class="p-new"><summary>${esc(p('newChemical'))}</summary>
         <div class="p-grid2">
           <label class="p-field">${esc(p('chemName'))}<input id="c-name" type="text"></label>
@@ -1235,6 +1280,31 @@ import { standardArticles } from '../../../data/ksArticles';
       await supabase.from('chemicals').delete().eq('id', b.dataset.chemdel); renderChemicals(projectId);
     }));
     const exp = document.getElementById('chem-export'); if (exp) exp.addEventListener('click', () => makeChemicalsPdf(rows || []));
+    // FDV-plukkeliste: fyll når seksjonen åpnes
+    const fdvDetails = document.getElementById('chem-fdv') as HTMLDetailsElement;
+    let fdvLoaded = false;
+    const fillFdvPick = async () => {
+      if (fdvLoaded) return; fdvLoaded = true;
+      await ensureFdv();
+      const pick = document.getElementById('fdv-pick')!;
+      pick.innerHTML = FDV.map((f: any) => `<label class="p-check" style="display:flex"><input type="checkbox" class="fdv-c" value="${esc(f.id)}"${f.is_chemical ? ' checked' : ''}> ${esc(f.name)}${f.is_chemical ? ` <span class="p-chip" style="margin-left:6px">${esc(p('chemicalBadge'))}</span>` : ''}</label>`).join('') || `<p class="p-muted">—</p>`;
+    };
+    fdvDetails?.addEventListener('toggle', () => { if (fdvDetails.open) fillFdvPick(); });
+    document.getElementById('fdv-add')!.addEventListener('click', async () => {
+      const ids = Array.from(secEl.querySelectorAll<HTMLInputElement>('.fdv-c:checked')).map((x) => x.value);
+      const msg = document.getElementById('fdv-msg')!;
+      if (!ids.length) return;
+      const { data: u } = await supabase.auth.getUser();
+      const chosen = FDV.filter((f: any) => ids.includes(f.id));
+      const rows2 = chosen.map((f: any) => ({
+        project_id: projectId, name: f.name, supplier: f.supplier || null, use_area: f.use_area || null,
+        hazards: f.hazards || null, signal_word: f.signal_word || null, sds_url: f.sds_url || null,
+        notes: f.notes || null, created_by: u.user?.id,
+      }));
+      const { error } = await supabase.from('chemicals').insert(rows2);
+      if (error) { msg.textContent = error.message; return; }
+      renderChemicals(projectId);
+    });
     document.getElementById('c-save')!.addEventListener('click', async () => {
       const name = (document.getElementById('c-name') as HTMLInputElement).value.trim();
       const msg = document.getElementById('c-msg')!;
@@ -1480,6 +1550,103 @@ import { standardArticles } from '../../../data/ksArticles';
       else { ({ error } = await supabase.from('articles').update(payload).eq('id', a.id)); }
       if (error) { msg.textContent = error.message; return; }
       await ensureArticles(); renderArticles();
+    });
+  }
+
+  // ---------- FDV-arkiv (produktbibliotek) ----------
+  async function renderFdv() {
+    redraw = renderFdv;
+    await ensureShell('fdv');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    await ensureFdv();
+    const cats = Array.from(new Set(FDV.map((f: any) => f.category || '—')));
+    const card = (f: any) => `
+      <div class="p-tpl">
+        <div class="p-tpl-head">
+          <div><h3>${esc(f.name)}${f.is_chemical ? ` <span class="p-badge open">${esc(p('chemicalBadge'))}</span>` : ''}</h3>
+          <p class="p-muted">${esc([f.supplier, f.unit].filter(Boolean).join(' · '))}</p></div>
+        </div>
+        ${f.use_area ? `<p class="p-muted">${esc(f.use_area)}</p>` : ''}
+        ${f.is_chemical && f.hazards ? `<div class="p-chips">${(f.hazards || '').split(',').filter(Boolean).map((h: string) => `<span class="p-chip">${esc(ghsLabel(h))}</span>`).join('')}</div>` : ''}
+        ${f.notes ? `<p class="p-muted" style="font-size:.85rem">${esc(f.notes)}</p>` : ''}
+        <div class="p-actions">
+          ${f.sds_url ? `<a class="btn btn--ghost p-sm" href="${esc(f.sds_url)}" target="_blank" rel="noopener">SDS ↗</a>` : ''}
+          ${f.fdv_url ? `<a class="btn btn--ghost p-sm" href="${esc(f.fdv_url)}" target="_blank" rel="noopener">FDV ↗</a>` : ''}
+          <button class="btn btn--ghost p-sm" data-fedit="${esc(f.id)}">${esc(p('edit'))}</button>
+          <button class="btn btn--ghost p-sm" data-fdel="${esc(f.id)}">${esc(p('del'))}</button>
+        </div>
+      </div>`;
+    const groups = cats.map((cat) => `<div class="p-section"><h2>${esc(cat)}</h2>${FDV.filter((f: any) => (f.category || '—') === cat).map(card).join('')}</div>`).join('');
+    root.innerHTML = `
+      <div class="p-head">
+        <div><h1>${esc(p('fdvArchive'))}</h1><p class="p-muted">${esc(p('fdvIntro'))}</p></div>
+        <div class="p-user"><button class="btn btn--primary" id="fdv-new">${esc(p('newFdv'))}</button></div>
+      </div>
+      ${FDV.length ? groups : `<p class="p-muted">—</p>`}`;
+    document.getElementById('fdv-new')!.addEventListener('click', () => renderFdvEditor(null));
+    root.querySelectorAll<HTMLElement>('[data-fedit]').forEach((b) => b.addEventListener('click', () => renderFdvEditor(FDV.find((x: any) => x.id === b.dataset.fedit))));
+    root.querySelectorAll<HTMLElement>('[data-fdel]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm(p('confirmDelete'))) return;
+      await supabase.from('fdv_products').delete().eq('id', b.dataset.fdel); await ensureFdv(); renderFdv();
+    }));
+  }
+
+  function renderFdvEditor(f: any) {
+    redraw = () => renderFdvEditor(f);
+    const isNew = !f;
+    const haz = new Set((f?.hazards || '').split(',').filter(Boolean));
+    const ghsChecks = GHS.map((g) => `<label class="p-check"><input type="checkbox" class="fe-haz" value="${g.v}"${haz.has(g.v) ? ' checked' : ''}> ${esc((g as any)[lang()])}</label>`).join('');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(isNew ? p('newFdv').replace('+ ', '') : p('edit'))}</h1>
+        <div class="p-user"><button class="btn btn--ghost" id="fe-back">${esc(p('back'))}</button></div></div>
+      <div class="p-card">
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('productName'))}<input id="fe-name" type="text" value="${esc(f?.name || '')}"></label>
+          <label class="p-field">${esc(p('supplier'))}<input id="fe-supplier" type="text" value="${esc(f?.supplier || '')}"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('devCategory'))}<input id="fe-cat" type="text" value="${esc(f?.category || '')}"></label>
+          <label class="p-field">${esc(p('unitLabel'))}<input id="fe-unit" type="text" value="${esc(f?.unit || '')}"></label>
+        </div>
+        <label class="p-field">${esc(p('useArea'))}<input id="fe-use" type="text" value="${esc(f?.use_area || '')}"></label>
+        <label class="p-check" style="margin:4px 0 12px"><input id="fe-chem" type="checkbox"${f?.is_chemical ? ' checked' : ''}> ${esc(p('isChemical'))}</label>
+        <div id="fe-chembox" style="${f?.is_chemical ? '' : 'display:none'}">
+          <label class="p-field">${esc(p('signalWord'))}
+            <select id="fe-signal"><option value="">${esc(p('none'))}</option><option value="${esc(p('danger'))}"${f?.signal_word === p('danger') ? ' selected' : ''}>${esc(p('danger'))}</option><option value="${esc(p('warning'))}"${f?.signal_word === p('warning') ? ' selected' : ''}>${esc(p('warning'))}</option></select>
+          </label>
+          <p class="p-field" style="margin-bottom:6px">${esc(p('hazardsLabel'))}</p>
+          <div class="p-checks">${ghsChecks}</div>
+        </div>
+        <label class="p-field">${esc(p('sdsFile'))} (URL)<input id="fe-sds" type="url" value="${esc(f?.sds_url || '')}" placeholder="https://…"></label>
+        <label class="p-field">${esc(p('fdvUrl'))}<input id="fe-fdv" type="url" value="${esc(f?.fdv_url || '')}" placeholder="https://…"></label>
+        <label class="p-field">${esc(p('notesLabel'))}<textarea id="fe-notes" rows="2">${esc(f?.notes || '')}</textarea></label>
+        <button class="btn btn--primary" id="fe-save" type="button">${esc(p('save'))}</button>
+        <span class="p-muted" id="fe-msg" style="margin-left:10px"></span>
+      </div>`;
+    document.getElementById('fe-back')!.addEventListener('click', renderFdv);
+    document.getElementById('fe-chem')!.addEventListener('change', (e) => { document.getElementById('fe-chembox')!.style.display = (e.target as HTMLInputElement).checked ? '' : 'none'; });
+    document.getElementById('fe-save')!.addEventListener('click', async () => {
+      const name = (document.getElementById('fe-name') as HTMLInputElement).value.trim();
+      const msg = document.getElementById('fe-msg')!;
+      if (!name) { msg.textContent = p('nameRequired'); return; }
+      const isChem = (document.getElementById('fe-chem') as HTMLInputElement).checked;
+      const hazards = isChem ? Array.from(root.querySelectorAll<HTMLInputElement>('.fe-haz:checked')).map((x) => x.value).join(',') : null;
+      const payload: any = {
+        name, supplier: (document.getElementById('fe-supplier') as HTMLInputElement).value.trim() || null,
+        category: (document.getElementById('fe-cat') as HTMLInputElement).value.trim() || null,
+        unit: (document.getElementById('fe-unit') as HTMLInputElement).value.trim() || null,
+        use_area: (document.getElementById('fe-use') as HTMLInputElement).value.trim() || null,
+        is_chemical: isChem,
+        signal_word: isChem ? ((document.getElementById('fe-signal') as HTMLSelectElement).value || null) : null,
+        hazards, sds_url: (document.getElementById('fe-sds') as HTMLInputElement).value.trim() || null,
+        fdv_url: (document.getElementById('fe-fdv') as HTMLInputElement).value.trim() || null,
+        notes: (document.getElementById('fe-notes') as HTMLTextAreaElement).value.trim() || null,
+      };
+      let error;
+      if (isNew) { ({ error } = await supabase.from('fdv_products').insert({ ...payload, slug: null, is_standard: false })); }
+      else { ({ error } = await supabase.from('fdv_products').update(payload).eq('id', f.id)); }
+      if (error) { msg.textContent = error.message; return; }
+      await ensureFdv(); renderFdv();
     });
   }
 
