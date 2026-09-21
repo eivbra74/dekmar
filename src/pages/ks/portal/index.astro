@@ -525,6 +525,18 @@ import { standardArticles } from '../../../data/ksArticles';
     ]);
     DEV_CATS = c || []; DEV_RESP = r || [];
   }
+  // Oversettelse av standard avvikskategorier (lagret navn = norsk; vises på gjeldende språk)
+  const DEV_CAT_I18N: Record<string, { no: string; pl: string; en: string }> = {
+    'HMS': { no: 'HMS', pl: 'BHP', en: 'HSE' },
+    'Kvalitet': { no: 'Kvalitet', pl: 'Jakość', en: 'Quality' },
+    'Fremdrift': { no: 'Fremdrift', pl: 'Postęp', en: 'Progress' },
+    'Materiell / leveranse': { no: 'Materiell / leveranse', pl: 'Materiały / dostawa', en: 'Materials / delivery' },
+    'Skade / ulykke': { no: 'Skade / ulykke', pl: 'Uraz / wypadek', en: 'Injury / accident' },
+    'Nestenulykke': { no: 'Nestenulykke', pl: 'Sytuacja o mały włos', en: 'Near miss' },
+    'Miljø': { no: 'Miljø', pl: 'Środowisko', en: 'Environment' },
+    'Annet': { no: 'Annet', pl: 'Inne', en: 'Other' },
+  };
+  const devCatLabel = (name: string) => { const m = DEV_CAT_I18N[name]; return m ? m[lang()] : (name || ''); };
   const devSeverityLabel = (s: string) => s === 'hoy' ? p('sevHigh') : s === 'middels' ? p('sevMed') : s === 'lav' ? p('sevLow') : '';
   const devStatusLabel = (s: string) => s === 'closed' ? t('statusClosed') : s === 'in_progress' ? p('statusInProgress') : t('statusOpen');
   const devStatusClass = (s: string) => s === 'closed' ? 'closed' : s === 'in_progress' ? 'progress' : 'open';
@@ -708,11 +720,11 @@ import { standardArticles } from '../../../data/ksArticles';
       <li class="p-item" data-dev="${esc(d.id)}">
         <div>
           <h3>${esc(t('devNo'))} ${esc(d.number || '—')}${d.location ? ' · ' + esc(d.location) : ''}</h3>
-          <p>${esc([d.category, d.severity ? devSeverityLabel(d.severity) : '', (d.description || '').slice(0, 70)].filter(Boolean).join(' · '))}</p>
+          <p>${esc([d.category ? devCatLabel(d.category) : '', d.severity ? devSeverityLabel(d.severity) : '', (d.description || '').slice(0, 70)].filter(Boolean).join(' · '))}</p>
         </div>
         <span class="p-badge ${devStatusClass(d.status)}">${esc(devStatusLabel(d.status))}</span>
       </li>`).join('');
-    const catOptsDev = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    const catOptsDev = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(devCatLabel(c.name))}</option>`).join('');
     const respOptsDev = DEV_RESP.map((r: any) => `<option value="${esc(r.name)}">`).join('');
     root.innerHTML = `
       <button class="btn btn--ghost" id="back" style="margin-bottom:16px">${esc(p('back'))}</button>
@@ -833,6 +845,30 @@ import { standardArticles } from '../../../data/ksArticles';
       }));
   }
 
+  // Bygg inn en Unicode-font (DejaVu Sans) i PDF-ene så æøå og polske tegn (ł/ś/ż osv.) vises riktig.
+  let PDF_FONT_CACHE: { reg: string; bold: string } | null = null;
+  async function ensurePdfFont(doc: any) {
+    try {
+      if (!PDF_FONT_CACHE) {
+        const toB64 = (buf: ArrayBuffer) => {
+          const bytes = new Uint8Array(buf); let bin = '';
+          for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)) as any);
+          return btoa(bin);
+        };
+        const [r, b] = await Promise.all([
+          fetch('/fonts/DejaVuSans.ttf').then((x) => x.arrayBuffer()),
+          fetch('/fonts/DejaVuSans-Bold.ttf').then((x) => x.arrayBuffer()),
+        ]);
+        PDF_FONT_CACHE = { reg: toB64(r), bold: toB64(b) };
+      }
+      doc.addFileToVFS('DejaVuSans.ttf', PDF_FONT_CACHE.reg);
+      doc.addFont('DejaVuSans.ttf', 'DejaVu', 'normal');
+      doc.addFileToVFS('DejaVuSans-Bold.ttf', PDF_FONT_CACHE.bold);
+      doc.addFont('DejaVuSans-Bold.ttf', 'DejaVu', 'bold');
+      doc.setFont('DejaVu', 'normal');
+    } catch (_e) { /* faller tilbake til standardfont */ }
+  }
+
   async function makeDeviationPdf(d: any) {
     // hent bilder (signerte URL-er) og konverter til dataURL
     const { data: phRows } = await supabase.from('photos').select('*').eq('deviation_id', d.id);
@@ -847,29 +883,30 @@ import { standardArticles } from '../../../data/ksArticles';
       }
     }
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    await ensurePdfFont(doc);
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
     const block = (label: string, txt: string) => {
       if (!txt) return;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120);
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120);
       if (y > 275) { doc.addPage(); y = margin; }
       doc.text(label.toUpperCase(), margin, y); y += 4.5;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(20, 23, 28);
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(10.5); doc.setTextColor(20, 23, 28);
       doc.splitTextToSize(txt, maxW).forEach((ln: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3;
     };
     doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(t('deviation') + ' – ' + t('handoverTitle'), margin, 18);
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(t('deviation') + ' – ' + t('handoverTitle'), margin, 18);
     doc.setTextColor(20, 23, 28); y = 32;
     const stTxt = devStatusLabel(d.status);
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(11);
     doc.text(`${t('devNo')}: ${d.number || '—'}    ${t('date')}: ${d.dev_date || '—'}    ${t('status')}: ${stTxt}`, margin, y); y += 6;
-    const meta2 = [d.category ? `${p('devCategory')}: ${d.category}` : '', d.severity ? `${p('severity')}: ${devSeverityLabel(d.severity)}` : '', d.due_date ? `${p('dueDate')}: ${d.due_date}` : ''].filter(Boolean).join('    ');
-    if (meta2) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.text(meta2, margin, y); y += 6; }
+    const meta2 = [d.category ? `${p('devCategory')}: ${devCatLabel(d.category)}` : '', d.severity ? `${p('severity')}: ${devSeverityLabel(d.severity)}` : '', d.due_date ? `${p('dueDate')}: ${d.due_date}` : ''].filter(Boolean).join('    ');
+    if (meta2) { doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.text(meta2, margin, y); y += 6; }
     block(t('location'), d.location); block(t('description'), d.description); block(t('cause'), d.cause);
     block(t('correction'), d.correction); block(t('verification'), d.verification); block(t('responsible'), d.responsible);
     if (imgs.length) {
       if (y > 250) { doc.addPage(); y = margin; }
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120); doc.text(t('photos').toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120); doc.text(t('photos').toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
       const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
       imgs.forEach((src) => {
         if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; }
@@ -967,16 +1004,17 @@ import { standardArticles } from '../../../data/ksArticles';
     });
   }
 
-  function makeFormPdf(rec: any, items: any[], titleLabel: string, projectName?: string) {
+  async function makeFormPdf(rec: any, items: any[], titleLabel: string, projectName?: string) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    await ensurePdfFont(doc);
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
     const line = (txt: string, size = 10, style = 'normal', gap = 5) => {
-      doc.setFont('helvetica', style as any); doc.setFontSize(size);
+      doc.setFont('DejaVu', style as any); doc.setFontSize(size);
       doc.splitTextToSize(txt, maxW).forEach((pp: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(pp, margin, y); y += gap; });
     };
     doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 22, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Dekmar AS', margin, 10);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(titleLabel, margin, 16.5); doc.setTextColor(20, 23, 28); y = 30;
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.text('Dekmar AS', margin, 10);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(titleLabel, margin, 16.5); doc.setTextColor(20, 23, 28); y = 30;
     line(`${t('project')}: ${projectName || ''}`, 10, 'bold', 5.5);
     line(`${t('performedBy')}: ${rec.performed_by || ''}    ${t('date')}: ${rec.performed_date || fmt(rec.created_at)}`, 10, 'normal', 7);
     const A = rec.answers || {};
@@ -1229,18 +1267,19 @@ import { standardArticles } from '../../../data/ksArticles';
     });
   }
 
-  function makeChemicalsPdf(rows: any[]) {
+  async function makeChemicalsPdf(rows: any[]) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    await ensurePdfFont(doc);
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
     doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 22, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Dekmar AS', margin, 10);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(`${p('chemicals')} – ${CURRENT_PROJECT?.name || ''}`, margin, 16.5);
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.text('Dekmar AS', margin, 10);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(`${p('chemicals')} – ${CURRENT_PROJECT?.name || ''}`, margin, 16.5);
     doc.setTextColor(20, 23, 28); y = 30;
     rows.forEach((c: any) => {
       if (y > 265) { doc.addPage(); y = margin; }
       doc.setDrawColor(204, 31, 42); doc.line(margin, y, margin + maxW, y); y += 5;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(`${c.name}${c.signal_word ? ' (' + c.signal_word + ')' : ''}`, margin, y); y += 5;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(11); doc.text(`${c.name}${c.signal_word ? ' (' + c.signal_word + ')' : ''}`, margin, y); y += 5;
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5);
       const meta = [c.supplier, c.use_area, c.quantity, c.location].filter(Boolean).join('  ·  ');
       if (meta) { doc.text(meta, margin, y); y += 5; }
       const haz = (c.hazards || '').split(',').filter(Boolean).map((h: string) => ghsLabel(h)).join(', ');
@@ -1308,10 +1347,11 @@ import { standardArticles } from '../../../data/ksArticles';
   async function makeJobDocPdf(projectId: string) {
     const { data: rows } = await supabase.from('photos').select('*').eq('project_id', projectId).is('deviation_id', null).order('created_at');
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    await ensurePdfFont(doc);
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
     doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(`${p('jobdoc')} – ${CURRENT_PROJECT?.name || ''}`, margin, 18);
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(`${p('jobdoc')} – ${CURRENT_PROJECT?.name || ''}`, margin, 18);
     doc.setTextColor(20, 23, 28); y = 32;
     const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
     const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
@@ -1456,9 +1496,9 @@ import { standardArticles } from '../../../data/ksArticles';
     const stat = (label: string, n: number, cls = '') => `<div class="p-stat ${cls}"><span class="p-stat-n">${n}</span><span class="p-stat-l">${esc(label)}</span></div>`;
     const byCat = DEV_CATS.map((c: any) => ({ name: c.name, n: cnt((d) => d.category === c.name) })).filter((x) => x.n > 0);
     const uncategorized = cnt((d) => !d.category);
-    const catStatRows = byCat.map((c) => `<div class="p-catrow"><span>${esc(c.name)}</span><span class="p-chip">${c.n}</span></div>`).join('')
+    const catStatRows = byCat.map((c) => `<div class="p-catrow"><span>${esc(devCatLabel(c.name))}</span><span class="p-chip">${c.n}</span></div>`).join('')
       + (uncategorized ? `<div class="p-catrow"><span class="p-muted">${esc(p('none'))}</span><span class="p-chip">${uncategorized}</span></div>` : '');
-    const catFilterOpts = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    const catFilterOpts = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(devCatLabel(c.name))}</option>`).join('');
     root.innerHTML = `
       <div class="p-head">
         <h1>${esc(p('deviationCenter'))}</h1>
@@ -1506,7 +1546,7 @@ import { standardArticles } from '../../../data/ksArticles';
         <li class="p-item" data-openproj="${esc(d.project_id)}">
           <div>
             <h3>${esc(t('devNo'))} ${esc(d.number || '—')} · ${esc(d.projects?.name || '')}</h3>
-            <p>${esc([d.category, d.severity ? devSeverityLabel(d.severity) : '', d.due_date ? p('dueDate') + ' ' + d.due_date : '', (d.description || '').slice(0, 60)].filter(Boolean).join(' · '))}</p>
+            <p>${esc([d.category ? devCatLabel(d.category) : '', d.severity ? devSeverityLabel(d.severity) : '', d.due_date ? p('dueDate') + ' ' + d.due_date : '', (d.description || '').slice(0, 60)].filter(Boolean).join(' · '))}</p>
           </div>
           <span class="p-badge ${devStatusClass(d.status)}">${esc(devStatusLabel(d.status))}</span>
         </li>`).join('') || `<p class="p-muted">${esc(p('noResults'))}</p>`;
@@ -1518,7 +1558,7 @@ import { standardArticles } from '../../../data/ksArticles';
     // Config: kategorier
     const drawCats = () => {
       const el = document.getElementById('dc-cats')!;
-      el.innerHTML = DEV_CATS.map((c: any) => `<li class="p-item" style="cursor:default;padding:8px 12px"><span>${esc(c.name)}${c.is_standard ? ` <span class="p-muted">· ${esc(p('standardBadge'))}</span>` : ''}</span>${c.is_standard ? '' : `<button class="btn btn--ghost p-sm" data-catdel="${esc(c.id)}">${esc(p('del'))}</button>`}</li>`).join('');
+      el.innerHTML = DEV_CATS.map((c: any) => `<li class="p-item" style="cursor:default;padding:8px 12px"><span>${esc(devCatLabel(c.name))}${c.is_standard ? ` <span class="p-muted">· ${esc(p('standardBadge'))}</span>` : ''}</span>${c.is_standard ? '' : `<button class="btn btn--ghost p-sm" data-catdel="${esc(c.id)}">${esc(p('del'))}</button>`}</li>`).join('');
       el.querySelectorAll<HTMLElement>('[data-catdel]').forEach((b) => b.addEventListener('click', async () => { await supabase.from('deviation_categories').delete().eq('id', b.dataset.catdel); await ensureDevConfig(); drawCats(); }));
     };
     drawCats();
