@@ -15,8 +15,62 @@ import { standardArticles } from '../../../data/ksArticles';
 </KsLayout>
 
 <style>
-  .portal-root { max-width: 900px; margin-inline: auto; }
+  .portal-root { max-width: 1180px; margin-inline: auto; }
   .portal-loading { color: var(--muted); }
+  /* App-skall */
+  .app { display: grid; grid-template-columns: 236px minmax(0,1fr); gap: 28px; align-items: start; }
+  .app-scrim { display: none; }
+  .app-side { position: sticky; top: 84px; align-self: start; background: var(--dark); color: #e8ebf0; border-radius: 16px; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 104px); overflow: auto; }
+  .app-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 16px; }
+  .app-brand-mark { font-family: var(--font-head); font-weight: 800; letter-spacing: .12em; color: #ff8a91; font-size: .78rem; border: 1.5px solid #ff8a9155; border-radius: 6px; padding: 3px 7px; }
+  .app-brand-name { font-family: var(--font-head); font-weight: 700; font-size: 1.05rem; color: #fff; }
+  .app-nav { display: flex; flex-direction: column; gap: 2px; }
+  .app-nav-item { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; background: transparent; border: 0; color: #c7cdd7; font: inherit; font-family: var(--font-head); font-weight: 600; font-size: .94rem; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background .15s, color .15s; }
+  .app-nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .app-nav-item.is-active { background: var(--brand); color: #fff; }
+  .app-nav-ic { display: inline-flex; width: 20px; height: 20px; flex: 0 0 20px; }
+  .app-nav-ic svg { width: 100%; height: 100%; }
+  .app-side-foot { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); display: flex; flex-direction: column; gap: 6px; }
+  .app-user { font-size: .8rem; color: #9aa2af; padding: 0 12px; word-break: break-all; }
+  .app-logout { display: flex; align-items: center; gap: 11px; background: transparent; border: 0; color: #c7cdd7; font: inherit; font-family: var(--font-head); font-weight: 600; font-size: .92rem; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+  .app-logout:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .app-body { min-width: 0; }
+  .app-topbar { display: none; }
+  .app-main { min-width: 0; }
+  @media (max-width: 860px) {
+    .app { display: block; }
+    .app-topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .app-burger { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; color: var(--ink); }
+    .app-burger svg { width: 22px; height: 22px; }
+    .app-topbar-title { font-family: var(--font-head); font-weight: 800; font-size: 1.15rem; }
+    .app-side { position: fixed; top: 0; left: 0; bottom: 0; z-index: 60; width: 272px; border-radius: 0; max-height: none; transform: translateX(-100%); transition: transform .22s ease; }
+    .app-scrim { position: fixed; inset: 0; background: rgba(10,12,16,.5); z-index: 55; opacity: 0; pointer-events: none; transition: opacity .22s; }
+    .app[data-drawer="open"] .app-side { transform: translateX(0); }
+    .app[data-drawer="open"] .app-scrim { display: block; opacity: 1; pointer-events: auto; }
+  }
+  /* Oversikt */
+  .dash-hero { margin-bottom: 22px; }
+  .dash-hero h1 { margin: 0 0 4px; }
+  .dash-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
+  .dash-stat { text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .dash-stat:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .dash-stat-n { display: block; font-family: var(--font-head); font-weight: 800; font-size: 2rem; line-height: 1; }
+  .dash-stat-l { display: block; margin-top: 6px; color: var(--muted); font-size: .85rem; }
+  .dash-stat.is-alert .dash-stat-n { color: var(--brand-dark); }
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(258px,1fr)); gap: 14px; }
+  .dash-card { display: flex; align-items: flex-start; gap: 14px; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .dash-card:hover { border-color: var(--ink); box-shadow: 0 6px 20px rgba(20,23,28,.07); transform: translateY(-2px); }
+  .dash-card-ic { display: inline-flex; width: 40px; height: 40px; flex: 0 0 40px; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface); color: var(--brand); }
+  .dash-card-ic svg { width: 22px; height: 22px; }
+  .dash-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .dash-card-title { font-family: var(--font-head); font-weight: 700; font-size: 1.02rem; }
+  .dash-card-badge { display: inline-block; margin-left: 4px; background: var(--brand); color: #fff; font-size: .72rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
+  .dash-card-desc { color: var(--muted); font-size: .88rem; line-height: 1.45; }
+  .dash-card-go { color: var(--muted); display: inline-flex; width: 18px; height: 18px; align-self: center; }
+  .dash-card-go svg { width: 100%; height: 100%; }
+  .p-go { color: var(--muted); display: inline-flex; width: 18px; height: 18px; }
+  .p-go svg { width: 100%; height: 100%; }
+  @media (max-width: 560px) { .dash-stats { gap: 8px; } .dash-stat { padding: 12px; } .dash-stat-n { font-size: 1.5rem; } }
   .p-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(18px,3vw,28px); }
   .p-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
   .p-head h1 { margin: 0; }
@@ -260,6 +314,17 @@ import { standardArticles } from '../../../data/ksArticles';
     allLabel: { no: 'Alle', pl: 'Wszystkie', en: 'All' },
     openInProject: { no: 'Åpne prosjekt', pl: 'Otwórz projekt', en: 'Open project' },
     byCategory: { no: 'Per kategori', pl: 'Wg kategorii', en: 'By category' },
+    overview: { no: 'Oversikt', pl: 'Przegląd', en: 'Overview' },
+    dashSubtitle: { no: 'HMS- og kvalitetsportal for Dekmar AS', pl: 'Portal BHP i jakości Dekmar AS', en: 'HSE and quality portal for Dekmar AS' },
+    openDeviations: { no: 'Åpne avvik', pl: 'Otwarte niezgodności', en: 'Open deviations' },
+    activeProjects: { no: 'Aktive prosjekter', pl: 'Aktywne projekty', en: 'Active projects' },
+    cardProjectsDesc: { no: 'Avvik, sjekklister, stoffkartotek og bildedokumentasjon per prosjekt.', pl: 'Niezgodności, listy kontrolne, rejestr substancji i zdjęcia w projektach.', en: 'Deviations, checklists, chemical register and photo documentation per project.' },
+    cardDeviationsDesc: { no: 'Registrer og følg opp avvik med statistikk på tvers av prosjekter.', pl: 'Rejestruj i śledź niezgodności ze statystykami.', en: 'Log and follow up deviations with cross-project statistics.' },
+    cardHandbookDesc: { no: 'Rutiner og veiledninger for helse, miljø og sikkerhet.', pl: 'Procedury i wytyczne BHP.', en: 'Routines and guidance for health, safety and environment.' },
+    cardDocumentsDesc: { no: 'Felles HMS-dokumenter, datablad og sertifikater.', pl: 'Wspólne dokumenty BHP, karty i certyfikaty.', en: 'Shared HSE documents, data sheets and certificates.' },
+    cardTemplatesDesc: { no: 'Standardmaler og egne maler for vernerunder og sjekklister.', pl: 'Szablony standardowe i własne.', en: 'Standard and custom templates for safety rounds and checklists.' },
+    cardArchiveDesc: { no: 'Alle lagrede sjekklister og vernerunder, søkbart.', pl: 'Wszystkie zapisane listy i obchody, z wyszukiwaniem.', en: 'All saved checklists and safety rounds, searchable.' },
+    cardTeamDesc: { no: 'Inviter ansatte og se registrerte brukere.', pl: 'Zapraszaj pracowników i zarządzaj użytkownikami.', en: 'Invite staff and manage registered users.' },
     hmsHandbook: { no: 'HMS-håndbok', pl: 'Podręcznik BHP', en: 'HSE handbook' },
     articlesIntro: { no: 'Rutiner og veiledninger for helse, miljø og sikkerhet i Dekmar.', pl: 'Procedury i wytyczne BHP w Dekmar.', en: 'Routines and guidance for health, safety and environment at Dekmar.' },
     newArticle: { no: '+ Ny artikkel', pl: '+ Nowy artykuł', en: '+ New article' },
@@ -289,12 +354,89 @@ import { standardArticles } from '../../../data/ksArticles';
   const p = (k: string) => (P[k] ? P[k][lang()] : k);
   const catLabel = (v: string) => { const c = DOCCATS.find((x) => x.v === v); return c ? (c as any)[lang()] : (v || ''); };
   const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
-  const root = document.getElementById('portal-root')!;
+  const PORTAL = document.getElementById('portal-root')!;
+  let root: HTMLElement = PORTAL;            // render-mål; peker på hovedområdet inne i app-skallet når innlogget
+  let ACTIVE_NAV = 'dashboard';
+  let SHELL_BUILT = false;
   const fmt = (d: string) => new Date(d).toLocaleDateString('nb-NO');
+
+  // Enkelt, konsistent ikonsett (strek, currentColor)
+  const ICONS: Record<string, string> = {
+    dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+    projects: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+    deviation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 22 20H2z"/><path d="M12 10v4"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg>',
+    handbook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5z"/></svg>',
+    documents: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>',
+    templates: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 3v18"/><path d="M12 8h5M12 12h5"/></svg>',
+    archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg>',
+    team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6"/><path d="M18 14.5a5.5 5.5 0 0 1 3 5"/></svg>',
+    logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  };
+  const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
+    { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
+    { id: 'projects', icon: 'projects', label: () => p('projects'), run: () => renderProjects() },
+    { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
+    { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
+    { id: 'documents', icon: 'documents', label: () => p('documents'), run: () => renderDocuments() },
+    { id: 'templates', icon: 'templates', label: () => p('manageTemplates'), run: () => renderTemplates() },
+    { id: 'archive', icon: 'archive', label: () => p('archive'), run: () => renderArchive() },
+    { id: 'team', icon: 'team', label: () => p('team'), run: () => renderTeam() },
+  ];
 
   // Gjeldende visning tegnes på nytt når språket byttes (KsLayout sender 'kslangchange')
   let redraw: () => void = () => route();
-  document.addEventListener('kslangchange', () => redraw());
+  document.addEventListener('kslangchange', () => { if (SHELL_BUILT) paintShellChrome(); redraw(); });
+
+  // ---------- App-skall (sidemeny + hovedområde) ----------
+  async function currentEmailSafe() { try { const { data } = await supabase.auth.getUser(); return data.user?.email || ''; } catch { return ''; } }
+  function buildShell() {
+    PORTAL.innerHTML = `
+      <div class="app" data-drawer="closed">
+        <div class="app-scrim" id="app-scrim"></div>
+        <aside class="app-side" id="app-side">
+          <div class="app-brand"><span class="app-brand-mark">KS</span><span class="app-brand-name">Dekmar</span></div>
+          <nav class="app-nav" id="app-nav"></nav>
+          <div class="app-side-foot">
+            <div class="app-user" id="app-user"></div>
+            <button class="app-logout" id="app-logout"><span class="app-nav-ic">${ICONS.logout}</span><span></span></button>
+          </div>
+        </aside>
+        <div class="app-body">
+          <header class="app-topbar">
+            <button class="app-burger" id="app-burger" aria-label="Meny">${ICONS.menu}</button>
+            <span class="app-topbar-title" id="app-topbar-title"></span>
+          </header>
+          <main class="app-main" id="pmain"></main>
+        </div>
+      </div>`;
+    SHELL_BUILT = true;
+    root = document.getElementById('pmain')!;
+    const side = document.getElementById('app-side')!;
+    const app = PORTAL.querySelector('.app') as HTMLElement;
+    const closeDrawer = () => app.setAttribute('data-drawer', 'closed');
+    document.getElementById('app-burger')!.addEventListener('click', () => app.setAttribute('data-drawer', app.getAttribute('data-drawer') === 'open' ? 'closed' : 'open'));
+    document.getElementById('app-scrim')!.addEventListener('click', closeDrawer);
+    document.getElementById('app-logout')!.addEventListener('click', () => supabase.auth.signOut());
+    side.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.app-nav-item')) closeDrawer(); });
+    paintShellChrome();
+  }
+  function paintShellChrome() {
+    if (!SHELL_BUILT) return;
+    const nav = document.getElementById('app-nav'); if (!nav) return;
+    nav.innerHTML = NAV.map((n) => `<button class="app-nav-item${n.id === ACTIVE_NAV ? ' is-active' : ''}" data-nav="${n.id}"><span class="app-nav-ic">${ICONS[n.icon]}</span><span class="app-nav-label">${esc(n.label())}</span></button>`).join('');
+    nav.querySelectorAll<HTMLElement>('[data-nav]').forEach((b) => b.addEventListener('click', () => { const n = NAV.find((x) => x.id === b.dataset.nav); if (n) { ACTIVE_NAV = n.id; paintShellChrome(); n.run(); } }));
+    const logoutLabel = document.querySelector('#app-logout span:last-child'); if (logoutLabel) logoutLabel.textContent = p('signOut');
+    const title = document.getElementById('app-topbar-title'); if (title) { const n = NAV.find((x) => x.id === ACTIVE_NAV); title.textContent = n ? n.label() : ''; }
+  }
+  async function ensureShell(navId?: string) {
+    if (!SHELL_BUILT) buildShell();
+    if (navId) ACTIVE_NAV = navId;
+    paintShellChrome();
+    const ue = document.getElementById('app-user'); if (ue && !ue.textContent) ue.textContent = await currentEmailSafe();
+  }
+  function teardownShell() { SHELL_BUILT = false; root = PORTAL; PORTAL.innerHTML = ''; }
 
   // ---------- Maler (templates) ----------
   async function ensureTemplates() {
@@ -360,13 +502,15 @@ import { standardArticles } from '../../../data/ksArticles';
   async function route() {
     if (new URLSearchParams(location.search).get('setpw') === '1') { renderSetPassword(); return; }
     const { data } = await supabase.auth.getSession();
-    if (data.session) renderProjects(); else renderLogin();
+    if (data.session) { if (ACTIVE_NAV === 'dashboard') renderDashboard(); else { const n = NAV.find((x) => x.id === ACTIVE_NAV); (n ? n.run : renderDashboard)(); } }
+    else renderLogin();
   }
   supabase.auth.onAuthStateChange(() => route());
 
   // Inviterte ansatte lander her med ?setpw=1 og en aktiv invitasjons-sesjon
   function renderSetPassword() {
     redraw = renderSetPassword;
+    teardownShell();
     root.innerHTML = `
       <div class="p-card p-login">
         <h1>${esc(p('setPwTitle'))}</h1>
@@ -394,6 +538,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Login ----------
   function renderLogin() {
     redraw = renderLogin;
+    teardownShell();
     root.innerHTML = `
       <div class="p-card p-login">
         <h1>${esc(p('loginTitle'))}</h1>
@@ -424,22 +569,61 @@ import { standardArticles } from '../../../data/ksArticles';
     return data.user?.email || '';
   }
 
+  // ---------- Oversikt (dashboard) ----------
+  async function renderDashboard() {
+    redraw = renderDashboard;
+    await ensureShell('dashboard');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [projC, devC, docC] = await Promise.all([
+      supabase.from('projects').select('id', { count: 'exact', head: true }),
+      supabase.from('deviations').select('id', { count: 'exact', head: true }).neq('status', 'closed'),
+      supabase.from('documents').select('id', { count: 'exact', head: true }),
+    ]);
+    const nProj = projC.count ?? 0, nDev = devC.count ?? 0, nDoc = docC.count ?? 0;
+    const email = await currentEmailSafe();
+    const card = (nav: string, icon: string, title: string, desc: string, badge?: string) => `
+      <button class="dash-card" data-go="${nav}">
+        <span class="dash-card-ic">${ICONS[icon]}</span>
+        <span class="dash-card-body"><span class="dash-card-title">${esc(title)}${badge ? ` <span class="dash-card-badge">${esc(badge)}</span>` : ''}</span><span class="dash-card-desc">${esc(desc)}</span></span>
+        <span class="dash-card-go">${ICONS.chevron}</span>
+      </button>`;
+    root.innerHTML = `
+      <div class="dash-hero">
+        <h1>${esc(p('overview'))}</h1>
+        <p class="p-muted">${esc(p('dashSubtitle'))}${email ? ` · ${esc(email)}` : ''}</p>
+      </div>
+      <div class="dash-stats">
+        <button class="dash-stat" data-go="projects"><span class="dash-stat-n">${nProj}</span><span class="dash-stat-l">${esc(p('activeProjects'))}</span></button>
+        <button class="dash-stat ${nDev ? 'is-alert' : ''}" data-go="deviations"><span class="dash-stat-n">${nDev}</span><span class="dash-stat-l">${esc(p('openDeviations'))}</span></button>
+        <button class="dash-stat" data-go="documents"><span class="dash-stat-n">${nDoc}</span><span class="dash-stat-l">${esc(p('documents'))}</span></button>
+      </div>
+      <div class="dash-grid">
+        ${card('projects', 'projects', p('projects'), p('cardProjectsDesc'))}
+        ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
+        ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
+        ${card('documents', 'documents', p('documents'), p('cardDocumentsDesc'))}
+        ${card('templates', 'templates', p('manageTemplates'), p('cardTemplatesDesc'))}
+        ${card('archive', 'archive', p('archive'), p('cardArchiveDesc'))}
+        ${card('team', 'team', p('team'), p('cardTeamDesc'))}
+      </div>`;
+    root.querySelectorAll<HTMLElement>('[data-go]').forEach((el) => el.addEventListener('click', () => {
+      const n = NAV.find((x) => x.id === el.dataset.go); if (n) { ACTIVE_NAV = n.id; paintShellChrome(); n.run(); }
+    }));
+  }
+
   // ---------- Projects ----------
   async function renderProjects() {
     redraw = renderProjects;
+    await ensureShell('projects');
     root.innerHTML = `<p class="portal-loading">${esc(t('generating') || '…')}</p>`;
     const { data: projects, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-    const email = await currentEmail();
     const rows = (projects || []).map((pr: any) => `
       <li class="p-item" data-id="${esc(pr.id)}">
         <div><h3>${esc(pr.name)}</h3><p>${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p></div>
-        <span class="p-muted">›</span>
+        <span class="p-go">${ICONS.chevron}</span>
       </li>`).join('');
     root.innerHTML = `
-      <div class="p-head">
-        <h1>${esc(p('projects'))}</h1>
-        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="deviations-btn">${esc(p('deviationCenter'))}</button><button class="btn btn--ghost" id="articles-btn">${esc(p('hmsHandbook'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="templates-btn">${esc(p('manageTemplates'))}</button><button class="btn btn--ghost" id="team">${esc(p('team'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
-      </div>
+      <div class="p-head"><h1>${esc(p('projects'))}</h1></div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
       <details class="p-new">
@@ -453,13 +637,6 @@ import { standardArticles } from '../../../data/ksArticles';
           <button class="btn btn--primary" type="submit">${esc(p('create'))}</button>
         </form>
       </details>`;
-    document.getElementById('signout')!.addEventListener('click', () => supabase.auth.signOut());
-    document.getElementById('deviations-btn')!.addEventListener('click', renderDeviationCenter);
-    document.getElementById('articles-btn')!.addEventListener('click', renderArticles);
-    document.getElementById('archive')!.addEventListener('click', renderArchive);
-    document.getElementById('documents')!.addEventListener('click', renderDocuments);
-    document.getElementById('templates-btn')!.addEventListener('click', renderTemplates);
-    document.getElementById('team')!.addEventListener('click', renderTeam);
     root.querySelectorAll('.p-item').forEach((el) =>
       el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
     (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
@@ -480,6 +657,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Project detail ----------
   async function openProject(id: string) {
     redraw = () => openProject(id);
+    await ensureShell('projects');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: pr } = await supabase.from('projects').select('*').eq('id', id).single();
     CURRENT_PROJECT = pr;
@@ -779,6 +957,7 @@ import { standardArticles } from '../../../data/ksArticles';
   const kindLabel = (k: string) => (k === 'verneround' ? p('kindVerneround') : p('kindChecklist'));
   async function renderTemplates() {
     redraw = renderTemplates;
+    await ensureShell('templates');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     await ensureTemplates();
     const card = (tp: any) => {
@@ -1114,6 +1293,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- HMS-håndbok (artikler) ----------
   async function renderArticles() {
     redraw = renderArticles;
+    await ensureShell('articles');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     await ensureArticles();
     const cats = Array.from(new Set(ARTICLES.map((a: any) => a.category || '—')));
@@ -1193,6 +1373,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Avvikssystem: senter med oversikt, statistikk og innstillinger ----------
   async function renderDeviationCenter() {
     redraw = renderDeviationCenter;
+    await ensureShell('deviations');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     await ensureDevConfig();
     const { data: rows } = await supabase.from('deviations').select('*, projects(name)').order('created_at', { ascending: false });
@@ -1290,6 +1471,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
   async function renderArchive() {
     redraw = renderArchive;
+    await ensureShell('archive');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: rows } = await supabase.from('checklists').select('*, projects(name)').order('created_at', { ascending: false });
     (window as any).__arch = rows || [];
@@ -1345,6 +1527,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Ansatte / invitasjon ----------
   async function renderTeam() {
     redraw = renderTeam;
+    await ensureShell('team');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: profs } = await supabase.from('profiles').select('id, full_name, created_at').order('created_at');
     const rows = (profs || []).map((pr: any) => `
@@ -1383,6 +1566,7 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Dokumentbibliotek ----------
   async function renderDocuments() {
     redraw = renderDocuments;
+    await ensureShell('documents');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const [docsRes, projRes, profRes] = await Promise.all([
       supabase.from('documents').select('*, projects(name)').order('created_at', { ascending: false }),
