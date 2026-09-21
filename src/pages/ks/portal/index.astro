@@ -816,21 +816,20 @@ import { standardArticles } from '../../../data/ksArticles';
     }));
   }
 
-  async function duplicateTemplate(tp: any) {
+  // Dupliser åpner editoren med en redigerbar kopi (lagres som ny mal)
+  function duplicateTemplate(tp: any) {
     if (!tp) return;
-    const { data: u } = await supabase.auth.getUser();
-    await supabase.from('templates').insert({
-      slug: null, name: `${tp.name} ${p('copySuffix')}`, kind: tp.kind, description: tp.description,
-      is_standard: false, sections: tp.sections, sort: (tp.sort || 0) + 1, created_by: u.user?.id,
-    });
-    await loadTemplates(); renderTemplates();
+    renderTemplateEditor(tp, { duplicate: true });
   }
 
   // Enkel mal-editor. Egne maler lagres med samme tekst i alle tre språk.
-  function renderTemplateEditor(tp: any) {
-    redraw = () => renderTemplateEditor(tp);
-    const isNew = !tp;
+  // opts.duplicate = start fra en kopi av tp, men lagre som NY mal.
+  function renderTemplateEditor(tp: any, opts: { duplicate?: boolean } = {}) {
+    redraw = () => renderTemplateEditor(tp, opts);
+    const duplicate = !!opts.duplicate;
+    const isNew = !tp || duplicate;
     const model = tp ? JSON.parse(JSON.stringify(tp)) : { name: '', kind: 'verneround', description: '', sections: [] };
+    if (duplicate) { model.name = `${tp.name} ${p('copySuffix')}`; delete model.id; delete model.slug; model.is_standard = false; }
     const secHtml = (s: any, si: number) => `
       <fieldset class="p-cl-sec p-tpl-edit-sec" data-si="${si}">
         <div class="p-grid-inline">
@@ -849,7 +848,7 @@ import { standardArticles } from '../../../data/ksArticles';
     const draw = () => {
       root.innerHTML = `
         <div class="p-head">
-          <h1>${esc(isNew ? p('newTemplate').replace('+ ', '') : p('edit'))}</h1>
+          <h1>${esc(duplicate ? p('duplicate') + ' – ' + p('manageTemplates').toLowerCase() : (isNew ? p('newTemplate').replace('+ ', '') : p('edit')))}</h1>
           <div class="p-user"><button class="btn btn--ghost" id="te-back">${esc(p('back'))}</button></div>
         </div>
         <div class="p-card">
