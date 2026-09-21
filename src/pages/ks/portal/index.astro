@@ -69,6 +69,15 @@ import { standardTemplates } from '../../../data/ksTemplates';
   .p-grid-inline { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .p-grid-inline input { flex: 1; }
   .p-tpl-edit-sec { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  /* Stoffkartotek + jobbdokumentasjon */
+  .p-checks { display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: 6px 14px; margin-bottom: 14px; }
+  .p-check { display: flex; align-items: center; gap: 7px; font-size: 0.9rem; font-weight: 400; }
+  .p-check input { width: auto; }
+  .p-jd-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 12px; margin-top: 14px; }
+  .p-jd-photo { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+  .p-jd-photo img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
+  .p-jd-cap { padding: 8px 10px; font-size: 0.82rem; color: var(--muted); flex: 1; }
+  .p-jd-photo .btn { margin: 0 10px 10px; }
   /* Arkiv */
   .p-filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
   .p-filters input, .p-filters select { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; }
@@ -180,6 +189,36 @@ import { standardTemplates } from '../../../data/ksTemplates';
     confirmDelete: { no: 'Slette denne malen?', pl: 'Usunąć ten szablon?', en: 'Delete this template?' },
     copySuffix: { no: '(kopi)', pl: '(kopia)', en: '(copy)' },
     nameRequired: { no: 'Malnavn er påkrevd.', pl: 'Nazwa szablonu jest wymagana.', en: 'Template name is required.' },
+    chemicals: { no: 'Stoffkartotek', pl: 'Rejestr substancji chemicznych', en: 'Chemical register' },
+    chemicalsIntro: { no: 'Lovpålagt oversikt over kjemikalier på prosjektet, med sikkerhetsdatablad.', pl: 'Wymagany prawem wykaz substancji z kartami charakterystyki.', en: 'Legally required list of chemicals on the project, with safety data sheets.' },
+    newChemical: { no: 'Legg til kjemikalie', pl: 'Dodaj substancję', en: 'Add chemical' },
+    noChemicals: { no: 'Ingen kjemikalier registrert på dette prosjektet.', pl: 'Brak substancji w tym projekcie.', en: 'No chemicals registered for this project.' },
+    chemName: { no: 'Produktnavn', pl: 'Nazwa produktu', en: 'Product name' },
+    supplier: { no: 'Leverandør', pl: 'Dostawca', en: 'Supplier' },
+    useArea: { no: 'Bruksområde', pl: 'Zastosowanie', en: 'Use area' },
+    hazardsLabel: { no: 'Faremerking (GHS)', pl: 'Oznaczenia zagrożeń (GHS)', en: 'Hazard labels (GHS)' },
+    signalWord: { no: 'Signalord', pl: 'Hasło ostrzegawcze', en: 'Signal word' },
+    danger: { no: 'Fare', pl: 'Niebezpieczeństwo', en: 'Danger' },
+    warning: { no: 'Advarsel', pl: 'Ostrzeżenie', en: 'Warning' },
+    none: { no: 'Ingen', pl: 'Brak', en: 'None' },
+    quantity: { no: 'Mengde', pl: 'Ilość', en: 'Quantity' },
+    storageLoc: { no: 'Lagringssted', pl: 'Miejsce przechowywania', en: 'Storage location' },
+    sdsFile: { no: 'Sikkerhetsdatablad (PDF)', pl: 'Karta charakterystyki (PDF)', en: 'Safety data sheet (PDF)' },
+    sdsUrl: { no: '…eller lenke til datablad', pl: '…lub link do karty', en: '…or link to data sheet' },
+    openSds: { no: 'Datablad', pl: 'Karta', en: 'Data sheet' },
+    notesLabel: { no: 'Merknad', pl: 'Uwaga', en: 'Note' },
+    exportRegister: { no: 'Eksporter stoffkartotek (PDF)', pl: 'Eksportuj rejestr (PDF)', en: 'Export register (PDF)' },
+    jobdoc: { no: 'Dokumentasjon av utført arbeid', pl: 'Dokumentacja wykonanych prac', en: 'Completed-work documentation' },
+    jobdocIntro: { no: 'Bilder og beskrivelse av utført arbeid – til overlevering til sluttkunde.', pl: 'Zdjęcia i opis wykonanych prac – do przekazania klientowi.', en: 'Photos and description of completed work – for handover to the end customer.' },
+    addPhotos: { no: 'Legg til bilder', pl: 'Dodaj zdjęcia', en: 'Add photos' },
+    phaseLabel: { no: 'Fase', pl: 'Etap', en: 'Phase' },
+    phaseBefore: { no: 'Før', pl: 'Przed', en: 'Before' },
+    phaseDuring: { no: 'Under', pl: 'W trakcie', en: 'During' },
+    phaseAfter: { no: 'Etter', pl: 'Po', en: 'After' },
+    captionLabel: { no: 'Bildetekst', pl: 'Podpis', en: 'Caption' },
+    exportJobdoc: { no: 'Last ned sluttdokumentasjon (PDF)', pl: 'Pobierz dokumentację (PDF)', en: 'Download documentation (PDF)' },
+    noJobPhotos: { no: 'Ingen bilder lagt til ennå.', pl: 'Nie dodano jeszcze zdjęć.', en: 'No photos added yet.' },
+    deletePhoto: { no: 'Slett bilde', pl: 'Usuń zdjęcie', en: 'Delete photo' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -399,12 +438,16 @@ import { standardTemplates } from '../../../data/ksTemplates';
         </details>
       </div>
       <div class="p-section" id="sec-checklist"></div>
-      <div class="p-section" id="sec-verneround"></div>`;
+      <div class="p-section" id="sec-verneround"></div>
+      <div class="p-section" id="sec-chemicals"></div>
+      <div class="p-section" id="sec-jobdoc"></div>`;
     document.getElementById('back')!.addEventListener('click', renderProjects);
     setupDeviationForm(id, devs || []);
     await ensureTemplates();
     renderForms('checklist', id);
     renderForms('verneround', id);
+    renderChemicals(id);
+    renderJobDoc(id);
   }
 
   // downscale image File -> {blob, dataUrl}
@@ -756,6 +799,210 @@ import { standardTemplates } from '../../../data/ksTemplates';
       await loadTemplates(); renderTemplates();
     };
     draw();
+  }
+
+  // ---------- Stoffkartotek (kjemikalier per prosjekt) ----------
+  const GHS = [
+    { v: 'brannfarlig', no: 'Brannfarlig', pl: 'Łatwopalne', en: 'Flammable' },
+    { v: 'oksiderende', no: 'Oksiderende', pl: 'Utleniające', en: 'Oxidising' },
+    { v: 'gass', no: 'Gass under trykk', pl: 'Gaz pod ciśnieniem', en: 'Gas under pressure' },
+    { v: 'etsende', no: 'Etsende', pl: 'Żrące', en: 'Corrosive' },
+    { v: 'akutt', no: 'Akutt giftig', pl: 'Toksyczne', en: 'Acute toxicity' },
+    { v: 'helsefare', no: 'Helsefare/irriterende', pl: 'Szkodliwe/drażniące', en: 'Health hazard/irritant' },
+    { v: 'kronisk', no: 'Kronisk helsefare', pl: 'Zagrożenie przewlekłe', en: 'Serious health hazard' },
+    { v: 'miljo', no: 'Miljøfare', pl: 'Niebezpieczne dla środowiska', en: 'Environmental hazard' },
+    { v: 'eksplosiv', no: 'Eksplosiv', pl: 'Wybuchowe', en: 'Explosive' },
+  ];
+  const ghsLabel = (v: string) => { const g = GHS.find((x) => x.v === v); return g ? (g as any)[lang()] : v; };
+
+  async function renderChemicals(projectId: string) {
+    const secEl = document.getElementById('sec-chemicals')!;
+    const { data: rows } = await supabase.from('chemicals').select('*').eq('project_id', projectId).order('name');
+    const list = (rows || []).map((c: any) => {
+      const haz = (c.hazards || '').split(',').filter(Boolean).map((h: string) => `<span class="p-chip">${esc(ghsLabel(h))}</span>`).join('');
+      return `<li class="p-item" style="cursor:default;align-items:flex-start">
+        <div style="flex:1">
+          <h3>${esc(c.name)}${c.signal_word ? ` <span class="p-badge open">${esc(c.signal_word)}</span>` : ''}</h3>
+          <p>${esc([c.supplier, c.use_area, c.quantity, c.location].filter(Boolean).join(' · '))}</p>
+          <div class="p-chips" style="margin-top:6px">${haz}</div>
+        </div>
+        <div class="p-actions" style="margin:0">
+          ${c.sds_path ? `<button class="btn btn--ghost p-sm" data-sds="${esc(c.sds_path)}">${esc(p('openSds'))} ↓</button>` : ''}
+          ${c.sds_url ? `<a class="btn btn--ghost p-sm" href="${esc(c.sds_url)}" target="_blank" rel="noopener">${esc(p('openSds'))} ↗</a>` : ''}
+          <button class="btn btn--ghost p-sm" data-chemdel="${esc(c.id)}">${esc(p('del'))}</button>
+        </div>
+      </li>`;
+    }).join('');
+    const ghsChecks = GHS.map((g) => `<label class="p-check"><input type="checkbox" class="c-haz" value="${g.v}"> ${esc((g as any)[lang()])}</label>`).join('');
+    secEl.innerHTML = `
+      <h2>${esc(p('chemicals'))}</h2>
+      <p class="p-muted">${esc(p('chemicalsIntro'))}</p>
+      ${list ? `<ul class="p-list">${list}</ul>` : `<p class="p-muted">${esc(p('noChemicals'))}</p>`}
+      <div class="p-actions">${rows && rows.length ? `<button class="btn btn--ghost" id="chem-export">${esc(p('exportRegister'))}</button>` : ''}</div>
+      <details class="p-new"><summary>${esc(p('newChemical'))}</summary>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('chemName'))}<input id="c-name" type="text"></label>
+          <label class="p-field">${esc(p('supplier'))}<input id="c-supplier" type="text"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('useArea'))}<input id="c-use" type="text"></label>
+          <label class="p-field">${esc(p('signalWord'))}
+            <select id="c-signal"><option value="">${esc(p('none'))}</option><option value="${esc(p('danger'))}">${esc(p('danger'))}</option><option value="${esc(p('warning'))}">${esc(p('warning'))}</option></select>
+          </label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('quantity'))}<input id="c-qty" type="text"></label>
+          <label class="p-field">${esc(p('storageLoc'))}<input id="c-loc" type="text"></label>
+        </div>
+        <p class="p-field" style="margin-bottom:6px">${esc(p('hazardsLabel'))}</p>
+        <div class="p-checks">${ghsChecks}</div>
+        <label class="p-field">${esc(p('sdsFile'))}<input id="c-sds" type="file" accept="application/pdf"></label>
+        <label class="p-field">${esc(p('sdsUrl'))}<input id="c-sdsurl" type="url" placeholder="https://…"></label>
+        <label class="p-field">${esc(p('notesLabel'))}<textarea id="c-notes" rows="2"></textarea></label>
+        <button class="btn btn--primary" id="c-save" type="button">${esc(p('save'))}</button>
+        <span class="p-muted" id="c-msg" style="margin-left:10px"></span>
+      </details>`;
+    secEl.querySelectorAll<HTMLElement>('[data-sds]').forEach((b) => b.addEventListener('click', async () => {
+      const { data: signed } = await supabase.storage.from('ks-docs').createSignedUrl(b.dataset.sds!, 120);
+      if (signed?.signedUrl) window.open(signed.signedUrl, '_blank');
+    }));
+    secEl.querySelectorAll<HTMLElement>('[data-chemdel]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm(p('confirmDelete'))) return;
+      await supabase.from('chemicals').delete().eq('id', b.dataset.chemdel); renderChemicals(projectId);
+    }));
+    const exp = document.getElementById('chem-export'); if (exp) exp.addEventListener('click', () => makeChemicalsPdf(rows || []));
+    document.getElementById('c-save')!.addEventListener('click', async () => {
+      const name = (document.getElementById('c-name') as HTMLInputElement).value.trim();
+      const msg = document.getElementById('c-msg')!;
+      if (!name) { msg.textContent = p('chemName') + '?'; return; }
+      const btn = document.getElementById('c-save') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      let sds_path: string | null = null;
+      const f = (document.getElementById('c-sds') as HTMLInputElement).files?.[0];
+      if (f) {
+        const safe = f.name.replace(/[^a-z0-9._-]+/gi, '_');
+        const path = `sds/${projectId}/${crypto.randomUUID()}_${safe}`;
+        const up = await supabase.storage.from('ks-docs').upload(path, f, { contentType: f.type || 'application/pdf' });
+        if (!up.error) sds_path = path;
+      }
+      const hazards = Array.from(secEl.querySelectorAll<HTMLInputElement>('.c-haz:checked')).map((x) => x.value).join(',');
+      const { error } = await supabase.from('chemicals').insert({
+        project_id: projectId, name,
+        supplier: (document.getElementById('c-supplier') as HTMLInputElement).value.trim() || null,
+        use_area: (document.getElementById('c-use') as HTMLInputElement).value.trim() || null,
+        signal_word: (document.getElementById('c-signal') as HTMLSelectElement).value || null,
+        quantity: (document.getElementById('c-qty') as HTMLInputElement).value.trim() || null,
+        location: (document.getElementById('c-loc') as HTMLInputElement).value.trim() || null,
+        hazards: hazards || null, sds_path,
+        sds_url: (document.getElementById('c-sdsurl') as HTMLInputElement).value.trim() || null,
+        notes: (document.getElementById('c-notes') as HTMLTextAreaElement).value.trim() || null,
+        created_by: u.user?.id,
+      });
+      if (error) { alert(error.message); btn.disabled = false; msg.textContent = ''; return; }
+      renderChemicals(projectId);
+    });
+  }
+
+  function makeChemicalsPdf(rows: any[]) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 22, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Dekmar AS', margin, 10);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(`${p('chemicals')} – ${CURRENT_PROJECT?.name || ''}`, margin, 16.5);
+    doc.setTextColor(20, 23, 28); y = 30;
+    rows.forEach((c: any) => {
+      if (y > 265) { doc.addPage(); y = margin; }
+      doc.setDrawColor(204, 31, 42); doc.line(margin, y, margin + maxW, y); y += 5;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(`${c.name}${c.signal_word ? ' (' + c.signal_word + ')' : ''}`, margin, y); y += 5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+      const meta = [c.supplier, c.use_area, c.quantity, c.location].filter(Boolean).join('  ·  ');
+      if (meta) { doc.text(meta, margin, y); y += 5; }
+      const haz = (c.hazards || '').split(',').filter(Boolean).map((h: string) => ghsLabel(h)).join(', ');
+      if (haz) { doc.text(`${p('hazardsLabel')}: ${haz}`, margin, y); y += 5; }
+      if (c.notes) { doc.splitTextToSize(c.notes, maxW).forEach((ln: string) => { if (y > 285) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 4.5; }); }
+      y += 2;
+    });
+    doc.save(`Dekmar_Stoffkartotek_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+  }
+
+  // ---------- Dokumentasjon av utført arbeid (bilder til sluttkunde) ----------
+  async function renderJobDoc(projectId: string) {
+    const secEl = document.getElementById('sec-jobdoc')!;
+    const { data: rows } = await supabase.from('photos').select('*').eq('project_id', projectId).is('deviation_id', null).order('created_at');
+    const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
+    const grid = await Promise.all((rows || []).map(async (ph: any) => {
+      const { data: signed } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
+      return `<div class="p-jd-photo">
+        <img src="${signed?.signedUrl || ''}" loading="lazy">
+        <div class="p-jd-cap">${ph.phase ? `<span class="p-chip">${esc(phaseName(ph.phase))}</span> ` : ''}${esc(ph.caption || '')}</div>
+        <button class="btn btn--ghost p-sm" data-photodel="${esc(ph.id)}" data-path="${esc(ph.storage_path)}">${esc(p('deletePhoto'))}</button>
+      </div>`;
+    }));
+    secEl.innerHTML = `
+      <h2>${esc(p('jobdoc'))}</h2>
+      <p class="p-muted">${esc(p('jobdocIntro'))}</p>
+      ${grid.length ? `<div class="p-jd-grid">${grid.join('')}</div>` : `<p class="p-muted">${esc(p('noJobPhotos'))}</p>`}
+      <div class="p-actions">${rows && rows.length ? `<button class="btn btn--ghost" id="jd-export">${esc(p('exportJobdoc'))}</button>` : ''}</div>
+      <details class="p-new"><summary>${esc(p('addPhotos'))}</summary>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('phaseLabel'))}
+            <select id="jd-phase"><option value="after">${esc(p('phaseAfter'))}</option><option value="before">${esc(p('phaseBefore'))}</option><option value="during">${esc(p('phaseDuring'))}</option></select>
+          </label>
+          <label class="p-field">${esc(p('captionLabel'))}<input id="jd-cap" type="text"></label>
+        </div>
+        <label class="p-field"><input id="jd-files" type="file" accept="image/*" capture="environment" multiple></label>
+        <button class="btn btn--primary" id="jd-save" type="button">${esc(p('save'))}</button>
+        <span class="p-muted" id="jd-msg" style="margin-left:10px"></span>
+      </details>`;
+    secEl.querySelectorAll<HTMLElement>('[data-photodel]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm(p('confirmDelete'))) return;
+      await supabase.storage.from(KS_PHOTO_BUCKET).remove([b.dataset.path!]);
+      await supabase.from('photos').delete().eq('id', b.dataset.photodel); renderJobDoc(projectId);
+    }));
+    const exp = document.getElementById('jd-export'); if (exp) exp.addEventListener('click', () => makeJobDocPdf(projectId));
+    document.getElementById('jd-save')!.addEventListener('click', async () => {
+      const input = document.getElementById('jd-files') as HTMLInputElement;
+      const files = Array.from(input.files || []);
+      const msg = document.getElementById('jd-msg')!;
+      if (!files.length) { msg.textContent = '?'; return; }
+      const btn = document.getElementById('jd-save') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('uploading');
+      const { data: u } = await supabase.auth.getUser();
+      const phase = (document.getElementById('jd-phase') as HTMLSelectElement).value;
+      const caption = (document.getElementById('jd-cap') as HTMLInputElement).value.trim() || null;
+      for (const f of files) {
+        const s = await shrink(f);
+        const path = `${projectId}/jobdoc/${crypto.randomUUID()}.jpg`;
+        const up = await supabase.storage.from(KS_PHOTO_BUCKET).upload(path, s.blob, { contentType: 'image/jpeg' });
+        if (!up.error) await supabase.from('photos').insert({ project_id: projectId, storage_path: path, phase, caption, created_by: u.user?.id });
+      }
+      renderJobDoc(projectId);
+    });
+  }
+
+  async function makeJobDocPdf(projectId: string) {
+    const { data: rows } = await supabase.from('photos').select('*').eq('project_id', projectId).is('deviation_id', null).order('created_at');
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(`${p('jobdoc')} – ${CURRENT_PROJECT?.name || ''}`, margin, 18);
+    doc.setTextColor(20, 23, 28); y = 32;
+    const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
+    const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
+    for (const ph of rows || []) {
+      const { data: signed } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
+      if (!signed?.signedUrl) continue;
+      let dataUrl = '';
+      try { const blob = await (await fetch(signed.signedUrl)).blob(); dataUrl = await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }); } catch (e) { continue; }
+      if (y + rowH + 8 > 285) { doc.addPage(); y = margin; col = 0; }
+      const x = margin + col * (colW + 6);
+      try { doc.addImage(dataUrl, 'JPEG', x, y, colW, rowH); } catch (e) {}
+      doc.setDrawColor(220); doc.rect(x, y, colW, rowH);
+      const cap = `${ph.phase ? '[' + phaseName(ph.phase) + '] ' : ''}${ph.caption || ''}`;
+      if (cap.trim()) { doc.setFontSize(8); doc.setTextColor(80); doc.text(doc.splitTextToSize(cap, colW), x, y + rowH + 3.5); doc.setTextColor(20, 23, 28); }
+      if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
+    }
+    doc.save(`Dekmar_Sluttdokumentasjon_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
   }
 
   // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
