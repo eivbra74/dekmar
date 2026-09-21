@@ -161,6 +161,10 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
   const root = document.getElementById('portal-root')!;
   const fmt = (d: string) => new Date(d).toLocaleDateString('nb-NO');
 
+  // Gjeldende visning tegnes på nytt når språket byttes (KsLayout sender 'kslangchange')
+  let redraw: () => void = () => route();
+  document.addEventListener('kslangchange', () => redraw());
+
   // ---------- Auth routing ----------
   async function route() {
     if (new URLSearchParams(location.search).get('setpw') === '1') { renderSetPassword(); return; }
@@ -171,6 +175,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // Inviterte ansatte lander her med ?setpw=1 og en aktiv invitasjons-sesjon
   function renderSetPassword() {
+    redraw = renderSetPassword;
     root.innerHTML = `
       <div class="p-card p-login">
         <h1>${esc(p('setPwTitle'))}</h1>
@@ -197,6 +202,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Login ----------
   function renderLogin() {
+    redraw = renderLogin;
     root.innerHTML = `
       <div class="p-card p-login">
         <h1>${esc(p('loginTitle'))}</h1>
@@ -229,6 +235,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Projects ----------
   async function renderProjects() {
+    redraw = renderProjects;
     root.innerHTML = `<p class="portal-loading">${esc(t('generating') || '…')}</p>`;
     const { data: projects, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
     const email = await currentEmail();
@@ -278,6 +285,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Project detail ----------
   async function openProject(id: string) {
+    redraw = () => openProject(id);
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: pr } = await supabase.from('projects').select('*').eq('id', id).single();
     CURRENT_PROJECT = pr;
@@ -525,6 +533,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
   async function renderArchive() {
+    redraw = renderArchive;
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: rows } = await supabase.from('checklists').select('*, projects(name)').order('created_at', { ascending: false });
     (window as any).__arch = rows || [];
@@ -579,6 +588,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Ansatte / invitasjon ----------
   async function renderTeam() {
+    redraw = renderTeam;
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: profs } = await supabase.from('profiles').select('id, full_name, created_at').order('created_at');
     const rows = (profs || []).map((pr: any) => `
@@ -616,6 +626,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Dokumentbibliotek ----------
   async function renderDocuments() {
+    redraw = renderDocuments;
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const [docsRes, projRes, profRes] = await Promise.all([
       supabase.from('documents').select('*, projects(name)').order('created_at', { ascending: false }),
