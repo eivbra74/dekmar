@@ -1,4 +1,4 @@
-// Supabase Edge Function: invite-user
+// Supabase Edge Function: invite-user (deployet via dashboard-editor)
 // Sender e-postinvitasjon til en ny ansatt. Kun innloggede brukere kan kalle den.
 // Service-nøkkelen brukes kun her på serveren (aldri i frontend).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -8,30 +8,26 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...cors, 'content-type': 'application/json' } });
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...cors, 'content-type': 'application/json' } });
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   const url = Deno.env.get('SUPABASE_URL')!;
-  const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
   const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const authHeader = req.headers.get('Authorization') ?? '';
+  const admin = createClient(url, service, { auth: { persistSession: false } });
 
-  // 1) Bekreft at kalleren er innlogget
-  const asUser = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
-  const { data: { user }, error: authErr } = await asUser.auth.getUser();
-  if (authErr || !user) return json({ error: 'unauthorized' }, 401);
+  // Bekreft at kalleren er en innlogget bruker (JWT i Authorization)
+  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
+  const { data: { user } } = await admin.auth.getUser(token);
+  if (!user) return json({ error: 'unauthorized' }, 401);
 
-  // 2) Hent e-post
   let email = '';
-  try { email = (await req.json()).email?.trim() ?? ''; } catch { /* ignore */ }
+  try { email = ((await req.json()).email || '').trim(); } catch (_e) { /* ignore */ }
   if (!email) return json({ error: 'email required' }, 400);
 
-  // 3) Inviter via admin-API
-  const admin = createClient(url, service);
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: 'https://dekmar.no/ks/portal/?setpw=1',
   });
