@@ -32,6 +32,16 @@ import { standardTemplates } from '../../../data/ksTemplates';
   .p-badge { font-family: var(--font-head); font-weight: 700; font-size: 0.72rem; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
   .p-badge.open { background: #cc1f2a18; color: var(--brand-dark); }
   .p-badge.closed { background: #12855222; color: #0c6b42; }
+  .p-badge.progress { background: #b4690e22; color: #8a4b00; }
+  .p-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 12px; margin-top: 12px; }
+  .p-stat { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; }
+  .p-stat-n { display: block; font-family: var(--font-head); font-weight: 800; font-size: 1.9rem; line-height: 1; }
+  .p-stat-l { display: block; margin-top: 6px; font-size: 0.82rem; color: var(--muted); }
+  .p-stat.open .p-stat-n { color: var(--brand-dark); }
+  .p-stat.progress .p-stat-n { color: #8a4b00; }
+  .p-stat.closed .p-stat-n { color: #0c6b42; }
+  .p-catrow { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .p-catrow:last-child { border-bottom: 0; }
   .p-muted { color: var(--muted); font-size: 0.92rem; }
   .p-err { color: var(--brand-dark); font-size: 0.9rem; margin: 8px 0 0; }
   .p-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
@@ -101,6 +111,10 @@ import { standardTemplates } from '../../../data/ksTemplates';
   const STD_TEMPLATES = KSD.standardTemplates || [];
   let TEMPLATES: any[] = [];
   let TEMPLATES_SEEDED = false;
+  const STD_DEV_CATS = ['HMS', 'Kvalitet', 'Fremdrift', 'Materiell / leveranse', 'Skade / ulykke', 'Nestenulykke', 'Miljø', 'Annet'];
+  let DEV_CATS: any[] = [];
+  let DEV_RESP: any[] = [];
+  let DEV_SEEDED = false;
   let CURRENT_PROJECT: any = null;
   const lang = () => (window as any).ksLang || 'no';
   const t = (k: string) => (UI[k] ? UI[k][lang()] : k); // delte KS-felt
@@ -219,6 +233,24 @@ import { standardTemplates } from '../../../data/ksTemplates';
     exportJobdoc: { no: 'Last ned sluttdokumentasjon (PDF)', pl: 'Pobierz dokumentację (PDF)', en: 'Download documentation (PDF)' },
     noJobPhotos: { no: 'Ingen bilder lagt til ennå.', pl: 'Nie dodano jeszcze zdjęć.', en: 'No photos added yet.' },
     deletePhoto: { no: 'Slett bilde', pl: 'Usuń zdjęcie', en: 'Delete photo' },
+    devCategory: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
+    severity: { no: 'Alvorlighetsgrad', pl: 'Stopień ważności', en: 'Severity' },
+    sevLow: { no: 'Lav', pl: 'Niski', en: 'Low' },
+    sevMed: { no: 'Middels', pl: 'Średni', en: 'Medium' },
+    sevHigh: { no: 'Høy', pl: 'Wysoki', en: 'High' },
+    dueDate: { no: 'Frist', pl: 'Termin', en: 'Due date' },
+    statusInProgress: { no: 'Under arbeid', pl: 'W toku', en: 'In progress' },
+    deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
+    deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
+    statistics: { no: 'Statistikk', pl: 'Statystyki', en: 'Statistics' },
+    settingsLabel: { no: 'Innstillinger', pl: 'Ustawienia', en: 'Settings' },
+    manageCategories: { no: 'Kategorier', pl: 'Kategorie', en: 'Categories' },
+    manageResponsibles: { no: 'Ansvarlige', pl: 'Osoby odpowiedzialne', en: 'Responsibles' },
+    addLabel: { no: 'Legg til', pl: 'Dodaj', en: 'Add' },
+    totalLabel: { no: 'Totalt', pl: 'Razem', en: 'Total' },
+    allLabel: { no: 'Alle', pl: 'Wszystkie', en: 'All' },
+    openInProject: { no: 'Åpne prosjekt', pl: 'Otwórz projekt', en: 'Open project' },
+    byCategory: { no: 'Per kategori', pl: 'Wg kategorii', en: 'By category' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -268,6 +300,25 @@ import { standardTemplates } from '../../../data/ksTemplates';
     TEMPLATES = data || [];
   }
   const templatesOf = (kind: string) => TEMPLATES.filter((t: any) => t.kind === kind);
+
+  // ---------- Avvik-konfig (kategorier + ansvarlige) ----------
+  async function ensureDevConfig() {
+    if (!DEV_SEEDED) {
+      const { data: cats } = await supabase.from('deviation_categories').select('id').limit(1);
+      if (!cats || !cats.length) {
+        await supabase.from('deviation_categories').insert(STD_DEV_CATS.map((name, i) => ({ name, sort: i, is_standard: true })));
+      }
+      DEV_SEEDED = true;
+    }
+    const [{ data: c }, { data: r }] = await Promise.all([
+      supabase.from('deviation_categories').select('*').order('sort').order('name'),
+      supabase.from('deviation_responsibles').select('*').order('sort').order('name'),
+    ]);
+    DEV_CATS = c || []; DEV_RESP = r || [];
+  }
+  const devSeverityLabel = (s: string) => s === 'hoy' ? p('sevHigh') : s === 'middels' ? p('sevMed') : s === 'lav' ? p('sevLow') : '';
+  const devStatusLabel = (s: string) => s === 'closed' ? t('statusClosed') : s === 'in_progress' ? p('statusInProgress') : t('statusOpen');
+  const devStatusClass = (s: string) => s === 'closed' ? 'closed' : s === 'in_progress' ? 'progress' : 'open';
 
   // ---------- Auth routing ----------
   async function route() {
@@ -351,7 +402,7 @@ import { standardTemplates } from '../../../data/ksTemplates';
     root.innerHTML = `
       <div class="p-head">
         <h1>${esc(p('projects'))}</h1>
-        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="templates-btn">${esc(p('manageTemplates'))}</button><button class="btn btn--ghost" id="team">${esc(p('team'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
+        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="deviations-btn">${esc(p('deviationCenter'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="templates-btn">${esc(p('manageTemplates'))}</button><button class="btn btn--ghost" id="team">${esc(p('team'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
       </div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
@@ -367,6 +418,7 @@ import { standardTemplates } from '../../../data/ksTemplates';
         </form>
       </details>`;
     document.getElementById('signout')!.addEventListener('click', () => supabase.auth.signOut());
+    document.getElementById('deviations-btn')!.addEventListener('click', renderDeviationCenter);
     document.getElementById('archive')!.addEventListener('click', renderArchive);
     document.getElementById('documents')!.addEventListener('click', renderDocuments);
     document.getElementById('templates-btn')!.addEventListener('click', renderTemplates);
@@ -395,14 +447,17 @@ import { standardTemplates } from '../../../data/ksTemplates';
     const { data: pr } = await supabase.from('projects').select('*').eq('id', id).single();
     CURRENT_PROJECT = pr;
     const { data: devs } = await supabase.from('deviations').select('*').eq('project_id', id).order('created_at', { ascending: false });
+    await ensureDevConfig();
     const devRows = (devs || []).map((d: any) => `
       <li class="p-item" data-dev="${esc(d.id)}">
         <div>
           <h3>${esc(t('devNo'))} ${esc(d.number || '—')}${d.location ? ' · ' + esc(d.location) : ''}</h3>
-          <p>${esc((d.description || '').slice(0, 90))}</p>
+          <p>${esc([d.category, d.severity ? devSeverityLabel(d.severity) : '', (d.description || '').slice(0, 70)].filter(Boolean).join(' · '))}</p>
         </div>
-        <span class="p-badge ${d.status === 'closed' ? 'closed' : 'open'}">${esc(d.status === 'closed' ? t('statusClosed') : t('statusOpen'))}</span>
+        <span class="p-badge ${devStatusClass(d.status)}">${esc(devStatusLabel(d.status))}</span>
       </li>`).join('');
+    const catOptsDev = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    const respOptsDev = DEV_RESP.map((r: any) => `<option value="${esc(r.name)}">`).join('');
     root.innerHTML = `
       <button class="btn btn--ghost" id="back" style="margin-bottom:16px">${esc(p('back'))}</button>
       <div class="p-card">
@@ -418,17 +473,26 @@ import { standardTemplates } from '../../../data/ksTemplates';
             <label class="p-field">${esc(t('devNo'))}<input id="d-no" type="text"></label>
             <label class="p-field">${esc(t('date'))}<input id="d-date" type="date"></label>
           </div>
+          <div class="p-grid2">
+            <label class="p-field">${esc(p('devCategory'))}
+              <select id="d-cat"><option value="">${esc(p('none'))}</option>${catOptsDev}</select>
+            </label>
+            <label class="p-field">${esc(p('severity'))}
+              <select id="d-sev"><option value="">${esc(p('none'))}</option><option value="lav">${esc(p('sevLow'))}</option><option value="middels">${esc(p('sevMed'))}</option><option value="hoy">${esc(p('sevHigh'))}</option></select>
+            </label>
+          </div>
           <label class="p-field">${esc(t('location'))}<input id="d-loc" type="text"></label>
           <label class="p-field">${esc(t('description'))}<textarea id="d-desc" rows="2"></textarea></label>
           <label class="p-field">${esc(t('cause'))}<textarea id="d-cause" rows="2"></textarea></label>
           <label class="p-field">${esc(t('correction'))}<textarea id="d-corr" rows="2"></textarea></label>
           <label class="p-field">${esc(t('verification'))}<textarea id="d-verif" rows="2"></textarea></label>
           <div class="p-grid2">
-            <label class="p-field">${esc(t('responsible'))}<input id="d-resp" type="text"></label>
-            <label class="p-field">${esc(t('status'))}
-              <select id="d-status"><option value="open">${esc(t('statusOpen'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
-            </label>
+            <label class="p-field">${esc(t('responsible'))}<input id="d-resp" type="text" list="d-resp-list"><datalist id="d-resp-list">${respOptsDev}</datalist></label>
+            <label class="p-field">${esc(p('dueDate'))}<input id="d-due" type="date"></label>
           </div>
+          <label class="p-field">${esc(t('status'))}
+            <select id="d-status"><option value="open">${esc(t('statusOpen'))}</option><option value="in_progress">${esc(p('statusInProgress'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
+          </label>
           <label class="p-field">${esc(t('photos'))}
             <input id="d-photos" type="file" accept="image/*" capture="environment" multiple>
           </label>
@@ -482,11 +546,15 @@ import { standardTemplates } from '../../../data/ksTemplates';
       const btn = document.getElementById('d-save') as HTMLButtonElement;
       btn.disabled = true; msg.textContent = p('saving');
       const { data: u } = await supabase.auth.getUser();
+      const statusVal = (document.getElementById('d-status') as HTMLSelectElement).value;
       const { data: dev, error } = await supabase.from('deviations').insert({
         project_id: projectId, number: val('d-no'), dev_date: val('d-date'),
         location: val('d-loc'), description: val('d-desc'), cause: val('d-cause'),
         correction: val('d-corr'), verification: val('d-verif'), responsible: val('d-resp'),
-        status: (document.getElementById('d-status') as HTMLSelectElement).value,
+        category: (document.getElementById('d-cat') as HTMLSelectElement).value || null,
+        severity: (document.getElementById('d-sev') as HTMLSelectElement).value || null,
+        due_date: val('d-due'), status: statusVal,
+        closed_at: statusVal === 'closed' ? new Date().toISOString() : null,
         created_by: u.user?.id,
       }).select().single();
       if (error) { alert(error.message); btn.disabled = false; msg.textContent = ''; return; }
@@ -536,9 +604,11 @@ import { standardTemplates } from '../../../data/ksTemplates';
     doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(t('deviation') + ' – ' + t('handoverTitle'), margin, 18);
     doc.setTextColor(20, 23, 28); y = 32;
-    const stTxt = d.status === 'closed' ? t('statusClosed') : t('statusOpen');
+    const stTxt = devStatusLabel(d.status);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-    doc.text(`${t('devNo')}: ${d.number || '—'}    ${t('date')}: ${d.dev_date || '—'}    ${t('status')}: ${stTxt}`, margin, y); y += 7;
+    doc.text(`${t('devNo')}: ${d.number || '—'}    ${t('date')}: ${d.dev_date || '—'}    ${t('status')}: ${stTxt}`, margin, y); y += 6;
+    const meta2 = [d.category ? `${p('devCategory')}: ${d.category}` : '', d.severity ? `${p('severity')}: ${devSeverityLabel(d.severity)}` : '', d.due_date ? `${p('dueDate')}: ${d.due_date}` : ''].filter(Boolean).join('    ');
+    if (meta2) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.text(meta2, margin, y); y += 6; }
     block(t('location'), d.location); block(t('description'), d.description); block(t('cause'), d.cause);
     block(t('correction'), d.correction); block(t('verification'), d.verification); block(t('responsible'), d.responsible);
     if (imgs.length) {
@@ -1003,6 +1073,103 @@ import { standardTemplates } from '../../../data/ksTemplates';
       if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
     }
     doc.save(`Dekmar_Sluttdokumentasjon_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+  }
+
+  // ---------- Avvikssystem: senter med oversikt, statistikk og innstillinger ----------
+  async function renderDeviationCenter() {
+    redraw = renderDeviationCenter;
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    await ensureDevConfig();
+    const { data: rows } = await supabase.from('deviations').select('*, projects(name)').order('created_at', { ascending: false });
+    const all = rows || [];
+    (window as any).__devs = all;
+    const cnt = (f: (d: any) => boolean) => all.filter(f).length;
+    const stat = (label: string, n: number, cls = '') => `<div class="p-stat ${cls}"><span class="p-stat-n">${n}</span><span class="p-stat-l">${esc(label)}</span></div>`;
+    const byCat = DEV_CATS.map((c: any) => ({ name: c.name, n: cnt((d) => d.category === c.name) })).filter((x) => x.n > 0);
+    const uncategorized = cnt((d) => !d.category);
+    const catStatRows = byCat.map((c) => `<div class="p-catrow"><span>${esc(c.name)}</span><span class="p-chip">${c.n}</span></div>`).join('')
+      + (uncategorized ? `<div class="p-catrow"><span class="p-muted">${esc(p('none'))}</span><span class="p-chip">${uncategorized}</span></div>` : '');
+    const catFilterOpts = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    root.innerHTML = `
+      <div class="p-head">
+        <h1>${esc(p('deviationCenter'))}</h1>
+        <div class="p-user"><button class="btn btn--ghost" id="dc-back">${esc(p('back'))}</button></div>
+      </div>
+      <h2>${esc(p('statistics'))}</h2>
+      <div class="p-stats">
+        ${stat(p('totalLabel'), all.length)}
+        ${stat(t('statusOpen'), cnt((d) => d.status === 'open' || !d.status), 'open')}
+        ${stat(p('statusInProgress'), cnt((d) => d.status === 'in_progress'), 'progress')}
+        ${stat(t('statusClosed'), cnt((d) => d.status === 'closed'), 'closed')}
+        ${stat(p('sevHigh'), cnt((d) => d.severity === 'hoy'), 'open')}
+      </div>
+      ${catStatRows ? `<div class="p-card" style="margin-top:14px"><h3 style="margin-top:0">${esc(p('byCategory'))}</h3>${catStatRows}</div>` : ''}
+      <div class="p-section">
+        <h2>${esc(p('deviationsAll'))}</h2>
+        <div class="p-filters">
+          <select id="dc-fstatus"><option value="">${esc(p('allLabel'))} · ${esc(t('status'))}</option><option value="open">${esc(t('statusOpen'))}</option><option value="in_progress">${esc(p('statusInProgress'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
+          <select id="dc-fcat"><option value="">${esc(p('allLabel'))} · ${esc(p('devCategory'))}</option>${catFilterOpts}</select>
+        </div>
+        <ul class="p-list" id="dc-list"></ul>
+      </div>
+      <div class="p-section">
+        <h2>${esc(p('settingsLabel'))}</h2>
+        <div class="p-grid2">
+          <div class="p-card">
+            <h3 style="margin-top:0">${esc(p('manageCategories'))}</h3>
+            <ul class="p-list" id="dc-cats"></ul>
+            <div class="p-grid-inline"><input id="dc-newcat" type="text" placeholder="${esc(p('devCategory'))}"><button class="btn btn--ghost p-sm" id="dc-addcat">${esc(p('addLabel'))}</button></div>
+          </div>
+          <div class="p-card">
+            <h3 style="margin-top:0">${esc(p('manageResponsibles'))}</h3>
+            <ul class="p-list" id="dc-resps"></ul>
+            <div class="p-grid-inline"><input id="dc-newresp" type="text" placeholder="${esc(t('responsible'))}"><button class="btn btn--ghost p-sm" id="dc-addresp">${esc(p('addLabel'))}</button></div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('dc-back')!.addEventListener('click', renderProjects);
+    const listEl = document.getElementById('dc-list')!;
+    const drawList = () => {
+      const fs = (document.getElementById('dc-fstatus') as HTMLSelectElement).value;
+      const fc = (document.getElementById('dc-fcat') as HTMLSelectElement).value;
+      const filtered = all.filter((d) => (!fs || (d.status || 'open') === fs) && (!fc || d.category === fc));
+      listEl.innerHTML = filtered.map((d) => `
+        <li class="p-item" data-openproj="${esc(d.project_id)}">
+          <div>
+            <h3>${esc(t('devNo'))} ${esc(d.number || '—')} · ${esc(d.projects?.name || '')}</h3>
+            <p>${esc([d.category, d.severity ? devSeverityLabel(d.severity) : '', d.due_date ? p('dueDate') + ' ' + d.due_date : '', (d.description || '').slice(0, 60)].filter(Boolean).join(' · '))}</p>
+          </div>
+          <span class="p-badge ${devStatusClass(d.status)}">${esc(devStatusLabel(d.status))}</span>
+        </li>`).join('') || `<p class="p-muted">${esc(p('noResults'))}</p>`;
+      listEl.querySelectorAll<HTMLElement>('[data-openproj]').forEach((el) => el.addEventListener('click', () => openProject(el.dataset.openproj!)));
+    };
+    document.getElementById('dc-fstatus')!.addEventListener('change', drawList);
+    document.getElementById('dc-fcat')!.addEventListener('change', drawList);
+    drawList();
+    // Config: kategorier
+    const drawCats = () => {
+      const el = document.getElementById('dc-cats')!;
+      el.innerHTML = DEV_CATS.map((c: any) => `<li class="p-item" style="cursor:default;padding:8px 12px"><span>${esc(c.name)}${c.is_standard ? ` <span class="p-muted">· ${esc(p('standardBadge'))}</span>` : ''}</span>${c.is_standard ? '' : `<button class="btn btn--ghost p-sm" data-catdel="${esc(c.id)}">${esc(p('del'))}</button>`}</li>`).join('');
+      el.querySelectorAll<HTMLElement>('[data-catdel]').forEach((b) => b.addEventListener('click', async () => { await supabase.from('deviation_categories').delete().eq('id', b.dataset.catdel); await ensureDevConfig(); drawCats(); }));
+    };
+    drawCats();
+    document.getElementById('dc-addcat')!.addEventListener('click', async () => {
+      const inp = document.getElementById('dc-newcat') as HTMLInputElement; const name = inp.value.trim(); if (!name) return;
+      await supabase.from('deviation_categories').insert({ name, sort: DEV_CATS.length, is_standard: false });
+      inp.value = ''; await ensureDevConfig(); drawCats();
+    });
+    // Config: ansvarlige
+    const drawResps = () => {
+      const el = document.getElementById('dc-resps')!;
+      el.innerHTML = DEV_RESP.length ? DEV_RESP.map((r: any) => `<li class="p-item" style="cursor:default;padding:8px 12px"><span>${esc(r.name)}</span><button class="btn btn--ghost p-sm" data-respdel="${esc(r.id)}">${esc(p('del'))}</button></li>`).join('') : `<p class="p-muted">—</p>`;
+      el.querySelectorAll<HTMLElement>('[data-respdel]').forEach((b) => b.addEventListener('click', async () => { await supabase.from('deviation_responsibles').delete().eq('id', b.dataset.respdel); await ensureDevConfig(); drawResps(); }));
+    };
+    drawResps();
+    document.getElementById('dc-addresp')!.addEventListener('click', async () => {
+      const inp = document.getElementById('dc-newresp') as HTMLInputElement; const name = inp.value.trim(); if (!name) return;
+      await supabase.from('deviation_responsibles').insert({ name, sort: DEV_RESP.length });
+      inp.value = ''; await ensureDevConfig(); drawResps();
+    });
   }
 
   // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
