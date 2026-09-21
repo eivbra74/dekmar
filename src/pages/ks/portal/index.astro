@@ -70,6 +70,11 @@ import { standardArticles } from '../../../data/ksArticles';
   .dash-card-go svg { width: 100%; height: 100%; }
   .p-go { color: var(--muted); display: inline-flex; width: 18px; height: 18px; }
   .p-go svg { width: 100%; height: 100%; }
+  .p-searchbar { position: relative; margin: 4px 0 16px; }
+  .p-searchbar-ic { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+  .p-searchbar-ic svg { width: 100%; height: 100%; }
+  .p-searchbar input { width: 100%; font: inherit; padding: 11px 14px 11px 42px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .p-searchbar input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(20,23,28,.08); }
   @media (max-width: 560px) { .dash-stats { gap: 8px; } .dash-stat { padding: 12px; } .dash-stat-n { font-size: 1.5rem; } }
   .p-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(18px,3vw,28px); }
   .p-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -315,6 +320,7 @@ import { standardArticles } from '../../../data/ksArticles';
     openInProject: { no: 'Åpne prosjekt', pl: 'Otwórz projekt', en: 'Open project' },
     byCategory: { no: 'Per kategori', pl: 'Wg kategorii', en: 'By category' },
     overview: { no: 'Oversikt', pl: 'Przegląd', en: 'Overview' },
+    searchProjects: { no: 'Søk etter prosjekt, adresse eller oppdragsgiver…', pl: 'Szukaj projektu, adresu lub zleceniodawcy…', en: 'Search project, address or client…' },
     dashSubtitle: { no: 'HMS- og kvalitetsportal for Dekmar AS', pl: 'Portal BHP i jakości Dekmar AS', en: 'HSE and quality portal for Dekmar AS' },
     openDeviations: { no: 'Åpne avvik', pl: 'Otwarte niezgodności', en: 'Open deviations' },
     activeProjects: { no: 'Aktive prosjekter', pl: 'Aktywne projekty', en: 'Active projects' },
@@ -334,6 +340,7 @@ import { standardArticles } from '../../../data/ksArticles';
     articleSummaryLabel: { no: 'Kort sammendrag', pl: 'Krótkie streszczenie', en: 'Short summary' },
     articleBodyLabel: { no: 'Innhold (støtter HTML)', pl: 'Treść (obsługuje HTML)', en: 'Content (supports HTML)' },
     noArticles: { no: 'Ingen artikler ennå.', pl: 'Brak artykułów.', en: 'No articles yet.' },
+    editingInLang: { no: 'Redigerer språk', pl: 'Edytujesz język', en: 'Editing language' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -372,6 +379,7 @@ import { standardArticles } from '../../../data/ksArticles';
     team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6"/><path d="M18 14.5a5.5 5.5 0 0 1 3 5"/></svg>',
     logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>',
     chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
@@ -441,16 +449,12 @@ import { standardArticles } from '../../../data/ksArticles';
   // ---------- Maler (templates) ----------
   async function ensureTemplates() {
     if (!TEMPLATES_SEEDED) {
-      const { data: existing } = await supabase.from('templates').select('slug');
-      const have = new Set((existing || []).map((t: any) => t.slug).filter(Boolean));
-      const missing = STD_TEMPLATES.filter((t: any) => !have.has(t.slug));
-      if (missing.length) {
-        const { data: u } = await supabase.auth.getUser();
-        await supabase.from('templates').insert(missing.map((t: any) => ({
-          slug: t.slug, name: t.name, kind: t.kind, description: t.description || null,
-          is_standard: true, sections: t.sections, sort: t.sort || 0, created_by: u.user?.id,
-        })));
-      }
+      // upsert standardmaler på slug slik at innholdsendringer propagerer (standardmaler er ikke redigerbare i UI, kun «Dupliser»)
+      const { data: u } = await supabase.auth.getUser();
+      await supabase.from('templates').upsert(STD_TEMPLATES.map((t: any) => ({
+        slug: t.slug, name: t.name, kind: t.kind, description: t.description || null,
+        is_standard: true, sections: t.sections, sort: t.sort || 0, created_by: u.user?.id,
+      })), { onConflict: 'slug' });
       TEMPLATES_SEEDED = true;
     }
     await loadTemplates();
@@ -462,21 +466,35 @@ import { standardArticles } from '../../../data/ksArticles';
   const templatesOf = (kind: string) => TEMPLATES.filter((t: any) => t.kind === kind);
 
   // ---------- HMS-artikler ----------
+  // Standardartikler lagres trespråklig som JSON i tekstkolonnene (title/summary/body/category)
   async function ensureArticles() {
     if (!ARTICLES_SEEDED) {
-      const { data: existing } = await supabase.from('articles').select('slug');
-      const have = new Set((existing || []).map((a: any) => a.slug).filter(Boolean));
-      const missing = STD_ARTICLES.filter((a: any) => !have.has(a.slug));
-      if (missing.length) {
-        await supabase.from('articles').insert(missing.map((a: any) => ({
-          slug: a.slug, title: a.title, category: a.category, summary: a.summary, body: a.body,
-          sort: a.sort || 0, is_standard: true,
-        })));
-      }
+      // upsert på slug for å oppgradere eksisterende (tidl. kun norsk) til trespråklig
+      await supabase.from('articles').upsert(STD_ARTICLES.map((a: any) => ({
+        slug: a.slug, title: JSON.stringify(a.title), category: JSON.stringify(a.category),
+        summary: JSON.stringify(a.summary), body: JSON.stringify(a.body),
+        sort: a.sort || 0, is_standard: true, updated_at: new Date().toISOString(),
+      })), { onConflict: 'slug' });
       ARTICLES_SEEDED = true;
     }
     const { data } = await supabase.from('articles').select('*').order('sort').order('title');
     ARTICLES = data || [];
+  }
+  // Les et artikkelfelt: parse trespråklig JSON hvis det finnes, ellers ren tekst
+  function artText(a: any, field: string): string {
+    const raw = a?.[field];
+    if (raw == null) return '';
+    if (typeof raw === 'object') return raw[lang()] || raw.no || '';
+    if (typeof raw === 'string' && raw.startsWith('{')) {
+      try { const o = JSON.parse(raw); if (o && (o.no || o.pl || o.en)) return o[lang()] || o.no || ''; } catch (_e) { /* ren tekst */ }
+    }
+    return raw;
+  }
+  function artTri(a: any, field: string): any {
+    const raw = a?.[field];
+    if (raw && typeof raw === 'object') return { no: raw.no || '', pl: raw.pl || '', en: raw.en || '' };
+    if (typeof raw === 'string' && raw.startsWith('{')) { try { const o = JSON.parse(raw); if (o && (o.no || o.pl || o.en)) return o; } catch (_e) { /* */ } }
+    const v = raw || ''; return { no: v, pl: v, en: v };
   }
 
   // ---------- Avvik-konfig (kategorier + ansvarlige) ----------
@@ -617,15 +635,17 @@ import { standardArticles } from '../../../data/ksArticles';
     await ensureShell('projects');
     root.innerHTML = `<p class="portal-loading">${esc(t('generating') || '…')}</p>`;
     const { data: projects, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-    const rows = (projects || []).map((pr: any) => `
+    const all = projects || [];
+    const rowHtml = (pr: any) => `
       <li class="p-item" data-id="${esc(pr.id)}">
         <div><h3>${esc(pr.name)}</h3><p>${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p></div>
         <span class="p-go">${ICONS.chevron}</span>
-      </li>`).join('');
+      </li>`;
     root.innerHTML = `
       <div class="p-head"><h1>${esc(p('projects'))}</h1></div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
-      ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
+      ${all.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="pl-search" type="search" placeholder="${esc(p('searchProjects'))}" autocomplete="off"></div>` : ''}
+      <ul class="p-list" id="pl-list">${all.map(rowHtml).join('') || `<p class="p-muted">${esc(p('noProjects'))}</p>`}</ul>
       <details class="p-new">
         <summary>${esc(p('newProject'))}</summary>
         <form id="np">
@@ -637,8 +657,16 @@ import { standardArticles } from '../../../data/ksArticles';
           <button class="btn btn--primary" type="submit">${esc(p('create'))}</button>
         </form>
       </details>`;
-    root.querySelectorAll('.p-item').forEach((el) =>
-      el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
+    const listEl = document.getElementById('pl-list')!;
+    const paintList = (q: string) => {
+      const term = q.trim().toLowerCase();
+      const shown = term ? all.filter((pr: any) => [pr.name, pr.address, pr.client].filter(Boolean).join(' ').toLowerCase().includes(term)) : all;
+      listEl.innerHTML = shown.length ? shown.map(rowHtml).join('') : `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noResults'))}</li>`;
+      listEl.querySelectorAll('.p-item').forEach((el) => el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
+    };
+    paintList('');
+    const searchEl = document.getElementById('pl-search') as HTMLInputElement | null;
+    if (searchEl) searchEl.addEventListener('input', () => paintList(searchEl.value));
     (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = (document.getElementById('np-name') as HTMLInputElement).value.trim();
@@ -1296,11 +1324,11 @@ import { standardArticles } from '../../../data/ksArticles';
     await ensureShell('articles');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     await ensureArticles();
-    const cats = Array.from(new Set(ARTICLES.map((a: any) => a.category || '—')));
+    const cats = Array.from(new Set(ARTICLES.map((a: any) => artText(a, 'category') || '—')));
     const groups = cats.map((cat) => {
-      const items = ARTICLES.filter((a: any) => (a.category || '—') === cat).map((a: any) => `
+      const items = ARTICLES.filter((a: any) => (artText(a, 'category') || '—') === cat).map((a: any) => `
         <li class="p-item" data-article="${esc(a.id)}">
-          <div><h3>${esc(a.title)}</h3><p>${esc(a.summary || '')}</p></div>
+          <div><h3>${esc(artText(a, 'title'))}</h3><p>${esc(artText(a, 'summary'))}</p></div>
           <span class="p-muted">${esc(p('readArticle'))} ›</span>
         </li>`).join('');
       return `<div class="p-section"><h2>${esc(cat)}</h2><ul class="p-list">${items}</ul></div>`;
@@ -1321,10 +1349,10 @@ import { standardArticles } from '../../../data/ksArticles';
     redraw = () => renderArticle(a);
     root.innerHTML = `
       <div class="p-head">
-        <div><p class="p-muted" style="margin:0">${esc(a.category || '')}</p><h1 style="margin:2px 0 0">${esc(a.title)}</h1></div>
+        <div><p class="p-muted" style="margin:0">${esc(artText(a, 'category'))}</p><h1 style="margin:2px 0 0">${esc(artText(a, 'title'))}</h1></div>
         <div class="p-user"><button class="btn btn--ghost" id="ar-edit">${esc(p('edit'))}</button><button class="btn btn--ghost" id="ar-back">${esc(p('back'))}</button></div>
       </div>
-      <article class="p-article p-card">${a.body || ''}</article>`;
+      <article class="p-article p-card">${artText(a, 'body') || ''}</article>`;
     document.getElementById('ar-back')!.addEventListener('click', renderArticles);
     document.getElementById('ar-edit')!.addEventListener('click', () => renderArticleEditor(a));
   }
@@ -1338,12 +1366,13 @@ import { standardArticles } from '../../../data/ksArticles';
         <div class="p-user"><button class="btn btn--ghost" id="ae-back">${esc(p('back'))}</button></div>
       </div>
       <div class="p-card">
+        <p class="p-muted" style="margin-top:0">${esc(p('editingInLang'))}: ${lang().toUpperCase()}</p>
         <div class="p-grid2">
-          <label class="p-field">${esc(p('articleTitleLabel'))}<input id="ae-title" type="text" value="${esc(a?.title || '')}"></label>
-          <label class="p-field">${esc(p('articleCategoryLabel'))}<input id="ae-cat" type="text" value="${esc(a?.category || '')}"></label>
+          <label class="p-field">${esc(p('articleTitleLabel'))}<input id="ae-title" type="text" value="${esc(a ? artText(a, 'title') : '')}"></label>
+          <label class="p-field">${esc(p('articleCategoryLabel'))}<input id="ae-cat" type="text" value="${esc(a ? artText(a, 'category') : '')}"></label>
         </div>
-        <label class="p-field">${esc(p('articleSummaryLabel'))}<input id="ae-sum" type="text" value="${esc(a?.summary || '')}"></label>
-        <label class="p-field">${esc(p('articleBodyLabel'))}<textarea id="ae-body" rows="12">${esc(a?.body || '')}</textarea></label>
+        <label class="p-field">${esc(p('articleSummaryLabel'))}<input id="ae-sum" type="text" value="${esc(a ? artText(a, 'summary') : '')}"></label>
+        <label class="p-field">${esc(p('articleBodyLabel'))}<textarea id="ae-body" rows="12">${esc(a ? artText(a, 'body') : '')}</textarea></label>
         <button class="btn btn--primary" id="ae-save" type="button">${esc(p('save'))}</button>
         ${a && !a.is_standard ? `<button class="btn btn--ghost" id="ae-del" style="margin-left:8px">${esc(p('del'))}</button>` : ''}
         <span class="p-muted" id="ae-msg" style="margin-left:10px"></span>
@@ -1357,10 +1386,22 @@ import { standardArticles } from '../../../data/ksArticles';
       const title = (document.getElementById('ae-title') as HTMLInputElement).value.trim();
       const msg = document.getElementById('ae-msg')!;
       if (!title) { msg.textContent = p('nameRequired'); return; }
+      const L = lang();
+      // sett verdien for gjeldende språk, behold øvrige språk (eller speil for nye artikler)
+      const merge = (field: string, value: string) => {
+        const cur = a ? artTri(a, field) : { no: '', pl: '', en: '' };
+        const anyOther = cur.no || cur.pl || cur.en;
+        const obj: any = { no: cur.no || (anyOther ? cur.no : value), pl: cur.pl || (anyOther ? cur.pl : value), en: cur.en || (anyOther ? cur.en : value) };
+        if (!a) { obj.no = value; obj.pl = value; obj.en = value; } // ny artikkel: speil til alle språk
+        obj[L] = value;
+        return JSON.stringify(obj);
+      };
       const payload: any = {
-        title, category: (document.getElementById('ae-cat') as HTMLInputElement).value.trim() || null,
-        summary: (document.getElementById('ae-sum') as HTMLInputElement).value.trim() || null,
-        body: (document.getElementById('ae-body') as HTMLTextAreaElement).value, updated_at: new Date().toISOString(),
+        title: merge('title', title),
+        category: merge('category', (document.getElementById('ae-cat') as HTMLInputElement).value.trim()),
+        summary: merge('summary', (document.getElementById('ae-sum') as HTMLInputElement).value.trim()),
+        body: merge('body', (document.getElementById('ae-body') as HTMLTextAreaElement).value),
+        updated_at: new Date().toISOString(),
       };
       let error;
       if (isNew) { ({ error } = await supabase.from('articles').insert({ ...payload, slug: null, is_standard: false, sort: 100 })); }

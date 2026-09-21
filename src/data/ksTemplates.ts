@@ -131,6 +131,16 @@ const takBlikkVernerunde: TplSection[] = [
   ]),
 ];
 
+// Fotodokumentasjon gjennom hele prosessen (riving → alle ledd i montering → ferdig)
+const fotodok: TplSection = sec('fotodok', { no: 'Fotodokumentasjon (hele prosessen)', pl: 'Dokumentacja zdjęciowa (cały proces)', en: 'Photo documentation (whole process)' }, [
+  ['foto-for', { no: 'Bilder tatt FØR arbeidet – eksisterende tilstand', pl: 'Zdjęcia PRZED pracą – stan istniejący', en: 'Photos taken BEFORE the work – existing condition' }],
+  ['foto-riving', { no: 'Bilder under RIVING / demontering av gammelt tak', pl: 'Zdjęcia podczas ROZBIÓRKI / demontażu starego dachu', en: 'Photos during TEAR-OFF / removal of the old roof' }],
+  ['foto-underlag', { no: 'Bilder av UNDERLAG / undertak / dampsperre', pl: 'Zdjęcia PODŁOŻA / poszycia / paroizolacji', en: 'Photos of the SUBSTRATE / underlay / vapour barrier' }],
+  ['foto-montering', { no: 'Bilder under TEKKING / montering – alle ledd', pl: 'Zdjęcia podczas KRYCIA / montażu – wszystkie etapy', en: 'Photos during ROOFING / installation – every stage' }],
+  ['foto-detaljer', { no: 'Bilder av BESLAG, renner, nedløp og detaljer/gjennomføringer', pl: 'Zdjęcia OBRÓBEK, rynien, rur i detali/przejść', en: 'Photos of FLASHINGS, gutters, downpipes and details/penetrations' }],
+  ['foto-ferdig', { no: 'Bilder av FERDIG arbeid – sluttdokumentasjon til kunde', pl: 'Zdjęcia GOTOWEJ pracy – dokumentacja końcowa dla klienta', en: 'Photos of the FINISHED work – final documentation for the customer' }],
+]);
+
 export const standardTemplates: StandardTemplate[] = [
   {
     slug: 'generell-vernerunde',
@@ -154,7 +164,7 @@ export const standardTemplates: StandardTemplate[] = [
     kind: 'verneround',
     description: 'Vernerunde tilpasset arbeid på tak og blikkenslagerarbeid: fallsikring, stillas, varmt arbeid, gass, verktøy og vær.',
     sort: 30,
-    sections: takBlikkVernerunde,
+    sections: [...takBlikkVernerunde, fotodok],
   },
   {
     slug: 'vernerunde-basis',
@@ -168,9 +178,9 @@ export const standardTemplates: StandardTemplate[] = [
     slug: 'sjekkliste-sluttkontroll-tak',
     name: 'Sluttkontroll tak (taktekking)',
     kind: 'checklist',
-    description: 'Teknisk sluttkontroll og HMS-sjekkliste for taktekkingsarbeid.',
+    description: 'Teknisk sluttkontroll og HMS-sjekkliste for taktekkingsarbeid. Husk fotodokumentasjon gjennom hele prosessen.',
     sort: 50,
-    sections: checklist as unknown as TplSection[],
+    sections: [...(checklist as unknown as TplSection[]), fotodok],
   },
   {
     slug: 'egenkontroll-blikkenslager',
@@ -197,6 +207,7 @@ export const standardTemplates: StandardTemplate[] = [
       sec('overflate', { no: 'Overflate og finish', pl: 'Powierzchnia i wykończenie', en: 'Surface and finish' }, [
         ['skader', { no: 'Ingen riper, bulker eller korrosjon på synlige flater', pl: 'Brak rys, wgnieceń i korozji na widocznych powierzchniach', en: 'No scratches, dents or corrosion on visible surfaces' }],
       ]),
+      fotodok,
     ],
   },
 ];
