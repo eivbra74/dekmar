@@ -4,6 +4,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 import { standardTemplates } from '../../../data/ksTemplates';
 import { standardArticles } from '../../../data/ksArticles';
 import { standardFdv } from '../../../data/ksFdv';
+import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../data/ksSha';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -12,7 +13,7 @@ import { standardFdv } from '../../../data/ksFdv';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive } })} />
 </KsLayout>
 
 <style is:global>
@@ -151,6 +152,9 @@ import { standardFdv } from '../../../data/ksFdv';
   .p-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .p-chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 0.8rem; }
   .p-sm { padding: 6px 12px; font-size: 0.82rem; }
+  .p-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .p-grid3 input { font: inherit; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; width: 100%; }
+  @media (max-width: 560px) { .p-grid3 { grid-template-columns: 1fr; } }
   .p-grid-inline { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .p-grid-inline input { flex: 1; }
   .p-tpl-edit-sec { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
@@ -190,6 +194,7 @@ import { standardFdv } from '../../../data/ksFdv';
   const STD_FDV = KSD.standardFdv || [];
   let FDV: any[] = [];
   let FDV_SEEDED = false;
+  const STD_SHA = KSD.sha || { roles: [], milestones: [], specific: [], preventive: [] };
   let TEMPLATES: any[] = [];
   let TEMPLATES_SEEDED = false;
   const STD_DEV_CATS = ['HMS', 'Kvalitet', 'Fremdrift', 'Materiell / leveranse', 'Skade / ulykke', 'Nestenulykke', 'Miljø', 'Annet'];
@@ -369,6 +374,25 @@ import { standardFdv } from '../../../data/ksFdv';
     addSelected: { no: 'Legg til valgte', pl: 'Dodaj wybrane', en: 'Add selected' },
     fdvPickIntro: { no: 'Velg produkter som skal legges i stoffkartoteket for dette prosjektet:', pl: 'Wybierz produkty do rejestru w tym projekcie:', en: 'Choose products to add to this project’s register:' },
     added: { no: 'Lagt til', pl: 'Dodano', en: 'Added' },
+    shaPlan: { no: 'SHA-plan', pl: 'Plan BIOZ (SHA)', en: 'SHA plan' },
+    shaIntro: { no: 'Plan for sikkerhet, helse og arbeidsmiljø – skal foreligge før oppstart (byggherreforskriften).', pl: 'Plan bezpieczeństwa i higieny pracy – wymagany przed rozpoczęciem.', en: 'Safety, health and working-environment plan – required before start.' },
+    shaCreate: { no: 'Opprett SHA-plan', pl: 'Utwórz plan SHA', en: 'Create SHA plan' },
+    shaEdit: { no: 'Åpne / rediger SHA-plan', pl: 'Otwórz / edytuj plan SHA', en: 'Open / edit SHA plan' },
+    shaProjectDesc: { no: 'Beskrivelse av prosjektet', pl: 'Opis projektu', en: 'Project description' },
+    shaOrg: { no: 'Organisasjon og roller', pl: 'Organizacja i role', en: 'Organisation and roles' },
+    shaProgress: { no: 'Fremdrift / milepæler', pl: 'Postęp / kamienie milowe', en: 'Progress / milestones' },
+    shaSpecificT: { no: 'Spesifikke risikoreduserende tiltak', pl: 'Szczególne środki ograniczające ryzyko', en: 'Specific risk-reducing measures' },
+    shaPreventiveT: { no: 'Forebyggende tiltak', pl: 'Środki zapobiegawcze', en: 'Preventive measures' },
+    colRole: { no: 'Rolle', pl: 'Rola', en: 'Role' },
+    colCompany: { no: 'Virksomhet', pl: 'Firma', en: 'Company' },
+    colContact: { no: 'Kontaktperson', pl: 'Osoba kontaktowa', en: 'Contact' },
+    colActivity: { no: 'Aktivitet / forhold', pl: 'Czynność / warunek', en: 'Activity / condition' },
+    colRisk: { no: 'Fare / risiko', pl: 'Zagrożenie / ryzyko', en: 'Hazard / risk' },
+    colMeasure: { no: 'Tiltak', pl: 'Środek', en: 'Measure' },
+    colResponsible: { no: 'Ansvarlig', pl: 'Odpowiedzialny', en: 'Responsible' },
+    colMilestone: { no: 'Milepæl', pl: 'Kamień milowy', en: 'Milestone' },
+    addRow: { no: '+ Legg til rad', pl: '+ Dodaj wiersz', en: '+ Add row' },
+    exportSha: { no: 'Last ned SHA-plan (PDF)', pl: 'Pobierz plan SHA (PDF)', en: 'Download SHA plan (PDF)' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -808,6 +832,7 @@ import { standardFdv } from '../../../data/ksFdv';
           <span class="p-muted" id="d-status-msg" style="margin-left:10px"></span>
         </details>
       </div>
+      <div class="p-section" id="sec-sha"></div>
       <div class="p-section" id="sec-checklist"></div>
       <div class="p-section" id="sec-verneround"></div>
       <div class="p-section" id="sec-chemicals"></div>
@@ -815,10 +840,127 @@ import { standardFdv } from '../../../data/ksFdv';
     document.getElementById('back')!.addEventListener('click', renderProjects);
     setupDeviationForm(id, devs || []);
     await ensureTemplates();
+    renderShaEntry(id);
     renderForms('checklist', id);
     renderForms('verneround', id);
     renderChemicals(id);
     renderJobDoc(id);
+  }
+
+  // SHA-plan – inngang i prosjektvisningen
+  async function renderShaEntry(projectId: string) {
+    const secEl = document.getElementById('sec-sha')!;
+    const { data: plan } = await supabase.from('sha_plans').select('rev, updated_at').eq('project_id', projectId).maybeSingle();
+    secEl.innerHTML = `
+      <h2>${esc(p('shaPlan'))}</h2>
+      <p class="p-muted">${esc(p('shaIntro'))}</p>
+      <div class="p-actions">
+        <button class="btn btn--primary" id="sha-open">${plan ? esc(p('shaEdit')) : esc(p('shaCreate'))}</button>
+        ${plan ? `<span class="p-muted">${esc(p('revLabel'))} ${plan.rev} · ${esc(fmt(plan.updated_at))}</span>` : ''}
+      </div>`;
+    document.getElementById('sha-open')!.addEventListener('click', () => renderShaPlan(projectId));
+  }
+
+  async function renderShaPlan(projectId: string) {
+    redraw = () => renderShaPlan(projectId);
+    await ensureShell('projects');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const { data: pr } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    CURRENT_PROJECT = pr;
+    const { data: existing } = await supabase.from('sha_plans').select('*').eq('project_id', projectId).maybeSingle();
+    const clone = (x: any) => JSON.parse(JSON.stringify(x));
+    const d: any = existing?.data || {
+      description: '', roles: clone(STD_SHA.roles), milestones: clone(STD_SHA.milestones),
+      specific: clone(STD_SHA.specific), preventive: clone(STD_SHA.preventive),
+    };
+    const rev = existing?.rev ?? 0;
+    const sync = () => {
+      d.description = (document.getElementById('sha-desc') as HTMLTextAreaElement)?.value || '';
+      root.querySelectorAll<HTMLInputElement>('[data-role]').forEach((el) => { const i = +el.dataset.role!; const f = el.dataset.f!; if (d.roles[i]) d.roles[i][f] = el.value; });
+      root.querySelectorAll<HTMLInputElement>('[data-ms]').forEach((el) => { const i = +el.dataset.ms!; if (d.milestones[i]) d.milestones[i].date = el.value; });
+      root.querySelectorAll<HTMLElement>('[data-sp]').forEach((el) => { const i = +el.dataset.sp!; const f = el.dataset.f!; if (d.specific[i]) d.specific[i][f] = (el as HTMLInputElement).value; });
+      root.querySelectorAll<HTMLElement>('[data-pv]').forEach((el) => { const i = +el.dataset.pv!; const f = el.dataset.f!; if (d.preventive[i]) d.preventive[i][f] = (el as HTMLInputElement).value; });
+    };
+    const draw = () => {
+      const roleRows = d.roles.map((r: any, i: number) => `
+        <div class="p-grid3">
+          <input value="${esc(r.role)}" data-role="${i}" data-f="role" placeholder="${esc(p('colRole'))}">
+          <input value="${esc(r.company || '')}" data-role="${i}" data-f="company" placeholder="${esc(p('colCompany'))}">
+          <input value="${esc(r.contact || '')}" data-role="${i}" data-f="contact" placeholder="${esc(p('colContact'))}">
+        </div>`).join('');
+      const msRows = d.milestones.map((m: any, i: number) => `
+        <div class="p-grid2"><span class="p-field" style="margin:0;justify-content:center">${esc(m.name)}</span><input type="date" value="${esc(m.date || '')}" data-ms="${i}"></div>`).join('');
+      const spRows = d.specific.map((s: any, i: number) => `
+        <fieldset class="p-tpl-edit-sec"><div class="p-grid-inline"><input data-sp="${i}" data-f="activity" value="${esc(s.activity || '')}" placeholder="${esc(p('colActivity'))}"><button type="button" class="btn btn--ghost p-sm" data-spdel="${i}">${esc(p('removeLabel'))}</button></div>
+          <textarea data-sp="${i}" data-f="risk" rows="2" placeholder="${esc(p('colRisk'))}" style="width:100%;margin-bottom:6px">${esc(s.risk || '')}</textarea>
+          <textarea data-sp="${i}" data-f="measure" rows="3" placeholder="${esc(p('colMeasure'))}" style="width:100%;margin-bottom:6px">${esc(s.measure || '')}</textarea>
+          <input data-sp="${i}" data-f="responsible" value="${esc(s.responsible || '')}" placeholder="${esc(p('colResponsible'))}" style="width:100%"></fieldset>`).join('');
+      const pvRows = d.preventive.map((v: any, i: number) => `
+        <div class="p-grid-inline"><input data-pv="${i}" data-f="measure" value="${esc(v.measure || '')}" placeholder="${esc(p('colMeasure'))}"><input data-pv="${i}" data-f="responsible" value="${esc(v.responsible || '')}" placeholder="${esc(p('colResponsible'))}" style="max-width:150px"><button type="button" class="btn btn--ghost p-sm" data-pvdel="${i}">${esc(p('removeLabel'))}</button></div>`).join('');
+      root.innerHTML = `
+        <div class="p-head"><div><h1>${esc(p('shaPlan'))}</h1><p class="p-muted">${esc(pr?.name || '')}${rev ? ` · ${esc(p('revLabel'))} ${rev}` : ''}</p></div>
+          <div class="p-user"><button class="btn btn--ghost" id="sha-back">${esc(p('back'))}</button></div></div>
+        <div class="p-card">
+          <label class="p-field">${esc(p('shaProjectDesc'))}<textarea id="sha-desc" rows="3">${esc(d.description || '')}</textarea></label>
+          <h3>${esc(p('shaOrg'))}</h3>${roleRows}<button type="button" class="btn btn--ghost p-sm" id="sha-addrole">${esc(p('addRow'))}</button>
+          <h3 style="margin-top:18px">${esc(p('shaProgress'))}</h3>${msRows}
+          <h3 style="margin-top:18px">${esc(p('shaSpecificT'))}</h3>${spRows}<button type="button" class="btn btn--ghost p-sm" id="sha-addsp">${esc(p('addRow'))}</button>
+          <h3 style="margin-top:18px">${esc(p('shaPreventiveT'))}</h3>${pvRows}<button type="button" class="btn btn--ghost p-sm" id="sha-addpv">${esc(p('addRow'))}</button>
+          <div style="margin-top:18px" class="p-actions">
+            <button class="btn btn--primary" id="sha-save">${esc(p('save'))}</button>
+            <button class="btn btn--ghost" id="sha-pdf">${esc(p('exportSha'))}</button>
+            <span class="p-muted" id="sha-msg"></span>
+          </div>
+        </div>`;
+      document.getElementById('sha-back')!.addEventListener('click', () => openProject(projectId));
+      document.getElementById('sha-addrole')!.addEventListener('click', () => { sync(); d.roles.push({ role: '', company: '', contact: '' }); draw(); });
+      document.getElementById('sha-addsp')!.addEventListener('click', () => { sync(); d.specific.push({ activity: '', risk: '', measure: '', responsible: '' }); draw(); });
+      document.getElementById('sha-addpv')!.addEventListener('click', () => { sync(); d.preventive.push({ measure: '', responsible: '' }); draw(); });
+      root.querySelectorAll<HTMLElement>('[data-spdel]').forEach((b) => b.addEventListener('click', () => { sync(); d.specific.splice(+b.dataset.spdel!, 1); draw(); }));
+      root.querySelectorAll<HTMLElement>('[data-pvdel]').forEach((b) => b.addEventListener('click', () => { sync(); d.preventive.splice(+b.dataset.pvdel!, 1); draw(); }));
+      document.getElementById('sha-save')!.addEventListener('click', async () => {
+        sync(); const { data: u } = await supabase.auth.getUser();
+        const { error } = await supabase.from('sha_plans').upsert({ project_id: projectId, data: d, rev: rev + 1, updated_by: u.user?.id, updated_at: new Date().toISOString() }, { onConflict: 'project_id' });
+        const msg = document.getElementById('sha-msg')!;
+        if (error) { msg.textContent = error.message; return; } msg.textContent = p('added'); renderShaPlan(projectId);
+      });
+      document.getElementById('sha-pdf')!.addEventListener('click', () => { sync(); makeShaPdf(d, pr, rev); });
+    };
+    draw();
+  }
+
+  async function makeShaPdf(d: any, pr: any, rev: number) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    await ensurePdfFont(doc);
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    const line = (txt: string, size = 10, style = 'normal', gap = 5, color: number[] = [20, 23, 28]) => {
+      doc.setFont('DejaVu', style as any); doc.setFontSize(size); doc.setTextColor(color[0], color[1], color[2]);
+      doc.splitTextToSize(txt || '', maxW).forEach((ln: string) => { if (y > 283) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += gap; });
+    };
+    const hd = (t: string) => { y += 3; if (y > 275) { doc.addPage(); y = margin; } doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.5); doc.line(margin, y, margin + maxW, y); y += 5; line(t, 12, 'bold', 6); };
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text('SHA-plan – plan for sikkerhet, helse og arbeidsmiljø', margin, 18);
+    y = 32;
+    line(`${pr?.name || ''}`, 13, 'bold', 6);
+    line([pr?.address, pr?.client].filter(Boolean).join(' · '), 10, 'normal', 6, [90, 96, 104]);
+    line(`${p('revLabel')} ${rev}    ${fmt(new Date().toISOString())}`, 9.5, 'normal', 6, [90, 96, 104]);
+    if (d.description) { hd(p('shaProjectDesc')); line(d.description, 10, 'normal', 5); }
+    hd(p('shaOrg'));
+    (d.roles || []).forEach((r: any) => { if (r.role || r.company || r.contact) line(`${r.role}: ${[r.company, r.contact].filter(Boolean).join(' – ')}`, 10, 'normal', 5); });
+    hd(p('shaProgress'));
+    (d.milestones || []).forEach((m: any) => line(`${m.name}: ${m.date || '—'}`, 10, 'normal', 5));
+    hd(p('shaSpecificT'));
+    (d.specific || []).forEach((s: any, i: number) => {
+      line(`${i + 1}. ${s.activity || ''}`, 10.5, 'bold', 5.5);
+      if (s.risk) line(`${p('colRisk')}: ${s.risk}`, 9.5, 'normal', 4.6, [90, 96, 104]);
+      if (s.measure) line(`${p('colMeasure')}: ${s.measure}`, 10, 'normal', 5);
+      if (s.responsible) line(`${p('colResponsible')}: ${s.responsible}`, 9.5, 'normal', 5, [90, 96, 104]);
+      y += 1.5;
+    });
+    hd(p('shaPreventiveT'));
+    (d.preventive || []).forEach((v: any, i: number) => line(`${i + 1}. ${v.measure || ''}${v.responsible ? '  (' + v.responsible + ')' : ''}`, 10, 'normal', 5));
+    doc.save(`Dekmar_SHA-plan_${(pr?.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
   }
 
   // downscale image File -> {blob, dataUrl}
