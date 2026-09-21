@@ -183,8 +183,73 @@ export const checklist: CheckSection[] = [
   },
 ];
 
+// Vernerunde – HMS-inspeksjon på byggeplass (samme struktur som sjekkliste)
+export const safetyRound: CheckSection[] = [
+  {
+    id: 'vernerunde',
+    title: { no: 'Vernerunde – HMS-kontroll', pl: 'Obchód BHP – kontrola', en: 'Safety round – HSE check' },
+    items: [
+      { id: 'orden', text: {
+        no: 'Orden og ryddighet på arbeidsområde og adkomstveier',
+        pl: 'Porządek i czystość na obszarze pracy i drogach dostępu',
+        en: 'Order and tidiness in work area and access routes' } },
+      { id: 'ppe', text: {
+        no: 'Personlig verneutstyr brukes (hjelm, sko, briller, hansker, fallsele)',
+        pl: 'Stosowane środki ochrony osobistej (kask, obuwie, okulary, rękawice, szelki)',
+        en: 'Personal protective equipment used (helmet, boots, glasses, gloves, harness)' } },
+      { id: 'fall', text: {
+        no: 'Fallsikring: rekkverk/kollektiv sikring intakt; åpninger sikret',
+        pl: 'Ochrona przed upadkiem: barierki/zabezpieczenia zbiorowe sprawne; otwory zabezpieczone',
+        en: 'Fall protection: guardrails/collective protection intact; openings secured' } },
+      { id: 'stillas', text: {
+        no: 'Stillas godkjent (grønt skilt), ingen synlige mangler',
+        pl: 'Rusztowanie dopuszczone (zielona tabliczka), brak widocznych usterek',
+        en: 'Scaffold approved (green tag), no visible defects' } },
+      { id: 'stiger', text: {
+        no: 'Stiger og adkomst forsvarlig sikret',
+        pl: 'Drabiny i dostęp odpowiednio zabezpieczone',
+        en: 'Ladders and access properly secured' } },
+      { id: 'maskiner', text: {
+        no: 'Maskiner og elektrisk utstyr i orden; kabler uten skade',
+        pl: 'Maszyny i sprzęt elektryczny sprawne; kable bez uszkodzeń',
+        en: 'Machines and electrical equipment in order; cables undamaged' } },
+      { id: 'kjemikalier', text: {
+        no: 'Kjemikalier merket og lagret riktig; sikkerhetsdatablad tilgjengelig',
+        pl: 'Chemikalia oznakowane i przechowywane prawidłowo; karty charakterystyki dostępne',
+        en: 'Chemicals labelled and stored correctly; safety data sheets available' } },
+      { id: 'brann', text: {
+        no: 'Brannvern: slukkeutstyr tilgjengelig; varme arbeider sikret',
+        pl: 'Ochrona ppoż.: sprzęt gaśniczy dostępny; prace gorące zabezpieczone',
+        en: 'Fire safety: extinguishers available; hot work secured' } },
+      { id: 'forstehjelp', text: {
+        no: 'Førstehjelpsutstyr tilgjengelig og komplett',
+        pl: 'Apteczka dostępna i kompletna',
+        en: 'First-aid equipment available and complete' } },
+      { id: 'fallende', text: {
+        no: 'Sikring mot fallende gjenstander (fotlist, nett, avsperring)',
+        pl: 'Zabezpieczenie przed spadającymi przedmiotami (bortnica, siatka, ogrodzenie)',
+        en: 'Protection against falling objects (toe board, net, barriers)' } },
+      { id: 'skilting', text: {
+        no: 'Faresoner avsperret og skiltet; rømningsveier frie',
+        pl: 'Strefy niebezpieczne ogrodzone i oznakowane; drogi ewakuacyjne wolne',
+        en: 'Hazard zones cordoned and signed; escape routes clear' } },
+      { id: 'sja', text: {
+        no: 'SJA gjennomført for risikofylt arbeid',
+        pl: 'JSA przeprowadzona dla prac ryzykownych',
+        en: 'JSA carried out for high-risk work' } },
+      { id: 'stovstoy', text: {
+        no: 'Støv, støy og vibrasjon vurdert; tiltak iverksatt',
+        pl: 'Pył, hałas i drgania ocenione; środki wdrożone',
+        en: 'Dust, noise and vibration assessed; measures in place' } },
+    ],
+  },
+];
+
 // UI-strenger for KS-modulen
 export const ksUi: Record<string, T> = {
+  verneround: { no: 'Vernerunde', pl: 'Obchód BHP', en: 'Safety round' },
+  vernerounds: { no: 'Vernerunder', pl: 'Obchody BHP', en: 'Safety rounds' },
+  checklists: { no: 'Sjekklister', pl: 'Listy kontrolne', en: 'Checklists' },
   brand: { no: 'Dekmar KS', pl: 'Dekmar KS', en: 'Dekmar QA' },
   home: { no: 'KS-forside', pl: 'Strona główna KS', en: 'QA home' },
   checklist: { no: 'Sjekkliste', pl: 'Lista kontrolna', en: 'Checklist' },

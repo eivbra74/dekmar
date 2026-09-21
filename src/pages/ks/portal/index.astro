@@ -1,0 +1,516 @@
+---
+import KsLayout from '../../../layouts/KsLayout.astro';
+import { ksUi, checklist, safetyRound } from '../../../data/ks';
+---
+
+<KsLayout active="portal" title="Portal">
+  <div class="container">
+    <div id="portal-root" class="portal-root">
+      <p class="portal-loading">Laster …</p>
+    </div>
+  </div>
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound })} />
+</KsLayout>
+
+<style>
+  .portal-root { max-width: 900px; margin-inline: auto; }
+  .portal-loading { color: var(--muted); }
+  .p-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(18px,3vw,28px); }
+  .p-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .p-head h1 { margin: 0; }
+  .p-user { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--muted); }
+  .p-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; }
+  .p-field input, .p-field textarea, .p-field select { font: inherit; font-weight: 400; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; width: 100%; }
+  .p-grid2 { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 560px){ .p-grid2 { grid-template-columns: 1fr; } }
+  .p-list { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .p-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; }
+  .p-item:hover { border-color: var(--ink); }
+  .p-item h3 { margin: 0 0 2px; font-size: 1.05rem; }
+  .p-item p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+  .p-badge { font-family: var(--font-head); font-weight: 700; font-size: 0.72rem; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .p-badge.open { background: #cc1f2a18; color: var(--brand-dark); }
+  .p-badge.closed { background: #12855222; color: #0c6b42; }
+  .p-muted { color: var(--muted); font-size: 0.92rem; }
+  .p-err { color: var(--brand-dark); font-size: 0.9rem; margin: 8px 0 0; }
+  .p-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .p-thumbs { display: grid; grid-template-columns: repeat(auto-fill,minmax(84px,1fr)); gap: 8px; margin-top: 10px; }
+  .p-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+  .p-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .p-section { margin-top: 30px; }
+  .p-section > h2 { font-size: 1.25rem; }
+  details.p-new { border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
+  details.p-new summary { cursor: pointer; font-family: var(--font-head); font-weight: 700; color: var(--brand); }
+  details.p-new[open] summary { margin-bottom: 14px; }
+  .p-login { max-width: 400px; margin: 6vh auto 0; }
+  /* Skjema-avkryssing (sjekkliste/vernerunde) */
+  .p-cl-sec { border: 0; border-top: 2px solid var(--line); padding: 14px 0 2px; margin: 0; }
+  .p-cl-sec legend { font-family: var(--font-head); font-weight: 700; color: var(--brand); padding: 0; font-size: 1rem; }
+  .p-cl-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .p-cl-item:last-child { border-bottom: 0; }
+  .p-cl-text { margin: 0 0 8px; font-weight: 500; }
+  .ks-radios { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .ks-pill { position: relative; }
+  .ks-pill input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .ks-pill span { display: inline-block; padding: 7px 15px; border-radius: 999px; border: 1.5px solid var(--line); font-family: var(--font-head); font-weight: 600; font-size: 0.88rem; cursor: pointer; }
+  .ks-pill--ok input:checked + span { background: #12855222; border-color: #128552; color: #0c6b42; }
+  .ks-pill--na input:checked + span { background: var(--surface); border-color: var(--muted); color: var(--muted); }
+  .p-cl-note { flex: 1; min-width: 150px; font: inherit; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; }
+  /* Arkiv */
+  .p-filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+  .p-filters input, .p-filters select { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; }
+  .p-filters #a-search { flex: 1; min-width: 200px; }
+  .p-tablewrap { overflow-x: auto; }
+  .p-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .p-table th, .p-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 0.94rem; white-space: nowrap; }
+  .p-table th { font-family: var(--font-head); font-weight: 700; background: var(--surface); }
+  .p-table tbody tr[data-form] { cursor: pointer; }
+  .p-table tbody tr[data-form]:hover { background: var(--surface); }
+</style>
+
+<script>
+  import { supabase, KS_PHOTO_BUCKET } from '../../../lib/ksSupabase';
+  import { jsPDF } from 'jspdf';
+
+  const KSD = JSON.parse(document.getElementById('ks-data')!.textContent || '{}');
+  const UI = KSD.ui || {};
+  const CHECKLIST = KSD.checklist || [];
+  const SAFETYROUND = KSD.safetyRound || [];
+  let CURRENT_PROJECT: any = null;
+  const lang = () => (window as any).ksLang || 'no';
+  const t = (k: string) => (UI[k] ? UI[k][lang()] : k); // delte KS-felt
+  const P: Record<string, any> = {
+    signIn: { no: 'Logg inn', pl: 'Zaloguj się', en: 'Sign in' },
+    signOut: { no: 'Logg ut', pl: 'Wyloguj', en: 'Sign out' },
+    email: { no: 'E-post', pl: 'E-mail', en: 'Email' },
+    password: { no: 'Passord', pl: 'Hasło', en: 'Password' },
+    loginTitle: { no: 'Dekmar KS-portal', pl: 'Portal Dekmar KS', en: 'Dekmar QA portal' },
+    loginIntro: { no: 'Innlogging for Dekmar-ansatte.', pl: 'Logowanie dla pracowników Dekmar.', en: 'Sign in for Dekmar staff.' },
+    loginErr: { no: 'Feil e-post eller passord.', pl: 'Błędny e-mail lub hasło.', en: 'Wrong email or password.' },
+    projects: { no: 'Prosjekter', pl: 'Projekty', en: 'Projects' },
+    newProject: { no: 'Nytt prosjekt', pl: 'Nowy projekt', en: 'New project' },
+    projName: { no: 'Prosjektnavn', pl: 'Nazwa projektu', en: 'Project name' },
+    client: { no: 'Hovedentreprenør / byggherre', pl: 'Generalny wykonawca / inwestor', en: 'Main contractor / client' },
+    create: { no: 'Opprett', pl: 'Utwórz', en: 'Create' },
+    save: { no: 'Lagre', pl: 'Zapisz', en: 'Save' },
+    back: { no: '← Prosjekter', pl: '← Projekty', en: '← Projects' },
+    noProjects: { no: 'Ingen prosjekter ennå. Opprett det første nedenfor.', pl: 'Brak projektów. Utwórz pierwszy poniżej.', en: 'No projects yet. Create the first below.' },
+    deviations: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
+    newDeviation: { no: 'Nytt avvik', pl: 'Nowa niezgodność', en: 'New deviation' },
+    noDeviations: { no: 'Ingen avvik registrert på dette prosjektet.', pl: 'Brak niezgodności w tym projekcie.', en: 'No deviations logged for this project.' },
+    saving: { no: 'Lagrer …', pl: 'Zapisywanie …', en: 'Saving …' },
+    uploading: { no: 'Laster opp bilder …', pl: 'Przesyłanie zdjęć …', en: 'Uploading photos …' },
+    newChecklist: { no: 'Ny sjekkliste', pl: 'Nowa lista kontrolna', en: 'New checklist' },
+    noChecklists: { no: 'Ingen sjekklister lagret på dette prosjektet.', pl: 'Brak zapisanych list kontrolnych w tym projekcie.', en: 'No checklists saved for this project.' },
+    checklistTitle: { no: 'Tittel (valgfritt)', pl: 'Tytuł (opcjonalnie)', en: 'Title (optional)' },
+    createdAt: { no: 'Registrert', pl: 'Zarejestrowano', en: 'Logged' },
+    newVerneround: { no: 'Ny vernerunde', pl: 'Nowy obchód BHP', en: 'New safety round' },
+    noVernerounds: { no: 'Ingen vernerunder registrert på dette prosjektet.', pl: 'Brak obchodów BHP w tym projekcie.', en: 'No safety rounds logged for this project.' },
+    archive: { no: 'Arkiv', pl: 'Archiwum', en: 'Archive' },
+    search: { no: 'Søk (prosjekt, utførende, tittel)', pl: 'Szukaj (projekt, wykonawca, tytuł)', en: 'Search (project, performer, title)' },
+    sortBy: { no: 'Sorter', pl: 'Sortuj', en: 'Sort' },
+    dateNewest: { no: 'Dato (nyest)', pl: 'Data (najnowsze)', en: 'Date (newest)' },
+    dateOldest: { no: 'Dato (eldst)', pl: 'Data (najstarsze)', en: 'Date (oldest)' },
+    byProject: { no: 'Prosjekt', pl: 'Projekt', en: 'Project' },
+    byPerformer: { no: 'Utførende', pl: 'Wykonawca', en: 'Performer' },
+    typeAll: { no: 'Alle typer', pl: 'Wszystkie typy', en: 'All types' },
+    colDate: { no: 'Dato', pl: 'Data', en: 'Date' },
+    colProject: { no: 'Prosjekt', pl: 'Projekt', en: 'Project' },
+    colType: { no: 'Type', pl: 'Typ', en: 'Type' },
+    colPerformer: { no: 'Utførende', pl: 'Wykonawca', en: 'Performer' },
+    noResults: { no: 'Ingen treff.', pl: 'Brak wyników.', en: 'No results.' },
+  };
+  const p = (k: string) => (P[k] ? P[k][lang()] : k);
+  const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+  const root = document.getElementById('portal-root')!;
+  const fmt = (d: string) => new Date(d).toLocaleDateString('nb-NO');
+
+  // ---------- Auth routing ----------
+  async function route() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) renderProjects(); else renderLogin();
+  }
+  supabase.auth.onAuthStateChange(() => route());
+
+  // ---------- Login ----------
+  function renderLogin() {
+    root.innerHTML = `
+      <div class="p-card p-login">
+        <h1>${esc(p('loginTitle'))}</h1>
+        <p class="p-muted">${esc(p('loginIntro'))}</p>
+        <form id="lf" style="margin-top:16px">
+          <label class="p-field">${esc(p('email'))}<input id="lf-email" type="email" autocomplete="email" required></label>
+          <label class="p-field">${esc(p('password'))}<input id="lf-pass" type="password" autocomplete="current-password" required></label>
+          <button class="btn btn--primary" type="submit">${esc(p('signIn'))}</button>
+          <p class="p-err" id="lf-err" hidden></p>
+        </form>
+      </div>`;
+    const f = document.getElementById('lf') as HTMLFormElement;
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('lf-err')!;
+      err.hidden = true;
+      const email = (document.getElementById('lf-email') as HTMLInputElement).value.trim();
+      const password = (document.getElementById('lf-pass') as HTMLInputElement).value;
+      const btn = f.querySelector('button')!; btn.setAttribute('disabled', 'true');
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      btn.removeAttribute('disabled');
+      if (error) { err.textContent = p('loginErr'); err.hidden = false; }
+    });
+  }
+
+  async function currentEmail() {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.email || '';
+  }
+
+  // ---------- Projects ----------
+  async function renderProjects() {
+    root.innerHTML = `<p class="portal-loading">${esc(t('generating') || '…')}</p>`;
+    const { data: projects, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+    const email = await currentEmail();
+    const rows = (projects || []).map((pr: any) => `
+      <li class="p-item" data-id="${esc(pr.id)}">
+        <div><h3>${esc(pr.name)}</h3><p>${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p></div>
+        <span class="p-muted">›</span>
+      </li>`).join('');
+    root.innerHTML = `
+      <div class="p-head">
+        <h1>${esc(p('projects'))}</h1>
+        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
+      </div>
+      ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
+      ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
+      <details class="p-new">
+        <summary>${esc(p('newProject'))}</summary>
+        <form id="np">
+          <label class="p-field">${esc(p('projName'))}<input id="np-name" type="text" required></label>
+          <div class="p-grid2">
+            <label class="p-field">${esc(t('address'))}<input id="np-addr" type="text"></label>
+            <label class="p-field">${esc(p('client'))}<input id="np-client" type="text"></label>
+          </div>
+          <button class="btn btn--primary" type="submit">${esc(p('create'))}</button>
+        </form>
+      </details>`;
+    document.getElementById('signout')!.addEventListener('click', () => supabase.auth.signOut());
+    document.getElementById('archive')!.addEventListener('click', renderArchive);
+    root.querySelectorAll('.p-item').forEach((el) =>
+      el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
+    (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = (document.getElementById('np-name') as HTMLInputElement).value.trim();
+      if (!name) return;
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('projects').insert({
+        name,
+        address: (document.getElementById('np-addr') as HTMLInputElement).value.trim() || null,
+        client: (document.getElementById('np-client') as HTMLInputElement).value.trim() || null,
+        created_by: u.user?.id,
+      });
+      if (error) alert(error.message); else renderProjects();
+    });
+  }
+
+  // ---------- Project detail ----------
+  async function openProject(id: string) {
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const { data: pr } = await supabase.from('projects').select('*').eq('id', id).single();
+    CURRENT_PROJECT = pr;
+    const { data: devs } = await supabase.from('deviations').select('*').eq('project_id', id).order('created_at', { ascending: false });
+    const devRows = (devs || []).map((d: any) => `
+      <li class="p-item" data-dev="${esc(d.id)}">
+        <div>
+          <h3>${esc(t('devNo'))} ${esc(d.number || '—')}${d.location ? ' · ' + esc(d.location) : ''}</h3>
+          <p>${esc((d.description || '').slice(0, 90))}</p>
+        </div>
+        <span class="p-badge ${d.status === 'closed' ? 'closed' : 'open'}">${esc(d.status === 'closed' ? t('statusClosed') : t('statusOpen'))}</span>
+      </li>`).join('');
+    root.innerHTML = `
+      <button class="btn btn--ghost" id="back" style="margin-bottom:16px">${esc(p('back'))}</button>
+      <div class="p-card">
+        <h1 style="margin:0 0 4px">${esc(pr.name)}</h1>
+        <p class="p-muted">${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p>
+      </div>
+      <div class="p-section">
+        <h2>${esc(p('deviations'))}</h2>
+        ${devRows ? `<ul class="p-list">${devRows}</ul>` : `<p class="p-muted">${esc(p('noDeviations'))}</p>`}
+        <details class="p-new" id="nd">
+          <summary>${esc(p('newDeviation'))}</summary>
+          <div class="p-grid2">
+            <label class="p-field">${esc(t('devNo'))}<input id="d-no" type="text"></label>
+            <label class="p-field">${esc(t('date'))}<input id="d-date" type="date"></label>
+          </div>
+          <label class="p-field">${esc(t('location'))}<input id="d-loc" type="text"></label>
+          <label class="p-field">${esc(t('description'))}<textarea id="d-desc" rows="2"></textarea></label>
+          <label class="p-field">${esc(t('cause'))}<textarea id="d-cause" rows="2"></textarea></label>
+          <label class="p-field">${esc(t('correction'))}<textarea id="d-corr" rows="2"></textarea></label>
+          <label class="p-field">${esc(t('verification'))}<textarea id="d-verif" rows="2"></textarea></label>
+          <div class="p-grid2">
+            <label class="p-field">${esc(t('responsible'))}<input id="d-resp" type="text"></label>
+            <label class="p-field">${esc(t('status'))}
+              <select id="d-status"><option value="open">${esc(t('statusOpen'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
+            </label>
+          </div>
+          <label class="p-field">${esc(t('photos'))}
+            <input id="d-photos" type="file" accept="image/*" capture="environment" multiple>
+          </label>
+          <div class="p-thumbs" id="d-thumbs"></div>
+          <button class="btn btn--primary" id="d-save" type="button">${esc(p('save'))}</button>
+          <span class="p-muted" id="d-status-msg" style="margin-left:10px"></span>
+        </details>
+      </div>
+      <div class="p-section" id="sec-checklist"></div>
+      <div class="p-section" id="sec-verneround"></div>`;
+    document.getElementById('back')!.addEventListener('click', renderProjects);
+    setupDeviationForm(id, devs || []);
+    renderForms('checklist', id);
+    renderForms('verneround', id);
+  }
+
+  // downscale image File -> {blob, dataUrl}
+  function shrink(file: File): Promise<{ blob: Blob; dataUrl: string }> {
+    return new Promise((res) => {
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const max = 1400; let { width: w, height: h } = img;
+        if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d')!.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        c.toBlob((b) => res({ blob: b!, dataUrl: c.toDataURL('image/jpeg', 0.72) }), 'image/jpeg', 0.72);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); res({ blob: file, dataUrl: '' }); };
+      img.src = url;
+    });
+  }
+
+  function setupDeviationForm(projectId: string, existing: any[]) {
+    const pending: { blob: Blob; dataUrl: string }[] = [];
+    const thumbs = document.getElementById('d-thumbs')!;
+    const input = document.getElementById('d-photos') as HTMLInputElement;
+    const msg = document.getElementById('d-status-msg')!;
+    input?.addEventListener('change', async () => {
+      for (const f of Array.from(input.files || [])) { const s = await shrink(f); pending.push(s); }
+      input.value = '';
+      thumbs.innerHTML = pending.map((x) => `<div class="p-thumb"><img src="${x.dataUrl}"></div>`).join('');
+    });
+    document.getElementById('d-save')!.addEventListener('click', async () => {
+      const val = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value.trim() || null;
+      const btn = document.getElementById('d-save') as HTMLButtonElement;
+      btn.disabled = true; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      const { data: dev, error } = await supabase.from('deviations').insert({
+        project_id: projectId, number: val('d-no'), dev_date: val('d-date'),
+        location: val('d-loc'), description: val('d-desc'), cause: val('d-cause'),
+        correction: val('d-corr'), verification: val('d-verif'), responsible: val('d-resp'),
+        status: (document.getElementById('d-status') as HTMLSelectElement).value,
+        created_by: u.user?.id,
+      }).select().single();
+      if (error) { alert(error.message); btn.disabled = false; msg.textContent = ''; return; }
+      if (pending.length) {
+        msg.textContent = p('uploading');
+        for (const ph of pending) {
+          const path = `${projectId}/${dev.id}/${crypto.randomUUID()}.jpg`;
+          const up = await supabase.storage.from(KS_PHOTO_BUCKET).upload(path, ph.blob, { contentType: 'image/jpeg' });
+          if (!up.error) await supabase.from('photos').insert({ project_id: projectId, deviation_id: dev.id, storage_path: path, created_by: u.user?.id });
+        }
+      }
+      openProject(projectId);
+    });
+
+    // Klikk på et eksisterende avvik → lag PDF
+    root.querySelectorAll('.p-item[data-dev]').forEach((el) =>
+      el.addEventListener('click', () => {
+        const d = existing.find((x) => x.id === (el as HTMLElement).dataset.dev);
+        if (d) makeDeviationPdf(d);
+      }));
+  }
+
+  async function makeDeviationPdf(d: any) {
+    // hent bilder (signerte URL-er) og konverter til dataURL
+    const { data: phRows } = await supabase.from('photos').select('*').eq('deviation_id', d.id);
+    const imgs: string[] = [];
+    for (const ph of phRows || []) {
+      const { data: signed } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 120);
+      if (signed?.signedUrl) {
+        try {
+          const blob = await (await fetch(signed.signedUrl)).blob();
+          imgs.push(await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }));
+        } catch (e) {}
+      }
+    }
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    const block = (label: string, txt: string) => {
+      if (!txt) return;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120);
+      if (y > 275) { doc.addPage(); y = margin; }
+      doc.text(label.toUpperCase(), margin, y); y += 4.5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(20, 23, 28);
+      doc.splitTextToSize(txt, maxW).forEach((ln: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3;
+    };
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(t('deviation') + ' – ' + t('handoverTitle'), margin, 18);
+    doc.setTextColor(20, 23, 28); y = 32;
+    const stTxt = d.status === 'closed' ? t('statusClosed') : t('statusOpen');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+    doc.text(`${t('devNo')}: ${d.number || '—'}    ${t('date')}: ${d.dev_date || '—'}    ${t('status')}: ${stTxt}`, margin, y); y += 7;
+    block(t('location'), d.location); block(t('description'), d.description); block(t('cause'), d.cause);
+    block(t('correction'), d.correction); block(t('verification'), d.verification); block(t('responsible'), d.responsible);
+    if (imgs.length) {
+      if (y > 250) { doc.addPage(); y = margin; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120); doc.text(t('photos').toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
+      const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
+      imgs.forEach((src) => {
+        if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; }
+        const x = margin + col * (colW + 6);
+        try { doc.addImage(src, 'JPEG', x, y, colW, rowH); } catch (e) {}
+        doc.setDrawColor(220); doc.rect(x, y, colW, rowH);
+        if (col === 1) { y += rowH + 6; col = 0; } else col = 1;
+      });
+    }
+    doc.save(`Dekmar_Avvik_${(d.number || 'nr')}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+  }
+
+  // ---------- Sjekklister & vernerunder per prosjekt ----------
+  async function renderForms(kind: string, projectId: string) {
+    const items = kind === 'checklist' ? CHECKLIST : SAFETYROUND;
+    const secEl = document.getElementById(kind === 'checklist' ? 'sec-checklist' : 'sec-verneround')!;
+    const heading = kind === 'checklist' ? t('checklists') : t('vernerounds');
+    const newLabel = kind === 'checklist' ? p('newChecklist') : p('newVerneround');
+    const noLabel = kind === 'checklist' ? p('noChecklists') : p('noVernerounds');
+    const { data: rows } = await supabase.from('checklists').select('*').eq('project_id', projectId).eq('type', kind).order('created_at', { ascending: false });
+    const list = (rows || []).map((c: any) => `
+      <li class="p-item" data-form="${esc(c.id)}">
+        <div><h3>${esc(c.title || heading)}</h3><p>${esc([c.performed_by, c.performed_date].filter(Boolean).join(' · '))}${c.performed_by || c.performed_date ? ' · ' : ''}${esc(p('createdAt'))} ${esc(fmt(c.created_at))}</p></div>
+        <span class="p-muted">PDF ›</span>
+      </li>`).join('');
+    const formItems = items.map((sn: any) => `
+      <fieldset class="p-cl-sec"><legend>${esc(sn.title[lang()])}</legend>
+        ${sn.items.map((it: any) => `
+          <div class="p-cl-item"><p class="p-cl-text">${esc(it.text[lang()])}</p>
+            <div class="ks-radios">
+              <label class="ks-pill ks-pill--ok"><input type="radio" name="f_${sn.id}_${it.id}" value="ok"><span>${esc(t('ok'))}</span></label>
+              <label class="ks-pill ks-pill--na"><input type="radio" name="f_${sn.id}_${it.id}" value="na"><span>${esc(t('na'))}</span></label>
+              <input class="p-cl-note" data-note="n_${sn.id}_${it.id}" type="text" placeholder="${esc(t('notePlaceholder'))}">
+            </div>
+          </div>`).join('')}
+      </fieldset>`).join('');
+    secEl.innerHTML = `
+      <h2>${esc(heading)}</h2>
+      ${list ? `<ul class="p-list">${list}</ul>` : `<p class="p-muted">${esc(noLabel)}</p>`}
+      <details class="p-new"><summary>${esc(newLabel)}</summary>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('checklistTitle'))}<input class="f-title" type="text"></label>
+          <label class="p-field">${esc(t('performedBy'))}<input class="f-by" type="text"></label>
+        </div>
+        <label class="p-field">${esc(t('date'))}<input class="f-date" type="date"></label>
+        ${formItems}
+        <button class="btn btn--primary f-save" type="button">${esc(p('save'))}</button>
+        <span class="p-muted f-msg" style="margin-left:10px"></span>
+      </details>`;
+    secEl.querySelectorAll('.p-item[data-form]').forEach((el) =>
+      el.addEventListener('click', () => { const c = (rows || []).find((x: any) => x.id === (el as HTMLElement).dataset.form); if (c) makeFormPdf(c, items, heading, CURRENT_PROJECT?.name); }));
+    const saveBtn = secEl.querySelector('.f-save') as HTMLButtonElement;
+    saveBtn.addEventListener('click', async () => {
+      const answers: Record<string, string> = {};
+      secEl.querySelectorAll<HTMLInputElement>('input[type=radio]:checked').forEach((r) => { answers[r.name] = r.value; });
+      secEl.querySelectorAll<HTMLInputElement>('input[data-note]').forEach((n) => { if (n.value.trim()) answers[n.dataset.note!] = n.value.trim(); });
+      const { data: u } = await supabase.auth.getUser();
+      saveBtn.disabled = true; (secEl.querySelector('.f-msg') as HTMLElement).textContent = p('saving');
+      const { error } = await supabase.from('checklists').insert({
+        project_id: projectId, type: kind,
+        title: (secEl.querySelector('.f-title') as HTMLInputElement).value.trim() || null,
+        performed_by: (secEl.querySelector('.f-by') as HTMLInputElement).value.trim() || null,
+        performed_date: (secEl.querySelector('.f-date') as HTMLInputElement).value || null,
+        lang: lang(), answers, created_by: u.user?.id,
+      });
+      if (error) { alert(error.message); saveBtn.disabled = false; (secEl.querySelector('.f-msg') as HTMLElement).textContent = ''; return; }
+      renderForms(kind, projectId);
+    });
+  }
+
+  function makeFormPdf(rec: any, items: any[], titleLabel: string, projectName?: string) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    const line = (txt: string, size = 10, style = 'normal', gap = 5) => {
+      doc.setFont('helvetica', style as any); doc.setFontSize(size);
+      doc.splitTextToSize(txt, maxW).forEach((pp: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(pp, margin, y); y += gap; });
+    };
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 22, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Dekmar AS', margin, 10);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(titleLabel, margin, 16.5); doc.setTextColor(20, 23, 28); y = 30;
+    line(`${t('project')}: ${projectName || ''}`, 10, 'bold', 5.5);
+    line(`${t('performedBy')}: ${rec.performed_by || ''}    ${t('date')}: ${rec.performed_date || fmt(rec.created_at)}`, 10, 'normal', 7);
+    const A = rec.answers || {};
+    items.forEach((sn: any) => {
+      y += 2; if (y > 275) { doc.addPage(); y = margin; }
+      doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.5); doc.line(margin, y, margin + maxW, y); y += 5;
+      line(sn.title[lang()], 12, 'bold', 6);
+      sn.items.forEach((it: any) => {
+        const sel = A['f_' + sn.id + '_' + it.id];
+        const mark = sel ? (sel === 'ok' ? '[OK]' : '[' + t('na') + ']') : '[  ]';
+        const note = A['n_' + sn.id + '_' + it.id] || '';
+        line(`${mark}  ${it.text[lang()]}${note ? '  — ' + note : ''}`, 10, 'normal', 5);
+      });
+    });
+    doc.save(`Dekmar_${titleLabel}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+  }
+
+  // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
+  async function renderArchive() {
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const { data: rows } = await supabase.from('checklists').select('*, projects(name)').order('created_at', { ascending: false });
+    (window as any).__arch = rows || [];
+    root.innerHTML = `
+      <div class="p-head">
+        <h1>${esc(p('archive'))}</h1>
+        <div class="p-user"><button class="btn btn--ghost" id="a-back">${esc(p('back'))}</button></div>
+      </div>
+      <div class="p-filters">
+        <input id="a-search" type="search" placeholder="${esc(p('search'))}">
+        <select id="a-type"><option value="">${esc(p('typeAll'))}</option><option value="checklist">${esc(t('checklist'))}</option><option value="verneround">${esc(t('verneround'))}</option></select>
+        <select id="a-sort"><option value="dnew">${esc(p('dateNewest'))}</option><option value="dold">${esc(p('dateOldest'))}</option><option value="proj">${esc(p('byProject'))}</option><option value="perf">${esc(p('byPerformer'))}</option></select>
+      </div>
+      <div class="p-tablewrap"><table class="p-table">
+        <thead><tr><th>${esc(p('colDate'))}</th><th>${esc(p('colProject'))}</th><th>${esc(p('colType'))}</th><th>${esc(p('colPerformer'))}</th><th></th></tr></thead>
+        <tbody id="a-body"></tbody>
+      </table></div>`;
+    document.getElementById('a-back')!.addEventListener('click', renderProjects);
+    const draw = () => {
+      const q = (document.getElementById('a-search') as HTMLInputElement).value.toLowerCase();
+      const ty = (document.getElementById('a-type') as HTMLSelectElement).value;
+      const sort = (document.getElementById('a-sort') as HTMLSelectElement).value;
+      let list = ((window as any).__arch as any[])
+        .filter((r) => !ty || r.type === ty)
+        .filter((r) => { const hay = `${r.projects?.name || ''} ${r.performed_by || ''} ${r.title || ''}`.toLowerCase(); return !q || hay.includes(q); });
+      const key = (r: any) => r.performed_date || r.created_at;
+      list = list.slice().sort((a, b) => {
+        if (sort === 'dnew') return key(b).localeCompare(key(a));
+        if (sort === 'dold') return key(a).localeCompare(key(b));
+        if (sort === 'proj') return (a.projects?.name || '').localeCompare(b.projects?.name || '');
+        if (sort === 'perf') return (a.performed_by || '').localeCompare(b.performed_by || '');
+        return 0;
+      });
+      const tbody = document.getElementById('a-body')!;
+      tbody.innerHTML = list.length ? list.map((r) => `
+        <tr data-form="${esc(r.id)}">
+          <td>${esc(r.performed_date || fmt(r.created_at))}</td>
+          <td>${esc(r.projects?.name || '')}</td>
+          <td>${esc(r.type === 'verneround' ? t('verneround') : t('checklist'))}</td>
+          <td>${esc(r.performed_by || '')}</td>
+          <td><span class="p-muted">PDF ›</span></td>
+        </tr>`).join('') : `<tr><td colspan="5" class="p-muted">${esc(p('noResults'))}</td></tr>`;
+      tbody.querySelectorAll('tr[data-form]').forEach((tr) =>
+        tr.addEventListener('click', () => {
+          const r = ((window as any).__arch as any[]).find((x) => x.id === (tr as HTMLElement).dataset.form);
+          if (r) { const items = r.type === 'verneround' ? SAFETYROUND : CHECKLIST; makeFormPdf(r, items, r.type === 'verneround' ? t('verneround') : t('checklist'), r.projects?.name); }
+        }));
+    };
+    ['a-search', 'a-type', 'a-sort'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
+    draw();
+  }
+
+  route();
+</script>
