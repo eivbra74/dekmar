@@ -137,6 +137,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     inviteEmail: { no: 'E-post til den ansatte', pl: 'E-mail pracownika', en: "Staff member's email" },
     sendInvite: { no: 'Send invitasjon', pl: 'Wyślij zaproszenie', en: 'Send invitation' },
     inviteSent: { no: 'Invitasjon sendt til', pl: 'Zaproszenie wysłane do', en: 'Invitation sent to' },
+    alreadyMember: { no: 'Denne e-posten er allerede registrert.', pl: 'Ten adres e-mail jest już zarejestrowany.', en: 'This email is already registered.' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -602,7 +603,13 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
       const btn = (e.target as HTMLFormElement).querySelector('button')!; btn.setAttribute('disabled', 'true'); msg.textContent = '…';
       const { data, error } = await supabase.functions.invoke('invite-user', { body: { email } });
       btn.removeAttribute('disabled');
-      if (error || (data && data.error)) { msg.textContent = (error?.message || data?.error || 'Feil'); }
+      if (error || (data && data.error)) {
+        // supabase-js gir en generisk feilmelding; hent den faktiske teksten fra svarkroppen
+        let detail = data?.error || error?.message || 'Feil';
+        try { const body = await (error as any)?.context?.json?.(); if (body?.error) detail = body.error; } catch (_e) { /* ignore */ }
+        if (/already.*registered/i.test(detail)) detail = p('alreadyMember');
+        msg.textContent = detail;
+      }
       else { msg.textContent = p('inviteSent') + ' ' + email; (document.getElementById('inv-email') as HTMLInputElement).value = ''; }
     });
   }
