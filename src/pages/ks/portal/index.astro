@@ -5,6 +5,7 @@ import { standardTemplates } from '../../../data/ksTemplates';
 import { standardArticles } from '../../../data/ksArticles';
 import { standardFdv } from '../../../data/ksFdv';
 import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../data/ksSha';
+import { handbooks } from '../../../data/ksHandbooks';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -14,6 +15,7 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
     </div>
   </div>
   <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive } })} />
+  <script type="application/json" id="ks-handbooks" set:html={JSON.stringify(handbooks)} />
 </KsLayout>
 
 <style is:global>
@@ -113,6 +115,12 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
   .hb-title { font-family: var(--font-head); font-weight: 700; font-size: 1rem; }
   .hb-meta { font-size: .8rem; color: #aab2bd; word-break: break-all; }
   .hb-go { font-family: var(--font-head); font-weight: 700; font-size: .82rem; color: #ff8a91; white-space: nowrap; }
+  .hb-chap { background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+  .hb-chap > summary { cursor: pointer; padding: 14px 16px; font-family: var(--font-head); font-weight: 700; font-size: 1.02rem; list-style: none; }
+  .hb-chap > summary::-webkit-details-marker { display: none; }
+  .hb-chap > summary::before { content: '›'; display: inline-block; margin-right: 10px; color: var(--muted); transition: transform .15s; }
+  .hb-chap[open] > summary::before { transform: rotate(90deg); }
+  .hb-chap .p-article { padding: 0 18px 16px; }
   .p-article { line-height: 1.65; }
   .p-article h3 { font-size: 1.1rem; margin: 18px 0 6px; }
   .p-article p { margin: 0 0 12px; }
@@ -195,6 +203,8 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
   let FDV: any[] = [];
   let FDV_SEEDED = false;
   const STD_SHA = KSD.sha || { roles: [], milestones: [], specific: [], preventive: [] };
+  let HANDBOOKS: any[] | null = null;
+  const getHandbooks = () => { if (!HANDBOOKS) { try { HANDBOOKS = JSON.parse(document.getElementById('ks-handbooks')!.textContent || '[]'); } catch (_e) { HANDBOOKS = []; } } return HANDBOOKS!; };
   let TEMPLATES: any[] = [];
   let TEMPLATES_SEEDED = false;
   const STD_DEV_CATS = ['HMS', 'Kvalitet', 'Fremdrift', 'Materiell / leveranse', 'Skade / ulykke', 'Nestenulykke', 'Miljø', 'Annet'];
@@ -362,6 +372,10 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
     handbooksTitle: { no: 'Håndbøker og styrende dokumenter', pl: 'Podręczniki i dokumenty nadrzędne', en: 'Handbooks and governing documents' },
     openDoc: { no: 'Åpne dokument', pl: 'Otwórz dokument', en: 'Open document' },
     revLabel: { no: 'Rev.', pl: 'Rew.', en: 'Rev.' },
+    readElectronic: { no: 'Les elektronisk', pl: 'Czytaj elektronicznie', en: 'Read online' },
+    searchHandbook: { no: 'Søk i håndboken…', pl: 'Szukaj w podręczniku…', en: 'Search the handbook…' },
+    tableOfContents: { no: 'Innhold', pl: 'Spis treści', en: 'Contents' },
+    noHits: { no: 'Ingen treff.', pl: 'Brak wyników.', en: 'No matches.' },
     fdvArchive: { no: 'FDV-arkiv', pl: 'Archiwum FDV', en: 'FDV archive' },
     fdvIntro: { no: 'Produkter Dekmar bruker mest. Kjemikalier kan hentes rett inn i et prosjekts stoffkartotek.', pl: 'Najczęściej używane produkty. Substancje można dodać do rejestru w projekcie.', en: 'Products Dekmar uses most. Chemicals can be pulled into a project’s register.' },
     newFdv: { no: '+ Nytt produkt', pl: '+ Nowy produkt', en: '+ New product' },
@@ -1591,18 +1605,20 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
     await ensureArticles();
     // Offisielle håndbøker (kategori 'handbok') vises som fremhevet blokk øverst
     const { data: hb } = await supabase.from('documents').select('*').eq('category', 'handbok').order('title');
-    const hbHtml = (hb && hb.length) ? `
+    const readBtns = getHandbooks().map((b: any) => `<button class="btn btn--ghost" data-hbread="${esc(b.key)}"><span class="app-nav-ic" style="width:16px;height:16px;vertical-align:-3px">${ICONS.handbook}</span> ${esc(p('readElectronic'))}: ${esc(b.title)}</button>`).join('');
+    const hbHtml = `
       <div class="p-section">
         <h2>${esc(p('handbooksTitle'))}</h2>
-        <div class="hb-grid">
+        <div class="p-actions" style="margin-bottom:12px">${readBtns}</div>
+        ${(hb && hb.length) ? `<div class="hb-grid">
           ${hb.map((d: any) => `
             <button class="hb-card" data-hb="${esc(d.storage_path)}">
               <span class="hb-ic">${ICONS.handbook}</span>
               <span class="hb-body"><span class="hb-title">${esc(d.title)}</span>${d.file_name ? `<span class="hb-meta">${esc(d.file_name)}</span>` : ''}</span>
               <span class="hb-go">${esc(p('openDoc'))} ↓</span>
             </button>`).join('')}
-        </div>
-      </div>` : '';
+        </div>` : ''}
+      </div>`;
     const cats = Array.from(new Set(ARTICLES.map((a: any) => artText(a, 'category') || '—')));
     const groups = cats.map((cat) => {
       const items = ARTICLES.filter((a: any) => (artText(a, 'category') || '—') === cat).map((a: any) => `
@@ -1625,7 +1641,42 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
       const { data: signed } = await supabase.storage.from('ks-docs').createSignedUrl(el.dataset.hb!, 300);
       if (signed?.signedUrl) window.open(signed.signedUrl, '_blank');
     }));
+    root.querySelectorAll<HTMLElement>('[data-hbread]').forEach((el) => el.addEventListener('click', () => renderHandbookReader(el.dataset.hbread!)));
     root.querySelectorAll<HTMLElement>('[data-article]').forEach((el) => el.addEventListener('click', () => renderArticle(ARTICLES.find((a: any) => a.id === el.dataset.article))));
+  }
+
+  // ---------- Elektronisk håndbok-leser (kapittelnavigasjon + søk) ----------
+  function renderHandbookReader(key: string) {
+    redraw = () => renderHandbookReader(key);
+    const book = getHandbooks().find((b: any) => b.key === key);
+    if (!book) { renderArticles(); return; }
+    const chapHtml = (chapters: any[]) => chapters.map((c: any, i: number) => `
+      <details class="hb-chap" data-ci="${i}"><summary>${esc(c.title)}</summary><div class="p-article">${c.body}</div></details>`).join('');
+    root.innerHTML = `
+      <div class="p-head">
+        <div><h1>${esc(book.title)}</h1><p class="p-muted">${esc(book.revision)}</p></div>
+        <div class="p-user"><button class="btn btn--ghost" id="hbr-back">${esc(p('back'))}</button></div>
+      </div>
+      <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="hbr-search" type="search" placeholder="${esc(p('searchHandbook'))}" autocomplete="off"></div>
+      <div id="hbr-list">${chapHtml(book.chapters)}</div>
+      <p class="p-muted" id="hbr-none" hidden>${esc(p('noHits'))}</p>`;
+    document.getElementById('hbr-back')!.addEventListener('click', renderArticles);
+    const search = document.getElementById('hbr-search') as HTMLInputElement;
+    const list = document.getElementById('hbr-list')!;
+    const none = document.getElementById('hbr-none')!;
+    const chaps = Array.from(list.querySelectorAll<HTMLDetailsElement>('.hb-chap'));
+    const texts = book.chapters.map((c: any) => (c.title + ' ' + c.body).toLowerCase().replace(/<[^>]+>/g, ' '));
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      chaps.forEach((el, i) => {
+        const hit = !q || texts[i].includes(q);
+        el.style.display = hit ? '' : 'none';
+        el.open = !!q && hit;
+        if (hit) shown++;
+      });
+      none.hidden = shown > 0;
+    });
   }
 
   function renderArticle(a: any) {
