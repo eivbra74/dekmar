@@ -1,0 +1,170 @@
+---
+import '../styles/global.css';
+import { ksUi } from '../data/ks';
+
+interface Props {
+  active?: 'home' | 'checklist' | 'deviation' | 'help';
+  title?: string;
+}
+const { active, title } = Astro.props;
+const tri = (k: string) => ksUi[k];
+---
+
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="/images/brand/dekmar-logo.png" />
+    <title>{title ? `${title} – Dekmar KS` : 'Dekmar KS'}</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="ks-header">
+      <div class="container ks-header__inner">
+        <a class="ks-brand" href="/ks/">
+          <img src="/images/brand/dekmar-logo.png" alt="Dekmar" width="96" height="48" />
+          <span class="ks-brand__tag" data-no="KS" data-pl="KS" data-en="QA">KS</span>
+        </a>
+
+        <nav class="ks-nav" aria-label="KS">
+          <a href="/ks/" class:list={[{ active: active === 'home' }]} data-no={tri('home').no} data-pl={tri('home').pl} data-en={tri('home').en}>{tri('home').no}</a>
+          <a href="/ks/sjekkliste/" class:list={[{ active: active === 'checklist' }]} data-no={tri('checklist').no} data-pl={tri('checklist').pl} data-en={tri('checklist').en}>{tri('checklist').no}</a>
+          <a href="/ks/avvik/" class:list={[{ active: active === 'deviation' }]} data-no={tri('deviation').no} data-pl={tri('deviation').pl} data-en={tri('deviation').en}>{tri('deviation').no}</a>
+          <a href="/ks/hjelp/" class:list={[{ active: active === 'help' }]} data-no={tri('help').no} data-pl={tri('help').pl} data-en={tri('help').en}>{tri('help').no}</a>
+        </nav>
+
+        <div class="ks-lang" role="group" aria-label="Språk / Language">
+          <button type="button" data-ks-set="no" class="active">NO</button>
+          <button type="button" data-ks-set="pl">PL</button>
+          <button type="button" data-ks-set="en">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="ks-main">
+      <slot />
+    </main>
+
+    <footer class="ks-footer">
+      <div class="container">
+        <span>© {new Date().getFullYear()} Dekmar AS · KS</span>
+        <a href="/">dekmar.no →</a>
+      </div>
+    </footer>
+
+    <style>
+      body { background: var(--surface); }
+      .ks-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--dark);
+        color: #fff;
+      }
+      .ks-header__inner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-height: 64px;
+        flex-wrap: wrap;
+      }
+      .ks-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+      }
+      .ks-brand img {
+        height: 34px;
+        width: auto;
+        background: #fff;
+        border-radius: 6px;
+        padding: 3px 6px;
+      }
+      .ks-brand__tag {
+        font-family: var(--font-head);
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        font-size: 0.85rem;
+        color: #ff8a91;
+      }
+      .ks-nav {
+        display: flex;
+        gap: 4px;
+        margin-right: auto;
+        flex-wrap: wrap;
+      }
+      .ks-nav a {
+        color: #cdd2da;
+        font-family: var(--font-head);
+        font-weight: 600;
+        font-size: 0.92rem;
+        padding: 8px 11px;
+        border-radius: 8px;
+      }
+      .ks-nav a:hover { color: #fff; text-decoration: none; background: rgba(255,255,255,0.08); }
+      .ks-nav a.active { color: #fff; background: var(--brand); }
+      .ks-lang {
+        display: inline-flex;
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .ks-lang button {
+        background: transparent;
+        color: #cdd2da;
+        border: 0;
+        padding: 7px 12px;
+        font-family: var(--font-head);
+        font-weight: 700;
+        font-size: 0.82rem;
+        cursor: pointer;
+      }
+      .ks-lang button.active { background: var(--brand); color: #fff; }
+      .ks-main { padding-block: clamp(24px, 4vw, 44px); min-height: 60vh; }
+      .ks-footer {
+        border-top: 1px solid var(--line);
+        padding-block: 20px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      .ks-footer .container { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    </style>
+
+    <script>
+      type KsLang = 'no' | 'pl' | 'en';
+      const swap = (lang: KsLang) => {
+        document.documentElement.setAttribute('lang', lang === 'no' ? 'no' : lang);
+        document.querySelectorAll<HTMLElement>('[data-no]').forEach((el) => {
+          const v = el.getAttribute('data-' + lang);
+          if (v !== null) el.textContent = v;
+        });
+        document.querySelectorAll<HTMLElement>('[data-no-ph]').forEach((el) => {
+          const v = el.getAttribute('data-' + lang + '-ph');
+          if (v !== null) el.setAttribute('placeholder', v);
+        });
+        document.querySelectorAll<HTMLButtonElement>('[data-ks-set]').forEach((b) => {
+          b.classList.toggle('active', b.getAttribute('data-ks-set') === lang);
+        });
+        (window as any).ksLang = lang;
+        try { localStorage.setItem('ksLang', lang); } catch (e) {}
+        document.dispatchEvent(new CustomEvent('kslangchange', { detail: lang }));
+      };
+      let initial: KsLang = 'no';
+      try {
+        const s = localStorage.getItem('ksLang') as KsLang | null;
+        if (s === 'no' || s === 'pl' || s === 'en') initial = s;
+      } catch (e) {}
+      (window as any).ksLang = initial;
+      document.querySelectorAll<HTMLButtonElement>('[data-ks-set]').forEach((b) => {
+        b.addEventListener('click', () => swap(b.getAttribute('data-ks-set') as KsLang));
+      });
+      swap(initial);
+    </script>
+  </body>
+</html>

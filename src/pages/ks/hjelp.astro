@@ -1,0 +1,28 @@
+---
+import KsLayout from '../../layouts/KsLayout.astro';
+import { help, ksUi } from '../../data/ks';
+const t = (k: string) => ksUi[k];
+const d = (o: any) => ({ 'data-no': o.no, 'data-pl': o.pl, 'data-en': o.en });
+---
+
+<KsLayout active="help" title="Bruksanvisning">
+  <div class="container ks-prose">
+    <h1 {...d(t('help'))}>{t('help').no}</h1>
+    {help.map((s) => (
+      <section>
+        <h2 {...d(s.h)}>{s.h.no}</h2>
+        {s.p.map((para) => <p {...d(para)}>{para.no}</p>)}
+      </section>
+    ))}
+    <p class="ks-back"><a href="/ks/" data-no="← Til KS-forsiden" data-pl="← Do strony głównej KS" data-en="← To QA home">← Til KS-forsiden</a></p>
+  </div>
+</KsLayout>
+
+<style>
+  .ks-prose { max-width: 740px; font-size: 1.05rem; }
+  .ks-prose h1 { margin-bottom: 0.6em; }
+  .ks-prose section { margin-bottom: 1.6em; }
+  .ks-prose h2 { font-size: 1.25rem; color: var(--brand); margin-bottom: 0.4em; }
+  .ks-prose p { color: var(--ink); }
+  .ks-back { margin-top: 2em; font-family: var(--font-head); font-weight: 600; }
+</style>

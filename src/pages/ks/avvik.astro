@@ -1,0 +1,228 @@
+---
+import KsLayout from '../../layouts/KsLayout.astro';
+import { ksUi } from '../../data/ks';
+const t = (k: string) => ksUi[k];
+const d = (o: any) => ({ 'data-no': o.no, 'data-pl': o.pl, 'data-en': o.en });
+const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph': o.en });
+---
+
+<KsLayout active="deviation" title="Avviksrapport">
+  <div class="container ks-narrow">
+    <h1 {...d(t('deviation'))}>{t('deviation').no}</h1>
+    <p class="lead" {...d(t('toContractor'))}>{t('toContractor').no}</p>
+
+    <form id="av-form" class="ks-card-box">
+      <div class="ks-grid">
+        <label><span {...d(t('devNo'))}>{t('devNo').no}</span>
+          <input id="a_no" type="text" {...dph({no:'F.eks. 01', pl:'Np. 01', en:'E.g. 01'})} /></label>
+        <label><span {...d(t('date'))}>{t('date').no}</span>
+          <input id="a_date" type="date" /></label>
+        <label class="wide"><span {...d(t('project'))}>{t('project').no}</span>
+          <input id="a_project" type="text" {...dph({no:'F.eks. WTG57 Takrehabilitering', pl:'Np. WTG57 Remont dachu', en:'E.g. WTG57 Roof rehabilitation'})} /></label>
+        <label class="wide"><span {...d(t('location'))}>{t('location').no}</span>
+          <input id="a_location" type="text" {...dph({no:'F.eks. takskjegg/okap forside, første 50 cm', pl:'Np. okap od frontu, pierwsze 50 cm', en:'E.g. eaves front, first 50 cm'})} /></label>
+      </div>
+
+      <label class="block"><span {...d(t('description'))}>{t('description').no}</span>
+        <textarea id="a_desc" rows="3" {...dph({no:'Hva er avviket?', pl:'Na czym polega niezgodność?', en:'What is the deviation?'})}></textarea></label>
+      <label class="block"><span {...d(t('cause'))}>{t('cause').no}</span>
+        <textarea id="a_cause" rows="2" {...dph({no:'Årsak', pl:'Przyczyna', en:'Cause'})}></textarea></label>
+      <label class="block"><span {...d(t('correction'))}>{t('correction').no}</span>
+        <textarea id="a_corr" rows="3" {...dph({no:'Hvordan utbedres det?', pl:'Jak jest naprawiane?', en:'How is it corrected?'})}></textarea></label>
+      <label class="block"><span {...d(t('verification'))}>{t('verification').no}</span>
+        <textarea id="a_verif" rows="2" {...dph({no:'Hvordan er det verifisert/kontrollert?', pl:'Jak zweryfikowano/skontrolowano?', en:'How is it verified/checked?'})}></textarea></label>
+
+      <div class="ks-grid">
+        <label class="wide"><span {...d(t('responsible'))}>{t('responsible').no}</span>
+          <input id="a_resp" type="text" {...dph({no:'Navn', pl:'Imię i nazwisko', en:'Name'})} /></label>
+        <div class="statuswrap">
+          <span class="lbl" {...d(t('status'))}>{t('status').no}</span>
+          <div class="ks-radios">
+            <label class="ks-pill ks-pill--na"><input type="radio" name="a_status" value="open" checked /><span {...d(t('statusOpen'))}>{t('statusOpen').no}</span></label>
+            <label class="ks-pill ks-pill--ok"><input type="radio" name="a_status" value="closed" /><span {...d(t('statusClosed'))}>{t('statusClosed').no}</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="photos">
+        <span class="lbl" {...d(t('photos'))}>{t('photos').no}</span>
+        <p class="phint" {...d(t('photoHint'))}>{t('photoHint').no}</p>
+        <label class="btn btn--ghost photobtn">
+          <span {...d(t('addPhotos'))}>{t('addPhotos').no}</span>
+          <input id="a_photos" type="file" accept="image/*" capture="environment" multiple hidden />
+        </label>
+        <div id="a_thumbs" class="thumbs"></div>
+      </div>
+
+      <div class="ks-actions">
+        <button type="button" id="av-pdf" class="btn btn--primary" {...d(t('downloadPdf'))}>{t('downloadPdf').no}</button>
+        <button type="button" id="av-reset" class="btn btn--ghost" {...d(t('reset'))}>{t('reset').no}</button>
+        <span id="av-status" class="ks-savenote" aria-live="polite"></span>
+      </div>
+    </form>
+  </div>
+
+  <script type="application/json" id="av-ui" set:html={JSON.stringify(ksUi)} />
+</KsLayout>
+
+<style>
+  .ks-narrow { max-width: 820px; }
+  .ks-card-box { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(18px, 3vw, 30px); margin-top: 20px; }
+  .ks-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; margin-bottom: 14px; }
+  .ks-grid .wide { grid-column: 1 / -1; }
+  label { font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; }
+  label.block { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .ks-grid label { display: flex; flex-direction: column; gap: 6px; }
+  input, textarea { font: inherit; font-weight: 400; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; width: 100%; }
+  textarea { resize: vertical; }
+  .statuswrap { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; }
+  .ks-radios { display: inline-flex; gap: 8px; }
+  .ks-pill { position: relative; }
+  .ks-pill input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .ks-pill span { display: inline-block; padding: 8px 16px; border-radius: 999px; border: 1.5px solid var(--line); font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+  .ks-pill--ok input:checked + span { background: #12855222; border-color: #128552; color: #0c6b42; }
+  .ks-pill--na input:checked + span { background: #cc1f2a18; border-color: var(--brand); color: var(--brand-dark); }
+  .photos { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 18px; }
+  .phint { color: var(--muted); font-size: 0.88rem; font-weight: 400; margin: 4px 0 12px; }
+  .photobtn { cursor: pointer; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-top: 14px; }
+  .thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb button { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(20,23,28,0.8); color: #fff; cursor: pointer; font-size: 15px; line-height: 1; }
+  .ks-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 22px; }
+  .ks-savenote { color: var(--muted); font-size: 0.88rem; }
+  @media (max-width: 560px) { .ks-grid { grid-template-columns: 1fr; } }
+</style>
+
+<script>
+  import { jsPDF } from 'jspdf';
+
+  const UI = JSON.parse(document.getElementById('av-ui')!.textContent || '{}');
+  const lang = () => (window as any).ksLang || 'no';
+  const tr = (k: string) => (UI[k] ? UI[k][lang()] : k);
+  const form = document.getElementById('av-form') as HTMLFormElement;
+  const status = document.getElementById('av-status')!;
+  const thumbs = document.getElementById('a_thumbs')!;
+  const STORE = 'ks-avvik-v1';
+  let photos: string[] = [];
+
+  // downscale to dataURL
+  const shrink = (file: File): Promise<string> => new Promise((res) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 1400;
+      let { width: w, height: h } = img;
+      if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(''); };
+    img.src = url;
+  });
+
+  const renderThumbs = () => {
+    thumbs.innerHTML = '';
+    photos.forEach((src, i) => {
+      const div = document.createElement('div'); div.className = 'thumb';
+      const im = document.createElement('img'); im.src = src; div.appendChild(im);
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = '×';
+      b.setAttribute('aria-label', 'Fjern'); b.addEventListener('click', () => { photos.splice(i, 1); renderThumbs(); save(); });
+      div.appendChild(b); thumbs.appendChild(div);
+    });
+  };
+
+  (document.getElementById('a_photos') as HTMLInputElement).addEventListener('change', async (e) => {
+    const files = Array.from((e.target as HTMLInputElement).files || []);
+    for (const f of files) { const dataUrl = await shrink(f); if (dataUrl) photos.push(dataUrl); }
+    (e.target as HTMLInputElement).value = '';
+    renderThumbs(); save();
+  });
+
+  const fields = ['a_no','a_date','a_project','a_location','a_desc','a_cause','a_corr','a_verif','a_resp'];
+  const save = () => {
+    const data: any = { photos };
+    fields.forEach((id) => (data[id] = (document.getElementById(id) as HTMLInputElement).value));
+    const st = form.querySelector<HTMLInputElement>('input[name="a_status"]:checked'); data.status = st ? st.value : 'open';
+    try { localStorage.setItem(STORE, JSON.stringify(data)); } catch (e) {}
+    status.textContent = tr('saved'); setTimeout(() => (status.textContent = ''), 1500);
+  };
+  const load = () => {
+    let data: any = {};
+    try { data = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
+    fields.forEach((id) => { if (data[id] != null) (document.getElementById(id) as HTMLInputElement).value = data[id]; });
+    if (data.status) { const r = form.querySelector<HTMLInputElement>(`input[name="a_status"][value="${data.status}"]`); if (r) r.checked = true; }
+    if (Array.isArray(data.photos)) { photos = data.photos; renderThumbs(); }
+  };
+  form.addEventListener('input', save);
+  document.getElementById('av-reset')!.addEventListener('click', () => {
+    if (!confirm(lang() === 'pl' ? 'Wyczyścić formularz?' : lang() === 'en' ? 'Clear the form?' : 'Nullstille skjemaet?')) return;
+    form.reset(); photos = []; renderThumbs();
+    try { localStorage.removeItem(STORE); } catch (e) {}
+  });
+
+  document.getElementById('av-pdf')!.addEventListener('click', () => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2;
+    let y = margin;
+    const v = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value || '';
+    const block = (label: string, txt: string) => {
+      if (!txt) return;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120);
+      if (y > 275) { doc.addPage(); y = margin; }
+      doc.text(label.toUpperCase(), margin, y); y += 4.5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(20, 23, 28);
+      doc.splitTextToSize(txt, maxW).forEach((p: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(p, margin, y); y += 5; });
+      y += 3;
+    };
+
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+    doc.text('Dekmar AS', margin, 11);
+    doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+    doc.text(tr('deviation') + ' – ' + tr('handoverTitle'), margin, 18);
+    doc.setTextColor(20, 23, 28); y = 32;
+
+    const st = form.querySelector<HTMLInputElement>('input[name="a_status"]:checked')?.value;
+    const stTxt = st === 'closed' ? tr('statusClosed') : tr('statusOpen');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+    doc.text(`${tr('devNo')}: ${v('a_no') || '—'}    ${tr('date')}: ${v('a_date') || '—'}    ${tr('status')}: ${stTxt}`, margin, y);
+    y += 7;
+    block(tr('project'), v('a_project'));
+    block(tr('location'), v('a_location'));
+    block(tr('description'), v('a_desc'));
+    block(tr('cause'), v('a_cause'));
+    block(tr('correction'), v('a_corr'));
+    block(tr('verification'), v('a_verif'));
+    block(tr('responsible'), v('a_resp'));
+
+    if (photos.length) {
+      if (y > 250) { doc.addPage(); y = margin; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120);
+      doc.text(tr('photos').toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
+      const colW = (maxW - 6) / 2, rowH = colW * 0.72;
+      let col = 0;
+      photos.forEach((src) => {
+        if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; }
+        const x = margin + col * (colW + 6);
+        try { doc.addImage(src, 'JPEG', x, y, colW, rowH); } catch (e) {}
+        doc.setDrawColor(220); doc.rect(x, y, colW, rowH);
+        if (col === 1) { y += rowH + 6; col = 0; } else { col = 1; }
+      });
+      if (col === 1) y += rowH + 6;
+    }
+
+    if (y > 265) { doc.addPage(); y = margin; }
+    y += 4; doc.setDrawColor(220); doc.line(margin, y, margin + maxW, y); y += 6;
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(120);
+    doc.text(doc.splitTextToSize(tr('toContractor'), maxW), margin, y);
+
+    const fn = `Dekmar_Avvik_${v('a_no') || 'nr'}_${v('a_project') || ''}`.replace(/[^a-z0-9]+/gi, '_');
+    doc.save(fn + '.pdf');
+  });
+
+  load();
+</script>

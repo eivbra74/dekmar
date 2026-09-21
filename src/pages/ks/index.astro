@@ -1,0 +1,63 @@
+---
+import KsLayout from '../../layouts/KsLayout.astro';
+import { ksUi } from '../../data/ks';
+const t = (k: string) => ksUi[k];
+const cards = [
+  { href: '/ks/sjekkliste/', key: 'checklist', icon: '✓', desc: {
+      no: 'Fyll ut sjekkliste for tak- og blikkenslagerarbeid. Last ned som PDF.',
+      pl: 'Wypełnij listę kontrolną prac dekarskich i blacharskich. Pobierz jako PDF.',
+      en: 'Fill in the checklist for roofing and sheet metal work. Download as PDF.' } },
+  { href: '/ks/avvik/', key: 'deviation', icon: '⚠', desc: {
+      no: 'Registrer et avvik med årsak, utbedring, verifikasjon og bilder. Lag PDF til hovedentreprenør.',
+      pl: 'Zarejestruj niezgodność z przyczyną, naprawą, weryfikacją i zdjęciami. Utwórz PDF dla wykonawcy.',
+      en: 'Log a deviation with cause, correction, verification and photos. Create a PDF for the main contractor.' } },
+  { href: '/ks/hjelp/', key: 'help', icon: 'ℹ', desc: {
+      no: 'Slik bruker du KS-verktøyet – steg for steg.',
+      pl: 'Jak korzystać z narzędzia KS – krok po kroku.',
+      en: 'How to use the QA tool – step by step.' } },
+];
+---
+
+<KsLayout active="home" title="KS">
+  <div class="container">
+    <header class="ks-hero">
+      <span class="eyebrow" data-no={t('ksTitle').no} data-pl={t('ksTitle').pl} data-en={t('ksTitle').en}>{t('ksTitle').no}</span>
+      <h1 data-no="Dekmar KS" data-pl="Dekmar KS" data-en="Dekmar QA">Dekmar KS</h1>
+      <p class="lead" data-no={t('ksIntro').no} data-pl={t('ksIntro').pl} data-en={t('ksIntro').en}>{t('ksIntro').no}</p>
+    </header>
+
+    <div class="ks-cards">
+      {cards.map((c) => (
+        <a class="ks-card" href={c.href}>
+          <span class="ks-card__icon" aria-hidden="true">{c.icon}</span>
+          <h2 data-no={t(c.key).no} data-pl={t(c.key).pl} data-en={t(c.key).en}>{t(c.key).no}</h2>
+          <p data-no={c.desc.no} data-pl={c.desc.pl} data-en={c.desc.en}>{c.desc.no}</p>
+        </a>
+      ))}
+    </div>
+  </div>
+</KsLayout>
+
+<style>
+  .ks-hero { max-width: 720px; margin-bottom: 34px; }
+  .ks-cards { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .ks-cards { grid-template-columns: repeat(3, 1fr); } }
+  .ks-card {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 24px;
+    color: var(--ink);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .ks-card:hover { text-decoration: none; transform: translateY(-4px); box-shadow: var(--shadow); border-color: transparent; }
+  .ks-card__icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; border-radius: 12px;
+    background: rgba(204,31,42,0.1); color: var(--brand);
+    font-size: 1.4rem; margin-bottom: 14px;
+  }
+  .ks-card h2 { font-size: 1.25rem; margin: 0 0 6px; }
+  .ks-card p { color: var(--muted); font-size: 0.96rem; margin: 0; }
+</style>
