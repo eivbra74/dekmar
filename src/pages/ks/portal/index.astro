@@ -132,6 +132,17 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     common: { no: 'Felles / ingen', pl: 'Wspólne / brak', en: 'Common / none' },
     colTitle: { no: 'Tittel', pl: 'Tytuł', en: 'Title' },
     colCategory: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
+    team: { no: 'Ansatte', pl: 'Pracownicy', en: 'Team' },
+    invite: { no: 'Inviter ansatt', pl: 'Zaproś pracownika', en: 'Invite staff' },
+    inviteEmail: { no: 'E-post til den ansatte', pl: 'E-mail pracownika', en: "Staff member's email" },
+    sendInvite: { no: 'Send invitasjon', pl: 'Wyślij zaproszenie', en: 'Send invitation' },
+    inviteSent: { no: 'Invitasjon sendt til', pl: 'Zaproszenie wysłane do', en: 'Invitation sent to' },
+    members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
+    setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
+    setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
+    newPassword: { no: 'Nytt passord', pl: 'Nowe hasło', en: 'New password' },
+    savePassword: { no: 'Lagre passord', pl: 'Zapisz hasło', en: 'Save password' },
+    pwTooShort: { no: 'Passordet må være minst 8 tegn.', pl: 'Hasło musi mieć co najmniej 8 znaków.', en: 'Password must be at least 8 characters.' },
   };
   const DOCCATS = [
     { v: 'hms', no: 'HMS-håndbok', pl: 'Podręcznik BHP', en: 'HSE handbook' },
@@ -151,10 +162,37 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
 
   // ---------- Auth routing ----------
   async function route() {
+    if (new URLSearchParams(location.search).get('setpw') === '1') { renderSetPassword(); return; }
     const { data } = await supabase.auth.getSession();
     if (data.session) renderProjects(); else renderLogin();
   }
   supabase.auth.onAuthStateChange(() => route());
+
+  // Inviterte ansatte lander her med ?setpw=1 og en aktiv invitasjons-sesjon
+  function renderSetPassword() {
+    root.innerHTML = `
+      <div class="p-card p-login">
+        <h1>${esc(p('setPwTitle'))}</h1>
+        <p class="p-muted">${esc(p('setPwIntro'))}</p>
+        <form id="pwf" style="margin-top:16px">
+          <label class="p-field">${esc(p('newPassword'))}<input id="pwf-pass" type="password" autocomplete="new-password" required></label>
+          <button class="btn btn--primary" type="submit">${esc(p('savePassword'))}</button>
+          <p class="p-err" id="pwf-err" hidden></p>
+        </form>
+      </div>`;
+    const f = document.getElementById('pwf') as HTMLFormElement;
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('pwf-err')!; err.hidden = true;
+      const pass = (document.getElementById('pwf-pass') as HTMLInputElement).value;
+      if (pass.length < 8) { err.textContent = p('pwTooShort'); err.hidden = false; return; }
+      const btn = f.querySelector('button')!; btn.setAttribute('disabled', 'true');
+      const { error } = await supabase.auth.updateUser({ password: pass });
+      if (error) { err.textContent = error.message; err.hidden = false; btn.removeAttribute('disabled'); return; }
+      history.replaceState(null, '', '/ks/portal/');
+      renderProjects();
+    });
+  }
 
   // ---------- Login ----------
   function renderLogin() {
@@ -201,7 +239,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     root.innerHTML = `
       <div class="p-head">
         <h1>${esc(p('projects'))}</h1>
-        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
+        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="team">${esc(p('team'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
       </div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
@@ -219,6 +257,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     document.getElementById('signout')!.addEventListener('click', () => supabase.auth.signOut());
     document.getElementById('archive')!.addEventListener('click', renderArchive);
     document.getElementById('documents')!.addEventListener('click', renderDocuments);
+    document.getElementById('team')!.addEventListener('click', renderTeam);
     root.querySelectorAll('.p-item').forEach((el) =>
       el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
     (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
@@ -535,6 +574,37 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     };
     ['a-search', 'a-type', 'a-sort'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
     draw();
+  }
+
+  // ---------- Ansatte / invitasjon ----------
+  async function renderTeam() {
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const { data: profs } = await supabase.from('profiles').select('id, full_name, created_at').order('created_at');
+    const rows = (profs || []).map((pr: any) => `
+      <li class="p-item" style="cursor:default"><div><h3>${esc(pr.full_name || '—')}</h3><p>${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}</p></div></li>`).join('');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('team'))}</h1>
+        <div class="p-user"><button class="btn btn--ghost" id="t-back">${esc(p('back'))}</button></div></div>
+      <div class="p-card">
+        <h2 style="margin-top:0">${esc(p('invite'))}</h2>
+        <form id="inv">
+          <label class="p-field">${esc(p('inviteEmail'))}<input id="inv-email" type="email" required></label>
+          <button class="btn btn--primary" type="submit">${esc(p('sendInvite'))}</button>
+          <span class="p-muted" id="inv-msg" style="margin-left:10px"></span>
+        </form>
+      </div>
+      <div class="p-section"><h2>${esc(p('members'))}</h2>${rows ? `<ul class="p-list">${rows}</ul>` : ''}</div>`;
+    document.getElementById('t-back')!.addEventListener('click', renderProjects);
+    (document.getElementById('inv') as HTMLFormElement).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('inv-email') as HTMLInputElement).value.trim();
+      const msg = document.getElementById('inv-msg')!;
+      const btn = (e.target as HTMLFormElement).querySelector('button')!; btn.setAttribute('disabled', 'true'); msg.textContent = '…';
+      const { data, error } = await supabase.functions.invoke('invite-user', { body: { email } });
+      btn.removeAttribute('disabled');
+      if (error || (data && data.error)) { msg.textContent = (error?.message || data?.error || 'Feil'); }
+      else { msg.textContent = p('inviteSent') + ' ' + email; (document.getElementById('inv-email') as HTMLInputElement).value = ''; }
+    });
   }
 
   // ---------- Dokumentbibliotek ----------
