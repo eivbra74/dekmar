@@ -119,8 +119,32 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     colType: { no: 'Type', pl: 'Typ', en: 'Type' },
     colPerformer: { no: 'Utførende', pl: 'Wykonawca', en: 'Performer' },
     noResults: { no: 'Ingen treff.', pl: 'Brak wyników.', en: 'No results.' },
+    documents: { no: 'Dokumenter', pl: 'Dokumenty', en: 'Documents' },
+    newDocument: { no: 'Last opp dokument', pl: 'Prześlij dokument', en: 'Upload document' },
+    docTitle: { no: 'Tittel', pl: 'Tytuł', en: 'Title' },
+    category: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
+    allCategories: { no: 'Alle kategorier', pl: 'Wszystkie kategorie', en: 'All categories' },
+    download: { no: 'Last ned', pl: 'Pobierz', en: 'Download' },
+    uploadedBy: { no: 'Lastet opp av', pl: 'Przesłał', en: 'Uploaded by' },
+    noDocuments: { no: 'Ingen dokumenter ennå. Last opp det første nedenfor.', pl: 'Brak dokumentów. Prześlij pierwszy poniżej.', en: 'No documents yet. Upload the first below.' },
+    file: { no: 'Fil', pl: 'Plik', en: 'File' },
+    forProject: { no: 'Prosjekt (valgfritt)', pl: 'Projekt (opcjonalnie)', en: 'Project (optional)' },
+    common: { no: 'Felles / ingen', pl: 'Wspólne / brak', en: 'Common / none' },
+    colTitle: { no: 'Tittel', pl: 'Tytuł', en: 'Title' },
+    colCategory: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
   };
+  const DOCCATS = [
+    { v: 'hms', no: 'HMS-håndbok', pl: 'Podręcznik BHP', en: 'HSE handbook' },
+    { v: 'sha', no: 'SHA-plan', pl: 'Plan BIOZ', en: 'SHA plan' },
+    { v: 'sdb', no: 'Sikkerhetsdatablad', pl: 'Karta charakterystyki', en: 'Safety data sheet' },
+    { v: 'prosedyre', no: 'Prosedyre / instruks', pl: 'Procedura / instrukcja', en: 'Procedure / instruction' },
+    { v: 'sertifikat', no: 'Sertifikat / kurs', pl: 'Certyfikat / szkolenie', en: 'Certificate / course' },
+    { v: 'risiko', no: 'Risikovurdering / SJA', pl: 'Ocena ryzyka / JSA', en: 'Risk assessment / JSA' },
+    { v: 'referat', no: 'Møtereferat', pl: 'Protokół', en: 'Meeting minutes' },
+    { v: 'annet', no: 'Annet', pl: 'Inne', en: 'Other' },
+  ];
   const p = (k: string) => (P[k] ? P[k][lang()] : k);
+  const catLabel = (v: string) => { const c = DOCCATS.find((x) => x.v === v); return c ? (c as any)[lang()] : (v || ''); };
   const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
   const root = document.getElementById('portal-root')!;
   const fmt = (d: string) => new Date(d).toLocaleDateString('nb-NO');
@@ -177,7 +201,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     root.innerHTML = `
       <div class="p-head">
         <h1>${esc(p('projects'))}</h1>
-        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
+        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
       </div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
@@ -194,6 +218,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
       </details>`;
     document.getElementById('signout')!.addEventListener('click', () => supabase.auth.signOut());
     document.getElementById('archive')!.addEventListener('click', renderArchive);
+    document.getElementById('documents')!.addEventListener('click', renderDocuments);
     root.querySelectorAll('.p-item').forEach((el) =>
       el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
     (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
@@ -509,6 +534,94 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
         }));
     };
     ['a-search', 'a-type', 'a-sort'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
+    draw();
+  }
+
+  // ---------- Dokumentbibliotek ----------
+  async function renderDocuments() {
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [docsRes, projRes, profRes] = await Promise.all([
+      supabase.from('documents').select('*, projects(name)').order('created_at', { ascending: false }),
+      supabase.from('projects').select('id,name').order('name'),
+      supabase.from('profiles').select('id,full_name'),
+    ]);
+    const docs = docsRes.data || [];
+    (window as any).__docs = docs;
+    const nameById: Record<string, string> = {};
+    (profRes.data || []).forEach((pr: any) => { nameById[pr.id] = pr.full_name; });
+    (window as any).__docNames = nameById;
+    const projOpts = (projRes.data || []).map((pr: any) => `<option value="${esc(pr.id)}">${esc(pr.name)}</option>`).join('');
+    const catOpts = DOCCATS.map((c) => `<option value="${esc(c.v)}">${esc((c as any)[lang()])}</option>`).join('');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('documents'))}</h1>
+        <div class="p-user"><button class="btn btn--ghost" id="d-back">${esc(p('back'))}</button></div></div>
+      <details class="p-new"><summary>${esc(p('newDocument'))}</summary>
+        <label class="p-field">${esc(p('file'))}<input id="doc-file" type="file"></label>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('docTitle'))}<input id="doc-title" type="text"></label>
+          <label class="p-field">${esc(p('category'))}<select id="doc-cat">${catOpts}</select></label>
+        </div>
+        <label class="p-field">${esc(p('forProject'))}<select id="doc-proj"><option value="">${esc(p('common'))}</option>${projOpts}</select></label>
+        <button class="btn btn--primary" id="doc-save" type="button">${esc(p('save'))}</button>
+        <span class="p-muted" id="doc-msg" style="margin-left:10px"></span>
+      </details>
+      <div class="p-filters">
+        <input id="d-search" type="search" placeholder="${esc(p('search'))}">
+        <select id="d-cat"><option value="">${esc(p('allCategories'))}</option>${catOpts}</select>
+        <select id="d-sort"><option value="dnew">${esc(p('dateNewest'))}</option><option value="dold">${esc(p('dateOldest'))}</option><option value="title">${esc(p('colTitle'))}</option></select>
+      </div>
+      <div class="p-tablewrap"><table class="p-table">
+        <thead><tr><th>${esc(p('colDate'))}</th><th>${esc(p('colTitle'))}</th><th>${esc(p('colCategory'))}</th><th>${esc(p('colProject'))}</th><th>${esc(p('uploadedBy'))}</th><th></th></tr></thead>
+        <tbody id="d-body"></tbody></table></div>`;
+    document.getElementById('d-back')!.addEventListener('click', renderProjects);
+    document.getElementById('doc-save')!.addEventListener('click', async () => {
+      const fileInp = document.getElementById('doc-file') as HTMLInputElement;
+      const file = fileInp.files?.[0];
+      const msg = document.getElementById('doc-msg')!;
+      if (!file) { msg.textContent = p('file') + '?'; return; }
+      const btn = document.getElementById('doc-save') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('uploading');
+      const { data: u } = await supabase.auth.getUser();
+      const safe = file.name.replace(/[^a-z0-9._-]+/gi, '_');
+      const path = `docs/${crypto.randomUUID()}_${safe}`;
+      const up = await supabase.storage.from('ks-docs').upload(path, file, { contentType: file.type || 'application/octet-stream' });
+      if (up.error) { alert(up.error.message); btn.disabled = false; msg.textContent = ''; return; }
+      const { error } = await supabase.from('documents').insert({
+        title: (document.getElementById('doc-title') as HTMLInputElement).value.trim() || file.name,
+        category: (document.getElementById('doc-cat') as HTMLSelectElement).value,
+        project_id: (document.getElementById('doc-proj') as HTMLSelectElement).value || null,
+        file_name: file.name, mime: file.type, file_size: file.size, storage_path: path, uploaded_by: u.user?.id,
+      });
+      if (error) { alert(error.message); btn.disabled = false; msg.textContent = ''; return; }
+      renderDocuments();
+    });
+    const draw = () => {
+      const q = (document.getElementById('d-search') as HTMLInputElement).value.toLowerCase();
+      const cat = (document.getElementById('d-cat') as HTMLSelectElement).value;
+      const sort = (document.getElementById('d-sort') as HTMLSelectElement).value;
+      let list = ((window as any).__docs as any[])
+        .filter((r) => !cat || r.category === cat)
+        .filter((r) => { const hay = `${r.title || ''} ${r.projects?.name || ''} ${catLabel(r.category)}`.toLowerCase(); return !q || hay.includes(q); });
+      list = list.slice().sort((a, b) => {
+        if (sort === 'dnew') return b.created_at.localeCompare(a.created_at);
+        if (sort === 'dold') return a.created_at.localeCompare(b.created_at);
+        if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
+        return 0;
+      });
+      const tbody = document.getElementById('d-body')!;
+      tbody.innerHTML = list.length ? list.map((r) => `
+        <tr data-doc="${esc(r.id)}">
+          <td>${esc(fmt(r.created_at))}</td><td>${esc(r.title)}</td><td>${esc(catLabel(r.category))}</td>
+          <td>${esc(r.projects?.name || '—')}</td><td>${esc((window as any).__docNames[r.uploaded_by] || '')}</td>
+          <td><span class="p-muted">${esc(p('download'))} ↓</span></td>
+        </tr>`).join('') : `<tr><td colspan="6" class="p-muted">${esc(((window as any).__docs as any[]).length ? p('noResults') : p('noDocuments'))}</td></tr>`;
+      tbody.querySelectorAll('tr[data-doc]').forEach((tr) => tr.addEventListener('click', async () => {
+        const r = ((window as any).__docs as any[]).find((x) => x.id === (tr as HTMLElement).dataset.doc);
+        if (!r) return;
+        const { data: signed } = await supabase.storage.from('ks-docs').createSignedUrl(r.storage_path, 120, { download: r.file_name || true });
+        if (signed?.signedUrl) window.open(signed.signedUrl, '_blank');
+      }));
+    };
+    ['d-search', 'd-cat', 'd-sort'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
     draw();
   }
 

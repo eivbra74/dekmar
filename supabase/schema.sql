@@ -143,3 +143,34 @@ create policy ks_photos_update on storage.objects for update to authenticated
 drop policy if exists ks_photos_delete on storage.objects;
 create policy ks_photos_delete on storage.objects for delete to authenticated
   using (bucket_id = 'ks-photos');
+
+-- ─────────────────────────────────────────────────────────────
+-- 8) Dokumentbibliotek (HMS-dokumenter)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.documents (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references public.projects(id) on delete set null,
+  title text not null,
+  category text,
+  file_name text,
+  mime text,
+  file_size bigint,
+  storage_path text not null,
+  uploaded_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_documents_created on public.documents(created_at desc);
+alter table public.documents enable row level security;
+drop policy if exists documents_all on public.documents;
+create policy documents_all on public.documents for all to authenticated using (true) with check (true);
+
+insert into storage.buckets (id, name, public) values ('ks-docs', 'ks-docs', false)
+on conflict (id) do nothing;
+drop policy if exists ks_docs_read on storage.objects;
+create policy ks_docs_read on storage.objects for select to authenticated using (bucket_id = 'ks-docs');
+drop policy if exists ks_docs_insert on storage.objects;
+create policy ks_docs_insert on storage.objects for insert to authenticated with check (bucket_id = 'ks-docs');
+drop policy if exists ks_docs_update on storage.objects;
+create policy ks_docs_update on storage.objects for update to authenticated using (bucket_id = 'ks-docs');
+drop policy if exists ks_docs_delete on storage.objects;
+create policy ks_docs_delete on storage.objects for delete to authenticated using (bucket_id = 'ks-docs');
