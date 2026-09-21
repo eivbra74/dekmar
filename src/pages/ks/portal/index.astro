@@ -102,6 +102,15 @@ import { standardArticles } from '../../../data/ksArticles';
   .p-stat.closed .p-stat-n { color: #0c6b42; }
   .p-catrow { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); }
   .p-catrow:last-child { border-bottom: 0; }
+  .hb-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 14px; }
+  .hb-card { display: flex; align-items: center; gap: 14px; text-align: left; background: var(--dark); color: #eef1f5; border: 0; border-radius: 14px; padding: 18px; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+  .hb-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(20,23,28,.18); }
+  .hb-ic { display: inline-flex; width: 40px; height: 40px; flex: 0 0 40px; align-items: center; justify-content: center; border-radius: 11px; background: rgba(255,255,255,.1); color: #ff8a91; }
+  .hb-ic svg { width: 22px; height: 22px; }
+  .hb-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .hb-title { font-family: var(--font-head); font-weight: 700; font-size: 1rem; }
+  .hb-meta { font-size: .8rem; color: #aab2bd; word-break: break-all; }
+  .hb-go { font-family: var(--font-head); font-weight: 700; font-size: .82rem; color: #ff8a91; white-space: nowrap; }
   .p-article { line-height: 1.65; }
   .p-article h3 { font-size: 1.1rem; margin: 18px 0 6px; }
   .p-article p { margin: 0 0 12px; }
@@ -341,6 +350,9 @@ import { standardArticles } from '../../../data/ksArticles';
     articleBodyLabel: { no: 'Innhold (støtter HTML)', pl: 'Treść (obsługuje HTML)', en: 'Content (supports HTML)' },
     noArticles: { no: 'Ingen artikler ennå.', pl: 'Brak artykułów.', en: 'No articles yet.' },
     editingInLang: { no: 'Redigerer språk', pl: 'Edytujesz język', en: 'Editing language' },
+    handbooksTitle: { no: 'Håndbøker og styrende dokumenter', pl: 'Podręczniki i dokumenty nadrzędne', en: 'Handbooks and governing documents' },
+    openDoc: { no: 'Åpne dokument', pl: 'Otwórz dokument', en: 'Open document' },
+    revLabel: { no: 'Rev.', pl: 'Rew.', en: 'Rev.' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -349,6 +361,7 @@ import { standardArticles } from '../../../data/ksArticles';
     pwTooShort: { no: 'Passordet må være minst 8 tegn.', pl: 'Hasło musi mieć co najmniej 8 znaków.', en: 'Password must be at least 8 characters.' },
   };
   const DOCCATS = [
+    { v: 'handbok', no: 'Håndbok (offisiell)', pl: 'Podręcznik (oficjalny)', en: 'Handbook (official)' },
     { v: 'hms', no: 'HMS-håndbok', pl: 'Podręcznik BHP', en: 'HSE handbook' },
     { v: 'sha', no: 'SHA-plan', pl: 'Plan BIOZ', en: 'SHA plan' },
     { v: 'sdb', no: 'Sikkerhetsdatablad', pl: 'Karta charakterystyki', en: 'Safety data sheet' },
@@ -1324,6 +1337,20 @@ import { standardArticles } from '../../../data/ksArticles';
     await ensureShell('articles');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     await ensureArticles();
+    // Offisielle håndbøker (kategori 'handbok') vises som fremhevet blokk øverst
+    const { data: hb } = await supabase.from('documents').select('*').eq('category', 'handbok').order('title');
+    const hbHtml = (hb && hb.length) ? `
+      <div class="p-section">
+        <h2>${esc(p('handbooksTitle'))}</h2>
+        <div class="hb-grid">
+          ${hb.map((d: any) => `
+            <button class="hb-card" data-hb="${esc(d.storage_path)}">
+              <span class="hb-ic">${ICONS.handbook}</span>
+              <span class="hb-body"><span class="hb-title">${esc(d.title)}</span>${d.file_name ? `<span class="hb-meta">${esc(d.file_name)}</span>` : ''}</span>
+              <span class="hb-go">${esc(p('openDoc'))} ↓</span>
+            </button>`).join('')}
+        </div>
+      </div>` : '';
     const cats = Array.from(new Set(ARTICLES.map((a: any) => artText(a, 'category') || '—')));
     const groups = cats.map((cat) => {
       const items = ARTICLES.filter((a: any) => (artText(a, 'category') || '—') === cat).map((a: any) => `
@@ -1338,9 +1365,14 @@ import { standardArticles } from '../../../data/ksArticles';
         <div><h1>${esc(p('hmsHandbook'))}</h1><p class="p-muted">${esc(p('articlesIntro'))}</p></div>
         <div class="p-user"><button class="btn btn--primary" id="art-new">${esc(p('newArticle'))}</button><button class="btn btn--ghost" id="art-back">${esc(p('back'))}</button></div>
       </div>
+      ${hbHtml}
       ${ARTICLES.length ? groups : `<p class="p-muted">${esc(p('noArticles'))}</p>`}`;
     document.getElementById('art-back')!.addEventListener('click', renderProjects);
     document.getElementById('art-new')!.addEventListener('click', () => renderArticleEditor(null));
+    root.querySelectorAll<HTMLElement>('[data-hb]').forEach((el) => el.addEventListener('click', async () => {
+      const { data: signed } = await supabase.storage.from('ks-docs').createSignedUrl(el.dataset.hb!, 300);
+      if (signed?.signedUrl) window.open(signed.signedUrl, '_blank');
+    }));
     root.querySelectorAll<HTMLElement>('[data-article]').forEach((el) => el.addEventListener('click', () => renderArticle(ARTICLES.find((a: any) => a.id === el.dataset.article))));
   }
 
