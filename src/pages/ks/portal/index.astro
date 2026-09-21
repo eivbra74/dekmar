@@ -1,6 +1,7 @@
 ---
 import KsLayout from '../../../layouts/KsLayout.astro';
 import { ksUi, checklist, safetyRound } from '../../../data/ks';
+import { standardTemplates } from '../../../data/ksTemplates';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -9,7 +10,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates })} />
 </KsLayout>
 
 <style>
@@ -55,7 +56,19 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
   .ks-pill span { display: inline-block; padding: 7px 15px; border-radius: 999px; border: 1.5px solid var(--line); font-family: var(--font-head); font-weight: 600; font-size: 0.88rem; cursor: pointer; }
   .ks-pill--ok input:checked + span { background: #12855222; border-color: #128552; color: #0c6b42; }
   .ks-pill--na input:checked + span { background: var(--surface); border-color: var(--muted); color: var(--muted); }
+  .ks-pill--dev input:checked + span { background: #cc1f2a18; border-color: var(--brand); color: var(--brand-dark); }
   .p-cl-note { flex: 1; min-width: 150px; font: inherit; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; }
+  /* Maler */
+  .p-tpl { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+  .p-tpl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .p-tpl-head h3 { margin: 0; }
+  .p-tpl-cats-label { margin: 12px 0 6px; font-weight: 600; font-size: 0.85rem; font-family: var(--font-head); }
+  .p-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .p-chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 0.8rem; }
+  .p-sm { padding: 6px 12px; font-size: 0.82rem; }
+  .p-grid-inline { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .p-grid-inline input { flex: 1; }
+  .p-tpl-edit-sec { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
   /* Arkiv */
   .p-filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
   .p-filters input, .p-filters select { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; }
@@ -76,6 +89,9 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
   const UI = KSD.ui || {};
   const CHECKLIST = KSD.checklist || [];
   const SAFETYROUND = KSD.safetyRound || [];
+  const STD_TEMPLATES = KSD.standardTemplates || [];
+  let TEMPLATES: any[] = [];
+  let TEMPLATES_SEEDED = false;
   let CURRENT_PROJECT: any = null;
   const lang = () => (window as any).ksLang || 'no';
   const t = (k: string) => (UI[k] ? UI[k][lang()] : k); // delte KS-felt
@@ -138,6 +154,32 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     sendInvite: { no: 'Send invitasjon', pl: 'Wyślij zaproszenie', en: 'Send invitation' },
     inviteSent: { no: 'Invitasjon sendt til', pl: 'Zaproszenie wysłane do', en: 'Invitation sent to' },
     alreadyMember: { no: 'Denne e-posten er allerede registrert.', pl: 'Ten adres e-mail jest już zarejestrowany.', en: 'This email is already registered.' },
+    manageTemplates: { no: 'Maler', pl: 'Szablony', en: 'Templates' },
+    templatesTitle: { no: 'Maladministrasjon', pl: 'Zarządzanie szablonami', en: 'Template administration' },
+    standardTemplatesLabel: { no: 'Standardmaler', pl: 'Szablony standardowe', en: 'Standard templates' },
+    ownTemplates: { no: 'Egne maler', pl: 'Własne szablony', en: 'Own templates' },
+    newTemplate: { no: '+ Opprett egen mal', pl: '+ Utwórz własny szablon', en: '+ Create own template' },
+    standardBadge: { no: 'Standard', pl: 'Standard', en: 'Standard' },
+    duplicate: { no: 'Dupliser', pl: 'Duplikuj', en: 'Duplicate' },
+    edit: { no: 'Rediger', pl: 'Edytuj', en: 'Edit' },
+    del: { no: 'Slett', pl: 'Usuń', en: 'Delete' },
+    categoriesLabel: { no: 'Kategorier', pl: 'Kategorie', en: 'Categories' },
+    templateName: { no: 'Malnavn', pl: 'Nazwa szablonu', en: 'Template name' },
+    templateKind: { no: 'Type', pl: 'Typ', en: 'Type' },
+    kindVerneround: { no: 'Vernerunde', pl: 'Obchód BHP', en: 'Safety round' },
+    kindChecklist: { no: 'Sjekkliste', pl: 'Lista kontrolna', en: 'Checklist' },
+    descriptionLabel: { no: 'Beskrivelse', pl: 'Opis', en: 'Description' },
+    addSection: { no: '+ Legg til kategori', pl: '+ Dodaj kategorię', en: '+ Add category' },
+    addItem: { no: '+ Legg til punkt', pl: '+ Dodaj punkt', en: '+ Add item' },
+    sectionTitleLabel: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
+    itemTextLabel: { no: 'Kontrollpunkt', pl: 'Punkt kontrolny', en: 'Control point' },
+    removeLabel: { no: 'Fjern', pl: 'Usuń', en: 'Remove' },
+    chooseTemplate: { no: 'Velg mal', pl: 'Wybierz szablon', en: 'Choose template' },
+    noTemplatesYet: { no: 'Ingen maler for denne typen ennå. Opprett under «Maler».', pl: 'Brak szablonów tego typu. Utwórz w «Szablony».', en: 'No templates of this type yet. Create under “Templates”.' },
+    deviationMark: { no: 'Avvik', pl: 'Niezgodność', en: 'Deviation' },
+    confirmDelete: { no: 'Slette denne malen?', pl: 'Usunąć ten szablon?', en: 'Delete this template?' },
+    copySuffix: { no: '(kopi)', pl: '(kopia)', en: '(copy)' },
+    nameRequired: { no: 'Malnavn er påkrevd.', pl: 'Nazwa szablonu jest wymagana.', en: 'Template name is required.' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -164,6 +206,29 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
   // Gjeldende visning tegnes på nytt når språket byttes (KsLayout sender 'kslangchange')
   let redraw: () => void = () => route();
   document.addEventListener('kslangchange', () => redraw());
+
+  // ---------- Maler (templates) ----------
+  async function ensureTemplates() {
+    if (!TEMPLATES_SEEDED) {
+      const { data: existing } = await supabase.from('templates').select('slug');
+      const have = new Set((existing || []).map((t: any) => t.slug).filter(Boolean));
+      const missing = STD_TEMPLATES.filter((t: any) => !have.has(t.slug));
+      if (missing.length) {
+        const { data: u } = await supabase.auth.getUser();
+        await supabase.from('templates').insert(missing.map((t: any) => ({
+          slug: t.slug, name: t.name, kind: t.kind, description: t.description || null,
+          is_standard: true, sections: t.sections, sort: t.sort || 0, created_by: u.user?.id,
+        })));
+      }
+      TEMPLATES_SEEDED = true;
+    }
+    await loadTemplates();
+  }
+  async function loadTemplates() {
+    const { data } = await supabase.from('templates').select('*').order('sort').order('name');
+    TEMPLATES = data || [];
+  }
+  const templatesOf = (kind: string) => TEMPLATES.filter((t: any) => t.kind === kind);
 
   // ---------- Auth routing ----------
   async function route() {
@@ -247,7 +312,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     root.innerHTML = `
       <div class="p-head">
         <h1>${esc(p('projects'))}</h1>
-        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="team">${esc(p('team'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
+        <div class="p-user"><span>${esc(email)}</span><button class="btn btn--ghost" id="documents">${esc(p('documents'))}</button><button class="btn btn--ghost" id="archive">${esc(p('archive'))}</button><button class="btn btn--ghost" id="templates-btn">${esc(p('manageTemplates'))}</button><button class="btn btn--ghost" id="team">${esc(p('team'))}</button><button class="btn btn--ghost" id="signout">${esc(p('signOut'))}</button></div>
       </div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noProjects'))}</p>`}
@@ -265,6 +330,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     document.getElementById('signout')!.addEventListener('click', () => supabase.auth.signOut());
     document.getElementById('archive')!.addEventListener('click', renderArchive);
     document.getElementById('documents')!.addEventListener('click', renderDocuments);
+    document.getElementById('templates-btn')!.addEventListener('click', renderTemplates);
     document.getElementById('team')!.addEventListener('click', renderTeam);
     root.querySelectorAll('.p-item').forEach((el) =>
       el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
@@ -336,6 +402,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
       <div class="p-section" id="sec-verneround"></div>`;
     document.getElementById('back')!.addEventListener('click', renderProjects);
     setupDeviationForm(id, devs || []);
+    await ensureTemplates();
     renderForms('checklist', id);
     renderForms('verneround', id);
   }
@@ -446,55 +513,82 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     doc.save(`Dekmar_Avvik_${(d.number || 'nr')}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
   }
 
-  // ---------- Sjekklister & vernerunder per prosjekt ----------
+  // ---------- Sjekklister & vernerunder per prosjekt (malbasert) ----------
+  const staticFallback = (kind: string) => (kind === 'checklist' ? CHECKLIST : SAFETYROUND);
+  // Bygg avkryssings-HTML fra et sett seksjoner
+  function buildFormBody(sections: any[]): string {
+    return (sections || []).map((sn: any) => `
+      <fieldset class="p-cl-sec"><legend>${esc(sn.title[lang()] || sn.title.no || '')}</legend>
+        ${(sn.items || []).map((it: any) => `
+          <div class="p-cl-item"><p class="p-cl-text">${esc(it.text[lang()] || it.text.no || '')}</p>
+            <div class="ks-radios">
+              <label class="ks-pill ks-pill--ok"><input type="radio" name="f_${sn.id}_${it.id}" value="ok"><span>${esc(t('ok'))}</span></label>
+              <label class="ks-pill ks-pill--dev"><input type="radio" name="f_${sn.id}_${it.id}" value="avvik"><span>${esc(p('deviationMark'))}</span></label>
+              <label class="ks-pill ks-pill--na"><input type="radio" name="f_${sn.id}_${it.id}" value="na"><span>${esc(t('na'))}</span></label>
+              <input class="p-cl-note" data-note="n_${sn.id}_${it.id}" type="text" placeholder="${esc(t('notePlaceholder'))}">
+            </div>
+          </div>`).join('')}
+      </fieldset>`).join('');
+  }
+
   async function renderForms(kind: string, projectId: string) {
-    const items = kind === 'checklist' ? CHECKLIST : SAFETYROUND;
     const secEl = document.getElementById(kind === 'checklist' ? 'sec-checklist' : 'sec-verneround')!;
     const heading = kind === 'checklist' ? t('checklists') : t('vernerounds');
     const newLabel = kind === 'checklist' ? p('newChecklist') : p('newVerneround');
     const noLabel = kind === 'checklist' ? p('noChecklists') : p('noVernerounds');
+    const tpls = templatesOf(kind);
     const { data: rows } = await supabase.from('checklists').select('*').eq('project_id', projectId).eq('type', kind).order('created_at', { ascending: false });
     const list = (rows || []).map((c: any) => `
       <li class="p-item" data-form="${esc(c.id)}">
         <div><h3>${esc(c.title || heading)}</h3><p>${esc([c.performed_by, c.performed_date].filter(Boolean).join(' · '))}${c.performed_by || c.performed_date ? ' · ' : ''}${esc(p('createdAt'))} ${esc(fmt(c.created_at))}</p></div>
         <span class="p-muted">PDF ›</span>
       </li>`).join('');
-    const formItems = items.map((sn: any) => `
-      <fieldset class="p-cl-sec"><legend>${esc(sn.title[lang()])}</legend>
-        ${sn.items.map((it: any) => `
-          <div class="p-cl-item"><p class="p-cl-text">${esc(it.text[lang()])}</p>
-            <div class="ks-radios">
-              <label class="ks-pill ks-pill--ok"><input type="radio" name="f_${sn.id}_${it.id}" value="ok"><span>${esc(t('ok'))}</span></label>
-              <label class="ks-pill ks-pill--na"><input type="radio" name="f_${sn.id}_${it.id}" value="na"><span>${esc(t('na'))}</span></label>
-              <input class="p-cl-note" data-note="n_${sn.id}_${it.id}" type="text" placeholder="${esc(t('notePlaceholder'))}">
-            </div>
-          </div>`).join('')}
-      </fieldset>`).join('');
+    const tplOpts = tpls.map((tp: any) => `<option value="${esc(tp.id)}">${esc(tp.name)}${tp.is_standard ? '' : ' *'}</option>`).join('');
     secEl.innerHTML = `
       <h2>${esc(heading)}</h2>
       ${list ? `<ul class="p-list">${list}</ul>` : `<p class="p-muted">${esc(noLabel)}</p>`}
       <details class="p-new"><summary>${esc(newLabel)}</summary>
+        ${tpls.length ? `
+        <label class="p-field">${esc(p('chooseTemplate'))}
+          <select class="f-tpl"><option value="">${esc(p('chooseTemplate'))}…</option>${tplOpts}</select>
+        </label>
         <div class="p-grid2">
           <label class="p-field">${esc(p('checklistTitle'))}<input class="f-title" type="text"></label>
           <label class="p-field">${esc(t('performedBy'))}<input class="f-by" type="text"></label>
         </div>
         <label class="p-field">${esc(t('date'))}<input class="f-date" type="date"></label>
-        ${formItems}
-        <button class="btn btn--primary f-save" type="button">${esc(p('save'))}</button>
-        <span class="p-muted f-msg" style="margin-left:10px"></span>
+        <div class="f-body"></div>
+        <button class="btn btn--primary f-save" type="button" disabled>${esc(p('save'))}</button>
+        <span class="p-muted f-msg" style="margin-left:10px"></span>`
+        : `<p class="p-muted">${esc(p('noTemplatesYet'))}</p>`}
       </details>`;
     secEl.querySelectorAll('.p-item[data-form]').forEach((el) =>
-      el.addEventListener('click', () => { const c = (rows || []).find((x: any) => x.id === (el as HTMLElement).dataset.form); if (c) makeFormPdf(c, items, heading, CURRENT_PROJECT?.name); }));
+      el.addEventListener('click', () => {
+        const c = (rows || []).find((x: any) => x.id === (el as HTMLElement).dataset.form);
+        if (c) makeFormPdf(c, c.sections && c.sections.length ? c.sections : staticFallback(kind), heading, CURRENT_PROJECT?.name);
+      }));
+    if (!tpls.length) return;
+    let chosen: any = null;
+    const tplSel = secEl.querySelector('.f-tpl') as HTMLSelectElement;
+    const body = secEl.querySelector('.f-body') as HTMLElement;
     const saveBtn = secEl.querySelector('.f-save') as HTMLButtonElement;
+    const titleInp = secEl.querySelector('.f-title') as HTMLInputElement;
+    tplSel.addEventListener('change', () => {
+      chosen = tpls.find((x: any) => x.id === tplSel.value) || null;
+      body.innerHTML = chosen ? buildFormBody(chosen.sections) : '';
+      saveBtn.disabled = !chosen;
+      if (chosen && !titleInp.value.trim()) titleInp.value = chosen.name;
+    });
     saveBtn.addEventListener('click', async () => {
+      if (!chosen) return;
       const answers: Record<string, string> = {};
       secEl.querySelectorAll<HTMLInputElement>('input[type=radio]:checked').forEach((r) => { answers[r.name] = r.value; });
       secEl.querySelectorAll<HTMLInputElement>('input[data-note]').forEach((n) => { if (n.value.trim()) answers[n.dataset.note!] = n.value.trim(); });
       const { data: u } = await supabase.auth.getUser();
       saveBtn.disabled = true; (secEl.querySelector('.f-msg') as HTMLElement).textContent = p('saving');
       const { error } = await supabase.from('checklists').insert({
-        project_id: projectId, type: kind,
-        title: (secEl.querySelector('.f-title') as HTMLInputElement).value.trim() || null,
+        project_id: projectId, type: kind, template_id: chosen.id, sections: chosen.sections,
+        title: titleInp.value.trim() || chosen.name,
         performed_by: (secEl.querySelector('.f-by') as HTMLInputElement).value.trim() || null,
         performed_date: (secEl.querySelector('.f-date') as HTMLInputElement).value || null,
         lang: lang(), answers, created_by: u.user?.id,
@@ -520,15 +614,148 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
     items.forEach((sn: any) => {
       y += 2; if (y > 275) { doc.addPage(); y = margin; }
       doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.5); doc.line(margin, y, margin + maxW, y); y += 5;
-      line(sn.title[lang()], 12, 'bold', 6);
+      line(sn.title[lang()] || sn.title.no || '', 12, 'bold', 6);
       sn.items.forEach((it: any) => {
         const sel = A['f_' + sn.id + '_' + it.id];
-        const mark = sel ? (sel === 'ok' ? '[OK]' : '[' + t('na') + ']') : '[  ]';
+        const mark = sel ? (sel === 'ok' ? '[OK]' : sel === 'avvik' ? '[' + p('deviationMark') + ']' : '[' + t('na') + ']') : '[  ]';
         const note = A['n_' + sn.id + '_' + it.id] || '';
-        line(`${mark}  ${it.text[lang()]}${note ? '  — ' + note : ''}`, 10, 'normal', 5);
+        line(`${mark}  ${(it.text[lang()] || it.text.no || '')}${note ? '  — ' + note : ''}`, 10, 'normal', 5);
       });
     });
     doc.save(`Dekmar_${titleLabel}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+  }
+
+  // ---------- Maladministrasjon (maler) ----------
+  const kindLabel = (k: string) => (k === 'verneround' ? p('kindVerneround') : p('kindChecklist'));
+  async function renderTemplates() {
+    redraw = renderTemplates;
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    await ensureTemplates();
+    const card = (tp: any) => {
+      const cats = (tp.sections || []).map((s: any) => `<span class="p-chip">${esc(s.title?.[lang()] || s.title?.no || '')}</span>`).join('');
+      const actions = tp.is_standard
+        ? `<button class="btn btn--ghost p-sm" data-dup="${esc(tp.id)}">${esc(p('duplicate'))}</button>`
+        : `<button class="btn btn--ghost p-sm" data-edit="${esc(tp.id)}">${esc(p('edit'))}</button>
+           <button class="btn btn--ghost p-sm" data-dup="${esc(tp.id)}">${esc(p('duplicate'))}</button>
+           <button class="btn btn--ghost p-sm" data-del="${esc(tp.id)}">${esc(p('del'))}</button>`;
+      return `<div class="p-tpl">
+        <div class="p-tpl-head">
+          <div><h3>${esc(tp.name)} <span class="p-muted">· ${esc(kindLabel(tp.kind))}</span></h3></div>
+          <div class="p-tpl-badges">${tp.is_standard ? `<span class="p-badge closed">${esc(p('standardBadge'))}</span>` : ''}</div>
+        </div>
+        ${tp.description ? `<p class="p-muted">${esc(tp.description)}</p>` : ''}
+        <p class="p-tpl-cats-label">${esc(p('categoriesLabel'))}:</p>
+        <div class="p-chips">${cats}</div>
+        <div class="p-actions">${actions}</div>
+      </div>`;
+    };
+    root.innerHTML = `
+      <div class="p-head">
+        <div><h1>${esc(p('templatesTitle'))}</h1><p class="p-muted">${esc(p('standardTemplatesLabel'))}</p></div>
+        <div class="p-user"><button class="btn btn--primary" id="tpl-new">${esc(p('newTemplate'))}</button><button class="btn btn--ghost" id="tpl-back">${esc(p('back'))}</button></div>
+      </div>
+      ${TEMPLATES.map(card).join('') || `<p class="p-muted">${esc(p('noTemplatesYet'))}</p>`}`;
+    document.getElementById('tpl-back')!.addEventListener('click', renderProjects);
+    document.getElementById('tpl-new')!.addEventListener('click', () => renderTemplateEditor(null));
+    root.querySelectorAll<HTMLElement>('[data-edit]').forEach((b) => b.addEventListener('click', () => renderTemplateEditor(TEMPLATES.find((x) => x.id === b.dataset.edit))));
+    root.querySelectorAll<HTMLElement>('[data-dup]').forEach((b) => b.addEventListener('click', () => duplicateTemplate(TEMPLATES.find((x) => x.id === b.dataset.dup))));
+    root.querySelectorAll<HTMLElement>('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm(p('confirmDelete'))) return;
+      await supabase.from('templates').delete().eq('id', b.dataset.del);
+      await loadTemplates(); renderTemplates();
+    }));
+  }
+
+  async function duplicateTemplate(tp: any) {
+    if (!tp) return;
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from('templates').insert({
+      slug: null, name: `${tp.name} ${p('copySuffix')}`, kind: tp.kind, description: tp.description,
+      is_standard: false, sections: tp.sections, sort: (tp.sort || 0) + 1, created_by: u.user?.id,
+    });
+    await loadTemplates(); renderTemplates();
+  }
+
+  // Enkel mal-editor. Egne maler lagres med samme tekst i alle tre språk.
+  function renderTemplateEditor(tp: any) {
+    redraw = () => renderTemplateEditor(tp);
+    const isNew = !tp;
+    const model = tp ? JSON.parse(JSON.stringify(tp)) : { name: '', kind: 'verneround', description: '', sections: [] };
+    const secHtml = (s: any, si: number) => `
+      <fieldset class="p-cl-sec p-tpl-edit-sec" data-si="${si}">
+        <div class="p-grid-inline">
+          <input class="te-sec-title" data-si="${si}" type="text" placeholder="${esc(p('sectionTitleLabel'))}" value="${esc(s.title?.[lang()] || s.title?.no || '')}">
+          <button type="button" class="btn btn--ghost p-sm te-sec-del" data-si="${si}">${esc(p('removeLabel'))}</button>
+        </div>
+        <div class="te-items">
+          ${(s.items || []).map((it: any, ii: number) => `
+            <div class="p-grid-inline te-item-row" data-si="${si}" data-ii="${ii}">
+              <input class="te-item-text" data-si="${si}" data-ii="${ii}" type="text" placeholder="${esc(p('itemTextLabel'))}" value="${esc(it.text?.[lang()] || it.text?.no || '')}">
+              <button type="button" class="btn btn--ghost p-sm te-item-del" data-si="${si}" data-ii="${ii}">${esc(p('removeLabel'))}</button>
+            </div>`).join('')}
+        </div>
+        <button type="button" class="btn btn--ghost p-sm te-item-add" data-si="${si}">${esc(p('addItem'))}</button>
+      </fieldset>`;
+    const draw = () => {
+      root.innerHTML = `
+        <div class="p-head">
+          <h1>${esc(isNew ? p('newTemplate').replace('+ ', '') : p('edit'))}</h1>
+          <div class="p-user"><button class="btn btn--ghost" id="te-back">${esc(p('back'))}</button></div>
+        </div>
+        <div class="p-card">
+          <div class="p-grid2">
+            <label class="p-field">${esc(p('templateName'))}<input id="te-name" type="text" value="${esc(model.name)}"></label>
+            <label class="p-field">${esc(p('templateKind'))}
+              <select id="te-kind">
+                <option value="verneround"${model.kind === 'verneround' ? ' selected' : ''}>${esc(p('kindVerneround'))}</option>
+                <option value="checklist"${model.kind === 'checklist' ? ' selected' : ''}>${esc(p('kindChecklist'))}</option>
+              </select>
+            </label>
+          </div>
+          <label class="p-field">${esc(p('descriptionLabel'))}<textarea id="te-desc" rows="2">${esc(model.description || '')}</textarea></label>
+          <div id="te-secs">${model.sections.map(secHtml).join('')}</div>
+          <button type="button" class="btn btn--ghost" id="te-add-sec">${esc(p('addSection'))}</button>
+          <div style="margin-top:16px"><button class="btn btn--primary" id="te-save" type="button">${esc(p('save'))}</button>
+          <span class="p-muted" id="te-msg" style="margin-left:10px"></span></div>
+        </div>`;
+      // sync current inputs into model before re-render
+      const sync = () => {
+        model.name = (document.getElementById('te-name') as HTMLInputElement).value;
+        model.kind = (document.getElementById('te-kind') as HTMLSelectElement).value;
+        model.description = (document.getElementById('te-desc') as HTMLTextAreaElement).value;
+        root.querySelectorAll<HTMLInputElement>('.te-sec-title').forEach((el) => {
+          const si = +el.dataset.si!; if (model.sections[si]) model.sections[si]._t = el.value;
+        });
+        root.querySelectorAll<HTMLInputElement>('.te-item-text').forEach((el) => {
+          const si = +el.dataset.si!, ii = +el.dataset.ii!; if (model.sections[si]?.items[ii]) model.sections[si].items[ii]._t = el.value;
+        });
+      };
+      document.getElementById('te-back')!.addEventListener('click', renderTemplates);
+      document.getElementById('te-add-sec')!.addEventListener('click', () => { sync(); model.sections.push({ id: 's' + Date.now().toString(36), title: {}, items: [] }); applyPending(); draw(); });
+      root.querySelectorAll<HTMLElement>('.te-sec-del').forEach((b) => b.addEventListener('click', () => { sync(); model.sections.splice(+b.dataset.si!, 1); applyPending(); draw(); }));
+      root.querySelectorAll<HTMLElement>('.te-item-add').forEach((b) => b.addEventListener('click', () => { sync(); model.sections[+b.dataset.si!].items.push({ id: 'i' + Date.now().toString(36), text: {} }); applyPending(); draw(); }));
+      root.querySelectorAll<HTMLElement>('.te-item-del').forEach((b) => b.addEventListener('click', () => { sync(); model.sections[+b.dataset.si!].items.splice(+b.dataset.ii!, 1); applyPending(); draw(); }));
+      document.getElementById('te-save')!.addEventListener('click', async () => { sync(); applyPending(); await saveTemplate(); });
+    };
+    // flytt _t (redigert tekst) inn i {no,pl,en} for hver seksjon/punkt
+    const applyPending = () => {
+      model.sections.forEach((s: any) => {
+        if (s._t !== undefined) { const v = s._t; s.title = { no: v, pl: v, en: v }; delete s._t; if (!s.id) s.id = 's' + Math.random().toString(36).slice(2, 8); }
+        (s.items || []).forEach((it: any) => { if (it._t !== undefined) { const v = it._t; it.text = { no: v, pl: v, en: v }; delete it._t; if (!it.id) it.id = 'i' + Math.random().toString(36).slice(2, 8); } });
+      });
+    };
+    const saveTemplate = async () => {
+      const msg = document.getElementById('te-msg')!;
+      if (!model.name.trim()) { msg.textContent = p('nameRequired'); return; }
+      const { data: u } = await supabase.auth.getUser();
+      const payload: any = { name: model.name.trim(), kind: model.kind, description: model.description || null, sections: model.sections, is_standard: false };
+      let error;
+      if (isNew) { ({ error } = await supabase.from('templates').insert({ ...payload, slug: null, created_by: u.user?.id })); }
+      else { ({ error } = await supabase.from('templates').update(payload).eq('id', model.id)); }
+      if (error) { msg.textContent = error.message; return; }
+      await loadTemplates(); renderTemplates();
+    };
+    draw();
   }
 
   // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
@@ -579,7 +806,7 @@ import { ksUi, checklist, safetyRound } from '../../../data/ks';
       tbody.querySelectorAll('tr[data-form]').forEach((tr) =>
         tr.addEventListener('click', () => {
           const r = ((window as any).__arch as any[]).find((x) => x.id === (tr as HTMLElement).dataset.form);
-          if (r) { const items = r.type === 'verneround' ? SAFETYROUND : CHECKLIST; makeFormPdf(r, items, r.type === 'verneround' ? t('verneround') : t('checklist'), r.projects?.name); }
+          if (r) { const items = r.sections && r.sections.length ? r.sections : (r.type === 'verneround' ? SAFETYROUND : CHECKLIST); makeFormPdf(r, items, r.type === 'verneround' ? t('verneround') : t('checklist'), r.projects?.name); }
         }));
     };
     ['a-search', 'a-type', 'a-sort'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
