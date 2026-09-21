@@ -115,6 +115,8 @@ import { handbooks } from '../../../data/ksHandbooks';
   .hb-title { font-family: var(--font-head); font-weight: 700; font-size: 1rem; }
   .hb-meta { font-size: .8rem; color: #aab2bd; word-break: break-all; }
   .hb-go { font-family: var(--font-head); font-weight: 700; font-size: .82rem; color: #ff8a91; white-space: nowrap; }
+  .hb-review { background: #12855218; color: #0c6b42; border: 1px solid #12855244; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: .9rem; }
+  .hb-review.overdue { background: #cc1f2a14; color: var(--brand-dark); border-color: #cc1f2a44; font-weight: 600; }
   .hb-chap { background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
   .hb-chap > summary { cursor: pointer; padding: 14px 16px; font-family: var(--font-head); font-weight: 700; font-size: 1.02rem; list-style: none; }
   .hb-chap > summary::-webkit-details-marker { display: none; }
@@ -376,6 +378,8 @@ import { handbooks } from '../../../data/ksHandbooks';
     searchHandbook: { no: 'Søk i håndboken…', pl: 'Szukaj w podręczniku…', en: 'Search the handbook…' },
     tableOfContents: { no: 'Innhold', pl: 'Spis treści', en: 'Contents' },
     noHits: { no: 'Ingen treff.', pl: 'Brak wyników.', en: 'No matches.' },
+    nextReview: { no: 'Neste gjennomgang', pl: 'Następny przegląd', en: 'Next review' },
+    reviewOverdue: { no: '⚠ Håndboken skal gjennomgås/oppdateres (over 6 måneder siden siste revisjon)', pl: '⚠ Podręcznik wymaga przeglądu (ponad 6 miesięcy od ostatniej rewizji)', en: '⚠ Handbook is due for review (over 6 months since last revision)' },
     fdvArchive: { no: 'FDV-arkiv', pl: 'Archiwum FDV', en: 'FDV archive' },
     fdvIntro: { no: 'Produkter Dekmar bruker mest. Kjemikalier kan hentes rett inn i et prosjekts stoffkartotek.', pl: 'Najczęściej używane produkty. Substancje można dodać do rejestru w projekcie.', en: 'Products Dekmar uses most. Chemicals can be pulled into a project’s register.' },
     newFdv: { no: '+ Nytt produkt', pl: '+ Nowy produkt', en: '+ New product' },
@@ -1645,18 +1649,33 @@ import { handbooks } from '../../../data/ksHandbooks';
     root.querySelectorAll<HTMLElement>('[data-article]').forEach((el) => el.addEventListener('click', () => renderArticle(ARTICLES.find((a: any) => a.id === el.dataset.article))));
   }
 
-  // ---------- Elektronisk håndbok-leser (kapittelnavigasjon + søk) ----------
+  // ---------- Elektronisk håndbok-leser (kapittelnavigasjon + søk, NO/PL/EN) ----------
+  // Gir «neste gjennomgang» = revisjonsdato + 6 mnd, og varsel når forfalt
+  function reviewInfo(reviewDate: string) {
+    const base = new Date(reviewDate); if (isNaN(+base)) return null;
+    const due = new Date(base); due.setMonth(due.getMonth() + 6);
+    const overdue = Date.now() > +due;
+    return { due: due.toLocaleDateString('nb-NO'), overdue };
+  }
   function renderHandbookReader(key: string) {
     redraw = () => renderHandbookReader(key);
     const book = getHandbooks().find((b: any) => b.key === key);
     if (!book) { renderArticles(); return; }
+    const L = lang();
+    const chTitle = (c: any) => (L === 'en' ? (c.title_en || c.title) : c.title);
+    const chBody = (c: any) => (L === 'pl' ? (c.pl || c.no) : L === 'en' ? (c.en || c.no) : c.no);
     const chapHtml = (chapters: any[]) => chapters.map((c: any, i: number) => `
-      <details class="hb-chap" data-ci="${i}"><summary>${esc(c.title)}</summary><div class="p-article">${c.body}</div></details>`).join('');
+      <details class="hb-chap" data-ci="${i}"><summary>${esc(chTitle(c))}</summary><div class="p-article">${chBody(c)}</div></details>`).join('');
+    const ri = reviewInfo(book.reviewDate);
+    const reviewBanner = ri ? (ri.overdue
+      ? `<div class="hb-review overdue">${esc(p('reviewOverdue'))} (${esc(book.revision)})</div>`
+      : `<div class="hb-review">${esc(p('nextReview'))}: ${esc(ri.due)}</div>`) : '';
     root.innerHTML = `
       <div class="p-head">
         <div><h1>${esc(book.title)}</h1><p class="p-muted">${esc(book.revision)}</p></div>
         <div class="p-user"><button class="btn btn--ghost" id="hbr-back">${esc(p('back'))}</button></div>
       </div>
+      ${reviewBanner}
       <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="hbr-search" type="search" placeholder="${esc(p('searchHandbook'))}" autocomplete="off"></div>
       <div id="hbr-list">${chapHtml(book.chapters)}</div>
       <p class="p-muted" id="hbr-none" hidden>${esc(p('noHits'))}</p>`;
@@ -1665,7 +1684,7 @@ import { handbooks } from '../../../data/ksHandbooks';
     const list = document.getElementById('hbr-list')!;
     const none = document.getElementById('hbr-none')!;
     const chaps = Array.from(list.querySelectorAll<HTMLDetailsElement>('.hb-chap'));
-    const texts = book.chapters.map((c: any) => (c.title + ' ' + c.body).toLowerCase().replace(/<[^>]+>/g, ' '));
+    const texts = book.chapters.map((c: any) => (chTitle(c) + ' ' + chBody(c)).toLowerCase().replace(/<[^>]+>/g, ' '));
     search.addEventListener('input', () => {
       const q = search.value.trim().toLowerCase();
       let shown = 0;
