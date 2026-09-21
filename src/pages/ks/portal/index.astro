@@ -14,7 +14,7 @@ import { standardArticles } from '../../../data/ksArticles';
   <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles })} />
 </KsLayout>
 
-<style>
+<style is:global>
   .portal-root { max-width: 1180px; margin-inline: auto; }
   .portal-loading { color: var(--muted); }
   /* App-skall */
