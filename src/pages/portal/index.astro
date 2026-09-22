@@ -9,6 +9,7 @@ import { handbooks } from '../../data/ksHandbooks';
 import { standardQuoteElements, standardTerms, quoteLetter } from '../../data/ksQuote';
 import { standardMaterials } from '../../data/ksCalc';
 import { hseFormTypes } from '../../data/ksForms';
+import { inspectionTemplates } from '../../data/ksInspect';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -17,7 +18,7 @@ import { hseFormTypes } from '../../data/ksForms';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials, hseFormTypes })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials, hseFormTypes, inspectionTemplates })} />
   <script type="application/json" id="ks-handbooks" set:html={JSON.stringify(handbooks)} />
 </KsLayout>
 
@@ -163,6 +164,11 @@ import { hseFormTypes } from '../../data/ksForms';
   .p-fdv-mark { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 22px; padding: 0 7px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; cursor: pointer; border: 1px solid var(--line, #d9dde3); color: var(--muted, #8a909a); background: transparent; transition: background .12s, color .12s, border-color .12s; }
   .p-fdv-mark:hover { border-color: var(--brand); color: var(--brand); }
   .p-fdv-mark.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .i-tg { font-weight: 600; }
+  .i-tg-tg0 { color: #1a7f37; }
+  .i-tg-tg1 { color: #8a6a00; }
+  .i-tg-tg2 { color: #b5510a; }
+  .i-tg-tg3 { color: #cc1f2a; }
   .p-section { margin-top: 30px; }
   .p-section > h2 { font-size: 1.25rem; }
   details.p-new { border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
@@ -269,6 +275,7 @@ import { hseFormTypes } from '../../data/ksForms';
   let QUOTE_ELEMENTS: any[] = [];
   let QUOTE_ELEMENTS_SEEDED = false;
   const HSE_FORM_TYPES = KSD.hseFormTypes || [];
+  const INSPECT_TEMPLATES = KSD.inspectionTemplates || [];
   const STD_MATERIALS = KSD.materials || [];
   let MATERIALS: any[] = [];
   let MATERIALS_SEEDED = false;
@@ -569,6 +576,22 @@ import { hseFormTypes } from '../../data/ksForms';
     colRecommendation: { no: 'Anbefaling / tiltak', pl: 'Zalecenie / działanie', en: 'Recommendation / action' },
     inspPhotos: { no: 'Bilder', pl: 'Zdjęcia', en: 'Photos' },
     inspToQuote: { no: 'Lag tilbud fra befaring', pl: 'Utwórz ofertę z inspekcji', en: 'Create quote from survey' },
+    inspToProject: { no: 'Opprett prosjekt fra befaring', pl: 'Utwórz projekt z inspekcji', en: 'Create project from survey' },
+    inspTemplate: { no: 'Befaringsmal', pl: 'Szablon inspekcji', en: 'Survey template' },
+    inspTemplatePick: { no: '— Velg mal (fyller inn punkter) —', pl: '— Wybierz szablon —', en: '— Choose template —' },
+    colTg: { no: 'TG', pl: 'TG', en: 'CG' },
+    colPrio: { no: 'Prioritet', pl: 'Priorytet', en: 'Priority' },
+    colEstimate: { no: 'Estimat (kr)', pl: 'Szacunek (kr)', en: 'Estimate (kr)' },
+    inspTotalEstimate: { no: 'Sum estimert kostnad (eks. mva)', pl: 'Suma szacowanych kosztów (bez VAT)', en: 'Total estimated cost (excl. VAT)' },
+    tg0: { no: 'TG0 – ingen avvik', pl: 'TG0 – brak', en: 'CG0 – none' },
+    tg1: { no: 'TG1 – mindre avvik', pl: 'TG1 – drobne', en: 'CG1 – minor' },
+    tg2: { no: 'TG2 – vesentlig avvik', pl: 'TG2 – istotne', en: 'CG2 – significant' },
+    tg3: { no: 'TG3 – alvorlig / strakstiltak', pl: 'TG3 – poważne', en: 'CG3 – serious' },
+    prioNow: { no: 'Strakstiltak', pl: 'Natychmiast', en: 'Immediate' },
+    prioShort: { no: '1–5 år', pl: '1–5 lat', en: '1–5 years' },
+    prioLong: { no: 'Over 5 år', pl: 'Ponad 5 lat', en: 'Over 5 years' },
+    prioWatch: { no: 'Overvåk', pl: 'Monitoruj', en: 'Monitor' },
+    inspProjectCreated: { no: 'Prosjekt opprettet', pl: 'Utworzono projekt', en: 'Project created' },
     cardInspect: { no: 'Befaring', pl: 'Inspekcja', en: 'Survey' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
@@ -3216,17 +3239,30 @@ import { hseFormTypes } from '../../data/ksForms';
       <label class="p-field">${esc(p('quoteAddress'))}<input id="i-address" value="${esc(state.address)}"></label>
       <label class="p-field">${esc(p('inspPresent'))}<input id="i-present" value="${esc(state.present)}"></label>
       <p class="p-subhead">${esc(p('inspObs'))}</p>
-      <div class="p-tablewrap"><table class="ql-table"><thead><tr><th>${esc(p('colArea'))}</th><th>${esc(p('colObservation'))}</th><th>${esc(p('colRecommendation'))}</th><th></th></tr></thead><tbody id="i-rows"></tbody></table></div>
+      <label class="p-field" style="max-width:420px">${esc(p('inspTemplate'))}<select id="i-tmpl"><option value="">${esc(p('inspTemplatePick'))}</option>${INSPECT_TEMPLATES.map((tm: any) => `<option value="${esc(tm.slug)}">${esc(tm.name)}</option>`).join('')}</select></label>
+      <div class="p-tablewrap"><table class="ql-table i-obs-table"><thead><tr><th>${esc(p('colArea'))}</th><th>${esc(p('colObservation'))}</th><th>${esc(p('colRecommendation'))}</th><th>${esc(p('colTg'))}</th><th>${esc(p('colPrio'))}</th><th>${esc(p('colEstimate'))}</th><th></th></tr></thead><tbody id="i-rows"></tbody></table></div>
       <button class="btn btn--ghost p-sm" id="i-addrow" type="button" style="margin-top:6px">${esc(p('addRowLabel'))}</button>
+      <div id="i-total" class="ql-totals" style="margin-top:8px"></div>
       <label class="p-field" style="margin-top:14px">${esc(p('inspPhotos'))}<input id="i-photos" type="file" accept="image/*" capture="environment" multiple></label>
       <div class="p-thumbs" id="i-thumbs"></div>
       <label class="p-field">${esc(p('inspSummary'))}<textarea id="i-summary" rows="3">${esc(state.summary)}</textarea></label>
-      <div class="q-actions"><button class="btn btn--primary" id="i-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="i-pdf" type="button">${esc(p('downloadPdf'))}</button><button class="btn btn--ghost" id="i-pdf-en" type="button">${esc(p('pdfEn'))}</button><button class="btn btn--ghost" id="i-pdf-pl" type="button">${esc(p('pdfPl'))}</button><button class="btn btn--ghost" id="i-toquote" type="button">${esc(p('inspToQuote'))}</button>${state.id ? `<button class="btn btn--ghost" id="i-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="i-msg"></span></div>`;
+      <div class="q-actions"><button class="btn btn--primary" id="i-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="i-pdf" type="button">${esc(p('downloadPdf'))}</button><button class="btn btn--ghost" id="i-pdf-en" type="button">${esc(p('pdfEn'))}</button><button class="btn btn--ghost" id="i-pdf-pl" type="button">${esc(p('pdfPl'))}</button><button class="btn btn--ghost" id="i-toquote" type="button">${esc(p('inspToQuote'))}</button><button class="btn btn--ghost" id="i-toproject" type="button">${esc(p('inspToProject'))}</button>${state.id ? `<button class="btn btn--ghost" id="i-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="i-msg"></span></div>`;
+    const TG_OPTS: [string, string][] = [['', '—'], ['tg0', p('tg0')], ['tg1', p('tg1')], ['tg2', p('tg2')], ['tg3', p('tg3')]];
+    const PRIO_OPTS: [string, string][] = [['', '—'], ['now', p('prioNow')], ['short', p('prioShort')], ['long', p('prioLong')], ['watch', p('prioWatch')]];
+    const optList = (opts: [string, string][], val: any) => opts.map(([v, l]) => `<option value="${esc(v)}"${(val || '') === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
+    const drawTotal = () => { const el = document.getElementById('i-total'); if (!el) return; const sum = state.rows.reduce((s: number, r: any) => s + numv(r.cost), 0); el.innerHTML = sum > 0 ? `<div class="grand">${esc(p('inspTotalEstimate'))}: kr ${esc(nok(sum))}</div>` : ''; };
     const drawRows = () => {
       const tb = document.getElementById('i-rows')!;
-      tb.innerHTML = state.rows.length ? state.rows.map((r: any, i: number) => `<tr><td><input data-i="${i}" data-f="area" value="${esc(r.area || '')}"></td><td><input data-i="${i}" data-f="obs" value="${esc(r.obs || '')}"></td><td><input data-i="${i}" data-f="rec" value="${esc(r.rec || '')}"></td><td><button class="ql-del" data-del="${i}" type="button">✕</button></td></tr>`).join('') : `<tr><td colspan="4" class="p-muted">—</td></tr>`;
-      tb.querySelectorAll('input[data-i]').forEach((inp) => inp.addEventListener('input', (e) => { const el = e.target as HTMLInputElement; state.rows[+el.dataset.i!][el.dataset.f!] = el.value; }));
-      tb.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', (e) => { state.rows.splice(+(e.target as HTMLElement).dataset.del!, 1); drawRows(); }));
+      tb.innerHTML = state.rows.length ? state.rows.map((r: any, i: number) => `<tr>
+        <td><input data-i="${i}" data-f="area" value="${esc(r.area || '')}"></td>
+        <td><input data-i="${i}" data-f="obs" value="${esc(r.obs || '')}"></td>
+        <td><input data-i="${i}" data-f="rec" value="${esc(r.rec || '')}"></td>
+        <td><select data-i="${i}" data-f="tg" class="i-tg i-tg-${esc(r.tg || '')}">${optList(TG_OPTS, r.tg)}</select></td>
+        <td><select data-i="${i}" data-f="prio">${optList(PRIO_OPTS, r.prio)}</select></td>
+        <td><input data-i="${i}" data-f="cost" value="${esc(r.cost != null ? String(r.cost) : '')}" inputmode="decimal" style="width:78px"></td>
+        <td><button class="ql-del" data-del="${i}" type="button">✕</button></td></tr>`).join('') : `<tr><td colspan="7" class="p-muted">—</td></tr>`;
+      tb.querySelectorAll('[data-i]').forEach((el) => { const ev = el.tagName === 'SELECT' ? 'change' : 'input'; el.addEventListener(ev, (e) => { const t = e.target as HTMLInputElement; state.rows[+t.dataset.i!][t.dataset.f!] = t.value; if (t.dataset.f === 'cost') drawTotal(); if (t.dataset.f === 'tg') t.className = 'i-tg i-tg-' + t.value; }); });
+      tb.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', (e) => { state.rows.splice(+(e.target as HTMLElement).dataset.del!, 1); drawRows(); drawTotal(); }));
     };
     const drawThumbs = () => { document.getElementById('i-thumbs')!.innerHTML = existingPhotos.map((ph: any) => `<div class="p-thumb" data-exist="${esc(ph.id)}"><img src="${esc(ph.__url || '')}"><button class="p-thumb-del" data-pdel="${esc(ph.id)}" type="button">✕</button></div>`).join('') + pending.map((x, i) => `<div class="p-thumb"><img src="${x.dataUrl}"><button class="p-thumb-del" data-pend="${i}" type="button">✕</button></div>`).join(''); bindThumbs(); };
     const bindThumbs = () => {
@@ -3237,12 +3273,17 @@ import { hseFormTypes } from '../../data/ksForms';
     for (const ph of existingPhotos) { const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 3600); ph.__url = s?.signedUrl || ''; }
     document.getElementById('i-back')!.addEventListener('click', renderInspections);
     document.getElementById('i-addrow')!.addEventListener('click', () => { state.rows.push({}); drawRows(); });
+    (document.getElementById('i-tmpl') as HTMLSelectElement).addEventListener('change', (e) => {
+      const slug = (e.target as HTMLSelectElement).value; const tm = INSPECT_TEMPLATES.find((x: any) => x.slug === slug);
+      if (tm) { tm.points.forEach((pt: any) => state.rows.push({ area: pt.area, obs: pt.obs, rec: '', tg: '', prio: '', cost: '' })); drawRows(); drawTotal(); }
+      (e.target as HTMLSelectElement).value = '';
+    });
     (document.getElementById('i-photos') as HTMLInputElement).addEventListener('change', async (e) => { const inp = e.target as HTMLInputElement; for (const f of Array.from(inp.files || [])) { const s = await shrink(f); pending.push(s); } inp.value = ''; drawThumbs(); });
     const readTop = () => { state.title = (document.getElementById('i-title') as HTMLInputElement).value.trim(); state.insp_date = (document.getElementById('i-date') as HTMLInputElement).value || null; state.customer_id = (document.getElementById('i-cust') as HTMLSelectElement).value || null; state.project_id = (document.getElementById('i-proj') as HTMLSelectElement).value || null; state.address = (document.getElementById('i-address') as HTMLInputElement).value.trim(); state.present = (document.getElementById('i-present') as HTMLInputElement).value.trim(); state.summary = (document.getElementById('i-summary') as HTMLTextAreaElement).value; };
     const doSave = async () => {
       readTop(); const msg = document.getElementById('i-msg')!; msg.textContent = p('saving');
       const { data: u } = await supabase.auth.getUser();
-      const payload: any = { customer_id: state.customer_id, project_id: state.project_id, title: state.title || null, address: state.address || null, insp_date: state.insp_date, present: state.present || null, summary: state.summary || null, rows: state.rows.filter((r: any) => r.area || r.obs || r.rec) };
+      const payload: any = { customer_id: state.customer_id, project_id: state.project_id, title: state.title || null, address: state.address || null, insp_date: state.insp_date, present: state.present || null, summary: state.summary || null, rows: state.rows.filter((r: any) => r.area || r.obs || r.rec || r.tg || r.prio || r.cost) };
       if (!state.number && !state.id) { const year = new Date().getFullYear(); const { data: mx } = await supabase.from('inspections').select('number').like('number', `BEF-${year}-%`).order('number', { ascending: false }).limit(1); let seq = 1; if (mx && mx[0] && mx[0].number) { const mm = String(mx[0].number).match(/BEF-\d+-(\d+)/); if (mm) seq = (+mm[1]) + 1; } payload.number = `BEF-${year}-${String(seq).padStart(3, '0')}`; state.number = payload.number; }
       let res; if (state.id) res = await supabase.from('inspections').update(payload).eq('id', state.id).select().single();
       else { payload.created_by = u.user?.id; res = await supabase.from('inspections').insert(payload).select().single(); }
@@ -3257,7 +3298,7 @@ import { hseFormTypes } from '../../data/ksForms';
     const iPdfLang = async (target: string) => {
       await doSave(); const cust = CUST.find((c: any) => c.id === state.customer_id) || {};
       const msg = document.getElementById('i-msg')!; msg.textContent = p('translating');
-      const strings: string[] = ['Befaringsrapport', 'Område', 'Observasjon', 'Anbefaling', p('inspObs'), p('inspSummary'), p('inspPhotos'), state.title, state.summary];
+      const strings: string[] = ['Befaringsrapport', 'Område', 'Observasjon', 'Anbefaling', p('inspObs'), p('inspSummary'), p('inspPhotos'), p('colTg'), p('colPrio'), p('colEstimate'), p('inspTotalEstimate'), p('prioNow'), p('prioShort'), p('prioLong'), p('prioWatch'), state.title, state.summary];
       state.rows.forEach((r: any) => { strings.push(r.area); strings.push(r.obs); strings.push(r.rec); });
       try { const m = await translateMap(strings.filter(Boolean), target); msg.textContent = ''; await makeInspectionPdf(state, cust, existingPhotos, (s: string) => m.get(s) || s, langName(target)); }
       catch (e: any) { msg.textContent = (p('translateFail') + ' ' + (e.message || '')).trim(); }
@@ -3269,7 +3310,16 @@ import { hseFormTypes } from '../../data/ksForms';
       const { error } = await supabase.from('quotes').insert({ title: state.title || null, address: state.address || null, customer_id: state.customer_id, project_id: state.project_id, lines: [], terms: STD_QUOTE_TERMS.filter((tm: any) => tm.on).map((tm: any) => tm.text.replace('{rate}', nok(QUOTE_LETTER.hourlyDefault || 850))), vat_rate: 25, valid_days: QUOTE_LETTER.validDaysDefault || 30, hourly_rate: QUOTE_LETTER.hourlyDefault || 850, signatory: (QUOTE_LETTER.signatories[0] || {}).name, status: 'draft', created_by: u.user?.id });
       const msg = document.getElementById('i-msg')!; if (error) msg.textContent = error.message; else { ACTIVE_NAV = 'quotes'; paintShellChrome(); renderQuotes(); }
     });
-    drawRows(); drawThumbs();
+    document.getElementById('i-toproject')!.addEventListener('click', async () => {
+      await doSave(); const { data: u } = await supabase.auth.getUser();
+      const cust = CUST.find((c: any) => c.id === state.customer_id) || {};
+      const { data: proj, error } = await supabase.from('projects').insert({ name: state.title || (p('inspProjectCreated') + ' ' + (state.number || '')), address: state.address || null, client: cust.name || null, status: 'active', created_by: u.user?.id }).select().single();
+      const msg = document.getElementById('i-msg')!;
+      if (error) { msg.textContent = error.message; return; }
+      // koble befaringen til det nye prosjektet
+      if (proj) { await supabase.from('inspections').update({ project_id: proj.id }).eq('id', state.id); openProject(proj.id); }
+    });
+    drawRows(); drawThumbs(); drawTotal();
   }
 
   async function makeInspectionPdf(state: any, cust: any, photos: any[], T: (s: string) => string = (s) => s, lang = '') {
@@ -3287,16 +3337,27 @@ import { hseFormTypes } from '../../data/ksForms';
     y += 2;
     if ((state.rows || []).length) {
       doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(T(p('inspObs')), margin, y); y += 5;
-      const xs = [margin, margin + 45, margin + 110]; const ws = [43, 63, maxW - 110];
-      doc.setFontSize(8); doc.setTextColor(90, 96, 104); doc.text(T('Område'), xs[0], y); doc.text(T('Observasjon'), xs[1], y); doc.text(T('Anbefaling'), xs[2], y); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+      const xs = [margin, margin + 30, margin + 78, margin + 120, margin + 137, margin + maxW]; const ws = [28, 46, 40, 15, 21, 22];
+      doc.setFontSize(7.6); doc.setTextColor(90, 96, 104);
+      doc.text(T('Område'), xs[0], y); doc.text(T('Observasjon'), xs[1], y); doc.text(T('Anbefaling'), xs[2], y); doc.text(T(p('colTg')), xs[3], y); doc.text(T(p('colPrio')), xs[4], y); doc.text(T(p('colEstimate')), xs[5], y, { align: 'right' } as any);
+      y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+      const tgColor: Record<string, number[]> = { tg0: [26, 127, 55], tg1: [138, 106, 0], tg2: [181, 81, 10], tg3: [204, 31, 42] };
+      const PRIO_MAP: Record<string, string> = { now: 'prioNow', short: 'prioShort', long: 'prioLong', watch: 'prioWatch' };
+      let estTotal = 0;
       state.rows.forEach((r: any) => {
         const t0 = doc.splitTextToSize(T(r.area || ''), ws[0]), t1 = doc.splitTextToSize(T(r.obs || ''), ws[1]), t2 = doc.splitTextToSize(T(r.rec || ''), ws[2]);
-        const rowH = Math.max(t0.length, t1.length, t2.length) * 4.2 || 4.2;
+        const prioTxt = r.prio && PRIO_MAP[r.prio] ? T(p(PRIO_MAP[r.prio])) : '';
+        const t4 = doc.splitTextToSize(prioTxt, ws[4]);
+        const rowH = Math.max(t0.length, t1.length, t2.length, t4.length, 1) * 4.2;
         if (y + rowH > 282) { doc.addPage(); y = margin; }
-        doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5);
+        doc.setFont('DejaVu', 'normal'); doc.setFontSize(8);
         t0.forEach((ln: string, k: number) => doc.text(ln, xs[0], y + k * 4.2)); t1.forEach((ln: string, k: number) => doc.text(ln, xs[1], y + k * 4.2)); t2.forEach((ln: string, k: number) => doc.text(ln, xs[2], y + k * 4.2));
+        if (r.tg) { const c = tgColor[r.tg] || [20, 23, 28]; doc.setFont('DejaVu', 'bold'); doc.setTextColor(c[0], c[1], c[2]); doc.text(String(r.tg).toUpperCase(), xs[3], y); doc.setTextColor(20, 23, 28); doc.setFont('DejaVu', 'normal'); }
+        t4.forEach((ln: string, k: number) => doc.text(ln, xs[4], y + k * 4.2));
+        if (r.cost) { doc.text(nok(numv(r.cost)), xs[5], y, { align: 'right' } as any); estTotal += numv(r.cost); }
         y += rowH + 2;
       });
+      if (estTotal > 0) { if (y + 8 > 285) { doc.addPage(); y = margin; } doc.setDrawColor(20, 23, 28); doc.line(margin + 110, y, margin + maxW, y); y += 5; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.text(T(p('inspTotalEstimate')), margin + 110, y); doc.text('kr ' + nok(estTotal), margin + maxW, y, { align: 'right' } as any); y += 6; doc.setFont('DejaVu', 'normal'); }
       y += 2;
     }
     if (state.summary) { if (y > 260) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(T(p('inspSummary')), margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.splitTextToSize(T(state.summary), maxW).forEach((ln: string) => { if (y > 285) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3; }
