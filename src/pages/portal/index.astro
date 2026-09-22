@@ -175,6 +175,10 @@ import { inspectionTemplates } from '../../data/ksInspect';
   .p-timestats strong { font-size: 1.15rem; }
   tr.p-click { cursor: pointer; }
   tr.p-click:hover td { background: rgba(0,0,0,.03); }
+  .p-weeknav { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0 16px; }
+  .p-week-label { font-size: 1.05rem; }
+  .p-controlled { background: #e4f4e8; color: #1a7f37; border-radius: 10px; padding: 8px 12px; font-size: .9rem; font-weight: 600; margin-bottom: 14px; }
+  .p-weektable tr.p-weeksum td { border-top: 2px solid #20231c; font-weight: 700; }
   .p-section { margin-top: 30px; }
   .p-section > h2 { font-size: 1.25rem; }
   details.p-new { border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
@@ -620,6 +624,21 @@ import { inspectionTemplates } from '../../data/ksInspect';
     timeListPdf: { no: 'Timeliste (PDF)', pl: 'Lista godzin (PDF)', en: 'Timesheet (PDF)' },
     totalHours: { no: 'Sum timer', pl: 'Suma godzin', en: 'Total hours' },
     hoursShort: { no: 't', pl: 'godz', en: 'h' },
+    weekControl: { no: 'Ukekontroll', pl: 'Kontrola tygodniowa', en: 'Weekly control' },
+    cardWeekDesc: { no: 'Ukevis oversikt og godkjenning av timer', pl: 'Tygodniowy przegląd i zatwierdzanie godzin', en: 'Weekly overview and approval of hours' },
+    weekLabel: { no: 'Uke', pl: 'Tydzień', en: 'Week' },
+    prevWeek: { no: '‹ Forrige', pl: '‹ Poprzedni', en: '‹ Prev' },
+    nextWeek: { no: 'Neste ›', pl: 'Następny ›', en: 'Next ›' },
+    thisWeek: { no: 'Denne uken', pl: 'Ten tydzień', en: 'This week' },
+    weekEmployee: { no: 'Ansatt', pl: 'Pracownik', en: 'Employee' },
+    weekSum: { no: 'Sum', pl: 'Suma', en: 'Total' },
+    noEntriesWeek: { no: 'Ingen timer registrert denne uken.', pl: 'Brak godzin w tym tygodniu.', en: 'No hours logged this week.' },
+    perProjectWeek: { no: 'Per prosjekt', pl: 'Wg projektu', en: 'By project' },
+    markControlled: { no: 'Marker uke som kontrollert', pl: 'Oznacz tydzień jako sprawdzony', en: 'Mark week as controlled' },
+    undoControlled: { no: 'Opphev kontroll', pl: 'Cofnij kontrolę', en: 'Undo control' },
+    weekControlledBy: { no: 'Kontrollert av', pl: 'Sprawdzone przez', en: 'Controlled by' },
+    weekReportPdf: { no: 'Ukerapport (PDF)', pl: 'Raport tygodniowy (PDF)', en: 'Weekly report (PDF)' },
+    controlNote: { no: 'Merknad (valgfri)', pl: 'Uwaga (opcjonalnie)', en: 'Note (optional)' },
     cardInspect: { no: 'Befaring', pl: 'Inspekcja', en: 'Survey' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
@@ -741,6 +760,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     calc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v3M8 18h4"/></svg>',
     inspect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6a1 1 0 0 1 1 1v1h1a2 2 0 0 1 2 2v6"/><path d="M16 5H8a0 0 0 0 0 0 0V4a1 1 0 0 1 1-1"/><rect x="4" y="5" width="12" height="16" rx="2"/><circle cx="12.5" cy="13" r="2.5"/><path d="m14.4 14.9 1.6 1.6"/></svg>',
     time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+    week: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/><path d="m9 14.5 2 2 4-4"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
     { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
@@ -749,6 +769,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     { id: 'calc', icon: 'calc', label: () => p('calc'), run: () => renderCalc() },
     { id: 'inspections', icon: 'inspect', label: () => p('inspections'), run: () => renderInspections() },
     { id: 'time', icon: 'time', label: () => p('timeTracking'), run: () => renderTime() },
+    { id: 'weekcontrol', icon: 'week', label: () => p('weekControl'), run: () => renderWeekControl() },
     { id: 'customers', icon: 'customer', label: () => p('customers'), run: () => renderCustomers() },
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
@@ -1020,6 +1041,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
         ${card('calc', 'calc', p('calc'), p('cardCalcDesc'))}
         ${card('inspections', 'inspect', p('inspections'), p('cardInspectDesc'))}
         ${card('time', 'time', p('timeTracking'), p('cardTimeDesc'))}
+        ${card('weekcontrol', 'week', p('weekControl'), p('cardWeekDesc'))}
         ${card('customers', 'customer', p('customers'), p('cardCustomersDesc'))}
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
@@ -3553,6 +3575,111 @@ import { inspectionTemplates } from '../../data/ksInspect';
     doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('totalHours'), margin + 78, y); doc.text(nok(logged), margin + maxW, y, { align: 'right' } as any); y += 6;
     if (budget > 0) { doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5); doc.text(p('budgetHours') + ': ' + nok(budget) + '  ·  ' + (logged > budget ? p('overBudget') + ' ' + nok(logged - budget) : p('remainingHours') + ' ' + nok(budget - logged)), margin + 78, y); }
     await deliverPdf(doc, `Dekmar_Timeliste_${(pr?.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${p('timeListPdf')} – ${pr?.name || ''}`);
+  }
+
+  // ================= Ukekontroll =================
+  let WEEK_STATE: { y: number; w: number } | null = null;
+  function isoWeekOf(d: Date): [number, number] {
+    const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = (dt.getUTCDay() + 6) % 7; dt.setUTCDate(dt.getUTCDate() - day + 3);
+    const firstThu = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4));
+    const week = 1 + Math.round(((dt.getTime() - firstThu.getTime()) / 86400000 - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
+    return [dt.getUTCFullYear(), week];
+  }
+  function mondayOf(y: number, w: number): Date {
+    const simple = new Date(Date.UTC(y, 0, 4)); const day = (simple.getUTCDay() + 6) % 7;
+    const monday = new Date(simple); monday.setUTCDate(simple.getUTCDate() - day + (w - 1) * 7); return monday;
+  }
+  const ymd = (d: Date) => d.toISOString().slice(0, 10);
+  function shiftWeek(y: number, w: number, delta: number): { y: number; w: number } {
+    const mon = mondayOf(y, w); mon.setUTCDate(mon.getUTCDate() + delta * 7);
+    const [ny, nw] = isoWeekOf(new Date(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate())); return { y: ny, w: nw };
+  }
+
+  async function renderWeekControl() {
+    redraw = renderWeekControl; await ensureShell('weekcontrol');
+    if (!WEEK_STATE) { const [y, w] = isoWeekOf(new Date()); WEEK_STATE = { y, w }; }
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const monday = mondayOf(WEEK_STATE.y, WEEK_STATE.w);
+    const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 6);
+    const startS = ymd(monday), endS = ymd(sunday);
+    const [entRes, projRes, ctrlRes] = await Promise.all([
+      supabase.from('time_entries').select('*').gte('work_date', startS).lte('work_date', endS),
+      supabase.from('projects').select('id,name').order('name'),
+      supabase.from('week_controls').select('*').eq('iso_year', WEEK_STATE.y).eq('iso_week', WEEK_STATE.w).maybeSingle(),
+    ]);
+    const ENT = entRes.data || []; const PROJ = projRes.data || []; const ctrl = ctrlRes.data;
+    const projName = (id: string) => (PROJ.find((x: any) => x.id === id) || {}).name || '—';
+    const DAY_NAMES: Record<string, string[]> = { no: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'], pl: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'], en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] };
+    const days = DAY_NAMES[lang()] || DAY_NAMES.no;
+    const dayKeys = [0, 1, 2, 3, 4, 5, 6].map((i) => { const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + i); return ymd(d); });
+    const byEmp: Record<string, { days: number[]; total: number }> = {};
+    const byProj: Record<string, number> = {}; let grand = 0;
+    ENT.forEach((e: any) => {
+      const emp = e.employee || '—';
+      if (!byEmp[emp]) byEmp[emp] = { days: [0, 0, 0, 0, 0, 0, 0], total: 0 };
+      const di = dayKeys.indexOf(e.work_date); const h = numv(e.hours);
+      if (di >= 0) byEmp[emp].days[di] += h;
+      byEmp[emp].total += h; byProj[e.project_id] = (byProj[e.project_id] || 0) + h; grand += h;
+    });
+    const emps = Object.keys(byEmp).sort();
+    const dayTotals = [0, 1, 2, 3, 4, 5, 6].map((i) => emps.reduce((s, e) => s + byEmp[e].days[i], 0));
+    const range = `${fmt(startS)} – ${fmt(endS)}`;
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('weekControl'))}</h1></div>
+      <div class="p-weeknav">
+        <button class="btn btn--ghost p-sm" id="wk-prev">${esc(p('prevWeek'))}</button>
+        <span class="p-week-label"><strong>${esc(p('weekLabel'))} ${WEEK_STATE.w}</strong> · ${WEEK_STATE.y} <span class="p-muted">(${esc(range)})</span></span>
+        <button class="btn btn--ghost p-sm" id="wk-next">${esc(p('nextWeek'))}</button>
+        <button class="btn btn--ghost p-sm" id="wk-this">${esc(p('thisWeek'))}</button>
+      </div>
+      ${ctrl ? `<div class="p-controlled">✓ ${esc(p('weekControlledBy'))} ${esc(ctrl.controlled_by_email || '')} · ${esc(fmt(ctrl.controlled_at))}${ctrl.note ? ' · ' + esc(ctrl.note) : ''}</div>` : ''}
+      ${emps.length ? `
+      <div class="p-tablewrap"><table class="p-table p-weektable"><thead><tr><th>${esc(p('weekEmployee'))}</th>${days.map((d) => `<th style="text-align:right">${esc(d)}</th>`).join('')}<th style="text-align:right">${esc(p('weekSum'))}</th></tr></thead><tbody>
+        ${emps.map((e) => `<tr><td>${esc(e)}</td>${byEmp[e].days.map((h) => `<td style="text-align:right">${h ? esc(nok(h)) : ''}</td>`).join('')}<td style="text-align:right;font-weight:600">${esc(nok(byEmp[e].total))}</td></tr>`).join('')}
+        <tr class="p-weeksum"><td>${esc(p('weekSum'))}</td>${dayTotals.map((h) => `<td style="text-align:right">${h ? esc(nok(h)) : ''}</td>`).join('')}<td style="text-align:right">${esc(nok(grand))}</td></tr>
+      </tbody></table></div>
+      <div class="p-section"><h2>${esc(p('perProjectWeek'))}</h2>
+        <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('colProject'))}</th><th style="text-align:right">${esc(p('timeHours'))}</th></tr></thead><tbody>
+          ${Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).map((pid) => `<tr><td>${esc(projName(pid))}</td><td style="text-align:right">${esc(nok(byProj[pid]))}</td></tr>`).join('')}
+        </tbody></table></div>
+      </div>
+      <div class="p-card" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        ${ctrl ? `<button class="btn btn--ghost" id="wk-uncontrol" type="button">${esc(p('undoControlled'))}</button>` : `<label class="p-field" style="flex:1;min-width:220px">${esc(p('controlNote'))}<input id="wk-note"></label><button class="btn btn--primary" id="wk-control" type="button">${esc(p('markControlled'))}</button>`}
+        <button class="btn btn--ghost" id="wk-pdf" type="button">${esc(p('weekReportPdf'))}</button>
+      </div>`
+      : `<p class="p-muted" style="margin-top:16px">${esc(p('noEntriesWeek'))}</p>`}`;
+    document.getElementById('wk-prev')!.addEventListener('click', () => { WEEK_STATE = shiftWeek(WEEK_STATE!.y, WEEK_STATE!.w, -1); renderWeekControl(); });
+    document.getElementById('wk-next')!.addEventListener('click', () => { WEEK_STATE = shiftWeek(WEEK_STATE!.y, WEEK_STATE!.w, 1); renderWeekControl(); });
+    document.getElementById('wk-this')!.addEventListener('click', () => { const [y, w] = isoWeekOf(new Date()); WEEK_STATE = { y, w }; renderWeekControl(); });
+    const cbtn = document.getElementById('wk-control'); if (cbtn) cbtn.addEventListener('click', async () => {
+      const email = await currentEmailSafe(); const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('week_controls').upsert({ iso_year: WEEK_STATE!.y, iso_week: WEEK_STATE!.w, note: (document.getElementById('wk-note') as HTMLInputElement).value.trim() || null, controlled_by: u.user?.id, controlled_by_email: email, controlled_at: new Date().toISOString() }, { onConflict: 'iso_year,iso_week' });
+      if (error) alert(error.message); else renderWeekControl();
+    });
+    const ubtn = document.getElementById('wk-uncontrol'); if (ubtn) ubtn.addEventListener('click', async () => { await supabase.from('week_controls').delete().eq('iso_year', WEEK_STATE!.y).eq('iso_week', WEEK_STATE!.w); renderWeekControl(); });
+    const pbtn = document.getElementById('wk-pdf'); if (pbtn) pbtn.addEventListener('click', () => makeWeekPdf(WEEK_STATE!, range, days, emps, byEmp, dayTotals, grand, byProj, projName, ctrl));
+  }
+
+  async function makeWeekPdf(wk: any, range: string, days: string[], emps: string[], byEmp: any, dayTotals: number[], grand: number, byProj: any, projName: (id: string) => string, ctrl: any) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' }); await ensurePdfFont(doc); const logo = await ensureLogo();
+    const pageW = 297, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 18, 18); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(p('weekControl'), margin + 24, y + 7);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104); doc.text(`${p('weekLabel')} ${wk.w} · ${wk.y} · ${range}`, pageW - margin, y + 6, { align: 'right' } as any);
+    y += 24; doc.setTextColor(20, 23, 28);
+    const nameW = 62; const dayW = (maxW - nameW - 26) / 7; const sumX = margin + maxW;
+    const colX = (i: number) => margin + nameW + i * dayW + dayW - 2;
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+    doc.text(p('weekEmployee'), margin, y); days.forEach((d, i) => doc.text(d, colX(i), y, { align: 'right' } as any)); doc.text(p('weekSum'), sumX, y, { align: 'right' } as any);
+    y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(9);
+    emps.forEach((e) => { if (y > 190) { doc.addPage(); y = margin; } doc.text(e, margin, y); byEmp[e].days.forEach((h: number, i: number) => { if (h) doc.text(nok(h), colX(i), y, { align: 'right' } as any); }); doc.setFont('DejaVu', 'bold'); doc.text(nok(byEmp[e].total), sumX, y, { align: 'right' } as any); doc.setFont('DejaVu', 'normal'); y += 5.5; });
+    doc.setDrawColor(20, 23, 28); doc.line(margin, y, margin + maxW, y); y += 5; doc.setFont('DejaVu', 'bold'); doc.text(p('weekSum'), margin, y); dayTotals.forEach((h, i) => { if (h) doc.text(nok(h), colX(i), y, { align: 'right' } as any); }); doc.text(nok(grand), sumX, y, { align: 'right' } as any); y += 9; doc.setFont('DejaVu', 'normal');
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('perProjectWeek'), margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(9);
+    Object.keys(byProj).sort((a, b) => byProj[b] - byProj[a]).forEach((pid) => { if (y > 195) { doc.addPage(); y = margin; } doc.text(projName(pid), margin, y); doc.text(nok(byProj[pid]), margin + 100, y, { align: 'right' } as any); y += 5; });
+    if (ctrl) { y += 4; doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(`${p('weekControlledBy')}: ${ctrl.controlled_by_email || ''} · ${fmt(ctrl.controlled_at)}${ctrl.note ? ' · ' + ctrl.note : ''}`, margin, y); }
+    await deliverPdf(doc, `Dekmar_Ukerapport_${wk.y}_uke${wk.w}.pdf`, `${p('weekControl')} – ${p('weekLabel')} ${wk.w}/${wk.y}`);
   }
 
   // ================= HMS-skjemaer (SJA / risiko / stillas) =================
