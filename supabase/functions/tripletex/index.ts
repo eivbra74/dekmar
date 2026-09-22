@@ -1,7 +1,14 @@
 // Supabase Edge Function: tripletex (deployet via Management API)
 // Henter prosjekter og produkter (m/ kostpriser) fra Tripletex. Kun innloggede
-// portal-brukere. TRIPLETEX_CONSUMER_TOKEN + TRIPLETEX_EMPLOYEE_TOKEN som
-// server-hemmeligheter. Verify JWT AV.
+// portal-brukere.
+//
+// AUTH: Egen/intern integrasjon bruker Tripletex sin JWT-modell (ETT token):
+//   1) Selskap > API-nøkler > Opprett nøkkel  ->  JWT (refresh token)
+//   2) POST /token/session/:createFromRefreshToken {refreshToken, ttlSeconds}
+//      -> sesjonstoken  ->  Basic auth base64("0:" + sessionToken)
+// (Consumer/employee-token er kun for kommersielle partnerintegrasjoner.)
+// JWT ligger som server-hemmelighet TRIPLETEX_JWT (faller tilbake til
+// TRIPLETEX_CONSUMER_TOKEN for bakoverkompat). Verify JWT AV.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const cors = {
@@ -20,9 +27,10 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get('SUPABASE_URL')!;
   const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const consumerToken = (Deno.env.get('TRIPLETEX_CONSUMER_TOKEN') || '').trim();
-  const employeeToken = (Deno.env.get('TRIPLETEX_EMPLOYEE_TOKEN') || '').trim();
-  if (!consumerToken || !employeeToken) return json({ error: 'TRIPLETEX_CONSUMER_TOKEN / TRIPLETEX_EMPLOYEE_TOKEN mangler i miljoevariabler' }, 500);
+  // Egen integrasjon = ETT JWT-token (API-noekkel-siden gir alltid en JWT,
+  // uansett hva noekkelen kalles). Godta alle secret-navn brukeren kan ha valgt.
+  const jwt = (Deno.env.get('TRIPLETEX_JWT') || Deno.env.get('TRIPLETEX_EMPLOYEE_TOKEN') || Deno.env.get('TRIPLETEX_CONSUMER_TOKEN') || '').trim();
+  if (!jwt) return json({ error: 'Tripletex API-noekkel (JWT) mangler i miljoevariabler - legg inn som TRIPLETEX_JWT' }, 500);
 
   const admin = createClient(url, service, { auth: { persistSession: false } });
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
@@ -33,16 +41,18 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch (_e) { /* ignore */ }
   const action = String(body.action || 'projects');
 
-  // 1) opprett sesjonstoken (gyldig til i morgen)
-  const exp = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
-  const sessUrl = `${BASE}/token/session/:create?consumerToken=${encodeURIComponent(consumerToken)}&employeeToken=${encodeURIComponent(employeeToken)}&expirationDate=${exp}`;
-  const sessRes = await fetch(sessUrl, { method: 'PUT' });
+  // 1) veksle JWT (refresh token) inn i et kortlevd sesjonstoken
+  const sessRes = await fetch(`${BASE}/token/session/:createFromRefreshToken`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ refreshToken: jwt, ttlSeconds: 3600 }),
+  });
   const sessData = await sessRes.json().catch(() => ({}));
-  if (!sessRes.ok || !sessData?.value?.token) {
+  const sessionToken = sessData?.value?.token || sessData?.token;
+  if (!sessRes.ok || !sessionToken) {
     const msg = (sessData && (sessData.message || (sessData.validationMessages && sessData.validationMessages[0]?.message))) || `Tripletex-innlogging feilet (${sessRes.status})`;
     return json({ error: msg }, 400);
   }
-  const sessionToken = sessData.value.token;
   const auth = 'Basic ' + btoa('0:' + sessionToken);
 
   const get = async (endpoint: string) => {
@@ -54,7 +64,7 @@ Deno.serve(async (req) => {
 
   try {
     if (action === 'test') {
-      return json({ ok: true, expires: sessData.value.expirationDate });
+      return json({ ok: true, expires: sessData?.value?.expirationDate || null });
     }
     if (action === 'projects') {
       const values = await get('/project?count=1000&fields=id,name,number,displayName,isClosed,customer(name),deliveryAddress(displayName)');
