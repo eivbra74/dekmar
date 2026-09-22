@@ -1419,6 +1419,8 @@ import { hseFormTypes } from '../../../data/ksForms';
         <div class="q-actions">
           <button class="btn btn--primary" id="de-save" type="button">${esc(p('save'))}</button>
           <button class="btn btn--ghost" id="de-pdf" type="button">${esc(p('quotePreviewSend'))}</button>
+          <button class="btn btn--ghost" id="de-pdf-en" type="button">${esc(p('pdfEn'))}</button>
+          <button class="btn btn--ghost" id="de-pdf-pl" type="button">${esc(p('pdfPl'))}</button>
           <button class="btn btn--ghost" id="de-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>
           <span class="p-muted" id="de-msg"></span>
         </div>
@@ -1443,6 +1445,15 @@ import { hseFormTypes } from '../../../data/ksForms';
     };
     document.getElementById('de-save')!.addEventListener('click', doSave);
     document.getElementById('de-pdf')!.addEventListener('click', async () => { await doSave(); await makeDeviationPdf(d); });
+    const dePdfLang = async (target: string) => {
+      await doSave();
+      const msg = document.getElementById('de-msg')!; msg.textContent = p('translating');
+      const strings: string[] = [t('deviation'), t('handoverTitle'), t('devNo'), t('date'), t('status'), devStatusLabel(d.status), p('devCategory'), (d.category ? devCatLabel(d.category) : ''), p('severity'), (d.severity ? devSeverityLabel(d.severity) : ''), p('dueDate'), 'Iht. Internkontrollforskriften § 5', 'Avviksrapport', p('devSecReporter'), p('devSecHandler'), p('devReporter'), t('location'), t('description'), t('correction'), p('devImprovement'), t('responsible'), t('cause'), p('devPreventive'), t('verification'), p('devReporterInformed'), p('devClosedDate'), t('photos'), d.reporter, d.location, d.description, d.correction, d.improvement, d.responsible, d.cause, d.preventive, d.verification];
+      try { const m = await translateMap(strings.filter(Boolean), target); msg.textContent = ''; await makeDeviationPdf(d, (s: string) => m.get(s) || s, langName(target)); }
+      catch (e: any) { msg.textContent = (p('translateFail') + ' ' + (e.message || '')).trim(); }
+    };
+    document.getElementById('de-pdf-en')!.addEventListener('click', () => dePdfLang('EN'));
+    document.getElementById('de-pdf-pl')!.addEventListener('click', () => dePdfLang('PL'));
     document.getElementById('de-del')!.addEventListener('click', async () => { if (!confirm((d.number || '') + '')) return; await supabase.from('deviations').delete().eq('id', d.id); openProject(projectId); });
     drawThumbs();
   }
@@ -1471,7 +1482,7 @@ import { hseFormTypes } from '../../../data/ksForms';
     } catch (_e) { /* faller tilbake til standardfont */ }
   }
 
-  async function makeDeviationPdf(d: any) {
+  async function makeDeviationPdf(d: any, T: (s: string) => string = (s) => s, lang = '') {
     // hent bilder (signerte URL-er) og konverter til dataURL
     const { data: phRows } = await supabase.from('photos').select('*').eq('deviation_id', d.id);
     const imgs: string[] = [];
@@ -1487,36 +1498,36 @@ import { hseFormTypes } from '../../../data/ksForms';
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     await ensurePdfFont(doc);
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
-    const block = (label: string, txt: string) => {
+    const block = (label: string, txt: string, translateVal = true) => {
       if (!txt) return;
       doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120);
       if (y > 275) { doc.addPage(); y = margin; }
-      doc.text(label.toUpperCase(), margin, y); y += 4.5;
+      doc.text(T(label).toUpperCase(), margin, y); y += 4.5;
       doc.setFont('DejaVu', 'normal'); doc.setFontSize(10.5); doc.setTextColor(20, 23, 28);
-      doc.splitTextToSize(txt, maxW).forEach((ln: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3;
+      doc.splitTextToSize(translateVal ? T(txt) : txt, maxW).forEach((ln: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3;
     };
     doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
     doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
-    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(t('deviation') + ' – ' + t('handoverTitle'), margin, 18);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(T(t('deviation')) + ' – ' + T(t('handoverTitle')), margin, 18);
     doc.setTextColor(20, 23, 28); y = 32;
     const stTxt = devStatusLabel(d.status);
     doc.setFont('DejaVu', 'bold'); doc.setFontSize(11);
-    doc.text(`${t('devNo')}: ${d.number || '—'}    ${t('date')}: ${d.dev_date || '—'}    ${t('status')}: ${stTxt}`, margin, y); y += 6;
-    const meta2 = [d.category ? `${p('devCategory')}: ${devCatLabel(d.category)}` : '', d.severity ? `${p('severity')}: ${devSeverityLabel(d.severity)}` : '', d.due_date ? `${p('dueDate')}: ${d.due_date}` : ''].filter(Boolean).join('    ');
+    doc.text(`${T(t('devNo'))}: ${d.number || '—'}    ${T(t('date'))}: ${d.dev_date || '—'}    ${T(t('status'))}: ${T(stTxt)}`, margin, y); y += 6;
+    const meta2 = [d.category ? `${T(p('devCategory'))}: ${T(devCatLabel(d.category))}` : '', d.severity ? `${T(p('severity'))}: ${T(devSeverityLabel(d.severity))}` : '', d.due_date ? `${T(p('dueDate'))}: ${d.due_date}` : ''].filter(Boolean).join('    ');
     if (meta2) { doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.text(meta2, margin, y); y += 6; }
-    doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5); doc.setTextColor(120); doc.text('Iht. Internkontrollforskriften § 5', margin, y); y += 6; doc.setTextColor(20, 23, 28);
-    const sec = (title: string) => { if (y > 270) { doc.addPage(); y = margin; } y += 1; doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.4); doc.line(margin, y, margin + maxW, y); y += 5; doc.setFont('DejaVu', 'bold'); doc.setFontSize(10.5); doc.setTextColor(204, 31, 42); doc.text(title, margin, y); y += 6; doc.setTextColor(20, 23, 28); };
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5); doc.setTextColor(120); doc.text(T('Iht. Internkontrollforskriften § 5'), margin, y); y += 6; doc.setTextColor(20, 23, 28);
+    const sec = (title: string) => { if (y > 270) { doc.addPage(); y = margin; } y += 1; doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.4); doc.line(margin, y, margin + maxW, y); y += 5; doc.setFont('DejaVu', 'bold'); doc.setFontSize(10.5); doc.setTextColor(204, 31, 42); doc.text(T(title), margin, y); y += 6; doc.setTextColor(20, 23, 28); };
     sec(p('devSecReporter'));
     block(p('devReporter'), d.reporter); block(t('location'), d.location); block(t('description'), d.description);
     block(t('correction'), d.correction); block(p('devImprovement'), d.improvement);
     sec(p('devSecHandler'));
     block(t('responsible'), d.responsible); block(t('cause'), d.cause);
     block(p('devPreventive'), d.preventive); block(t('verification'), d.verification);
-    if (d.reporter_informed) block(p('devReporterInformed'), d.reporter_informed);
-    if (d.closed_at) block(p('devClosedDate'), fmt(d.closed_at));
+    if (d.reporter_informed) block(p('devReporterInformed'), d.reporter_informed, false);
+    if (d.closed_at) block(p('devClosedDate'), fmt(d.closed_at), false);
     if (imgs.length) {
       if (y > 250) { doc.addPage(); y = margin; }
-      doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120); doc.text(t('photos').toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120); doc.text(T(t('photos')).toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
       const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
       imgs.forEach((src) => {
         if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; }
@@ -1526,7 +1537,7 @@ import { hseFormTypes } from '../../../data/ksForms';
         if (col === 1) { y += rowH + 6; col = 0; } else col = 1;
       });
     }
-    await deliverPdf(doc, `Dekmar_Avvik_${(d.number || 'nr')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Avviksrapport ${d.number || ''} – ${CURRENT_PROJECT?.name || ''}`.trim());
+    await deliverPdf(doc, `Dekmar_Avvik${lang ? '_' + lang : ''}_${(d.number || 'nr')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${T('Avviksrapport')} ${d.number || ''} – ${CURRENT_PROJECT?.name || ''}`.trim());
   }
 
   // ---------- Sjekklister & vernerunder per prosjekt (malbasert) ----------
@@ -2816,6 +2827,8 @@ import { hseFormTypes } from '../../../data/ksForms';
       <div class="q-actions">
         <button class="btn btn--primary" id="q-save" type="button">${esc(p('save'))}</button>
         <button class="btn btn--ghost" id="q-pdf" type="button">${esc(p('quotePreviewSend'))}</button>
+        <button class="btn btn--ghost" id="q-pdf-en" type="button">${esc(p('pdfEn'))}</button>
+        <button class="btn btn--ghost" id="q-pdf-pl" type="button">${esc(p('pdfPl'))}</button>
         <select id="q-status">${['draft', 'sent', 'accepted', 'declined'].map((s) => `<option value="${s}"${s === state.status ? ' selected' : ''}>${esc(qStatusLabel(s))}</option>`).join('')}</select>
         ${state.id ? `<button class="btn btn--ghost" id="q-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}
         <span class="p-muted" id="q-msg"></span>
@@ -2904,22 +2917,31 @@ import { hseFormTypes } from '../../../data/ksForms';
     };
     document.getElementById('q-save')!.addEventListener('click', doSave);
     const qdel = document.getElementById('q-del'); if (qdel) qdel.addEventListener('click', async () => { if (!confirm(state.number || '')) return; await supabase.from('quotes').delete().eq('id', state.id); renderQuotes(); });
-    document.getElementById('q-pdf')!.addEventListener('click', async () => {
-      await doSave();
+    const buildQuoteData = () => {
       const cust = CUST.find((c: any) => c.id === state.customer_id) || {};
       const proj = PROJ.find((pr: any) => pr.id === state.project_id) || {};
       const sig = (QUOTE_LETTER.signatories || []).find((s: any) => s.name === state.signatory) || (QUOTE_LETTER.signatories || [])[0] || {};
-      await makeQuotePdf({
+      return {
         number: state.number, dateISO: new Date().toISOString(), customer: cust, projectName: proj.name || state.title || '',
         address: state.address || proj.address || '', title: state.title || '', intro: state.intro || '', startNote: state.start_note || '',
         terms: state.terms.filter((tm: any) => tm.on && (tm.text || '').trim()).map((tm: any) => tm.text.trim()),
         lines: state.lines.filter((l: any) => (l.spec || '').trim()), vat: numv(state.vat_rate), validDays: numv(state.valid_days), sig,
-      });
-    });
+      };
+    };
+    document.getElementById('q-pdf')!.addEventListener('click', async () => { await doSave(); await makeQuotePdf(buildQuoteData()); });
+    const qPdfLang = async (target: string) => {
+      await doSave(); const d = buildQuoteData();
+      const msg = document.getElementById('q-msg')!; msg.textContent = p('translating');
+      const strings: string[] = ['Pristilbud', d.title, d.intro, 'Total pris som beskrevet i vedlegg:', 'eks. mva.', d.startNote, ...d.terms, QUOTE_LETTER.guarantee, (QUOTE_LETTER.validityLine || '').replace('{days}', String(d.validDays || 30)), 'Mvh.', 'for', d.sig.title, 'Tilbudsnr', 'Vedlegg – spesifiserte poster', 'PROSJEKT:', 'Postnr', 'Spesifikasjon', 'Enh', 'Mengde', 'Pris', 'Sum', 'Sum eks. mva.', 'MVA', 'Sum inkl. mva.', ...d.lines.map((l: any) => l.spec)];
+      try { const m = await translateMap(strings.filter(Boolean), target); msg.textContent = ''; await makeQuotePdf(d, (s: string) => m.get(s) || s, langName(target)); }
+      catch (e: any) { msg.textContent = (p('translateFail') + ' ' + (e.message || '')).trim(); }
+    };
+    document.getElementById('q-pdf-en')!.addEventListener('click', () => qPdfLang('EN'));
+    document.getElementById('q-pdf-pl')!.addEventListener('click', () => qPdfLang('PL'));
     drawLines(); drawTotals(); drawTerms();
   }
 
-  async function makeQuotePdf(d: any) {
+  async function makeQuotePdf(d: any, T: (s: string) => string = (s) => s, lang = '') {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     await ensurePdfFont(doc);
     const logo = await ensureLogo();
@@ -2933,7 +2955,7 @@ import { hseFormTypes } from '../../../data/ksForms';
     if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 22, 22); } catch (_e) { /* ignore */ } }
     doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104);
     doc.text('Oslo ' + fmt(d.dateISO), pageW - margin, y + 4, { align: 'right' } as any);
-    if (d.number) doc.text('Tilbudsnr ' + d.number, pageW - margin, y + 9, { align: 'right' } as any);
+    if (d.number) doc.text(T('Tilbudsnr') + ' ' + d.number, pageW - margin, y + 9, { align: 'right' } as any);
     y += 28;
     // kunde
     doc.setTextColor(20, 23, 28);
@@ -2941,21 +2963,21 @@ import { hseFormTypes } from '../../../data/ksForms';
     if (d.customer.address) line(d.customer.address, 10, 'normal', 5, [90, 96, 104]);
     if (d.customer.contact || d.customer.email || d.customer.phone) line([d.customer.contact, d.customer.email, d.customer.phone].filter(Boolean).join('  '), 9.5, 'normal', 6, [90, 96, 104]);
     y += 2;
-    line('Pristilbud – ' + (d.title || ''), 13, 'bold', 7);
-    line(d.intro, 10, 'normal', 5); y += 1;
+    line(T('Pristilbud') + ' – ' + T(d.title || ''), 13, 'bold', 7);
+    line(T(d.intro || ''), 10, 'normal', 5); y += 1;
     // total
     const ex = d.lines.reduce((s: number, l: any) => s + numv(l.qty) * numv(l.price), 0);
     const vat = ex * d.vat / 100; const inc = ex + vat;
-    line('Total pris som beskrevet i vedlegg:', 10, 'normal', 5);
-    line('•  kr ' + nok(ex) + ',- eks. mva.', 11, 'bold', 7);
-    if (d.startNote) { line(d.startNote, 10, 'normal', 5); y += 1; }
+    line(T('Total pris som beskrevet i vedlegg:'), 10, 'normal', 5);
+    line('•  kr ' + nok(ex) + ',- ' + T('eks. mva.'), 11, 'bold', 7);
+    if (d.startNote) { line(T(d.startNote), 10, 'normal', 5); y += 1; }
     // forbehold
-    (d.terms || []).forEach((tx: string) => line('•  ' + tx, 9.5, 'normal', 4.8));
+    (d.terms || []).forEach((tx: string) => line('•  ' + T(tx), 9.5, 'normal', 4.8));
     y += 2;
-    line(QUOTE_LETTER.guarantee || '', 10, 'normal', 5);
-    line((QUOTE_LETTER.validityLine || '').replace('{days}', String(d.validDays || 30)), 10, 'normal', 6);
-    y += 2; line('Mvh.', 10, 'normal', 5); line('for ' + (co.name || 'Dekmar AS'), 10, 'normal', 5);
-    line(d.sig.name || '', 10, 'bold', 4.8); line(d.sig.title || '', 9.5, 'normal', 4.6, [90, 96, 104]);
+    line(T(QUOTE_LETTER.guarantee || ''), 10, 'normal', 5);
+    line(T((QUOTE_LETTER.validityLine || '').replace('{days}', String(d.validDays || 30))), 10, 'normal', 6);
+    y += 2; line(T('Mvh.'), 10, 'normal', 5); line(T('for') + ' ' + (co.name || 'Dekmar AS'), 10, 'normal', 5);
+    line(d.sig.name || '', 10, 'bold', 4.8); line(T(d.sig.title || ''), 9.5, 'normal', 4.6, [90, 96, 104]);
     if (d.sig.phone) line('Tlf: ' + d.sig.phone, 9.5, 'normal', 4.6, [90, 96, 104]);
     if (d.sig.email) line('e-post: ' + d.sig.email, 9.5, 'normal', 5, [90, 96, 104]);
     // footer
@@ -2967,20 +2989,21 @@ import { hseFormTypes } from '../../../data/ksForms';
     doc.addPage(); y = margin;
     doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 20, 'F');
     doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(13); doc.text('Dekmar AS', margin, 9);
-    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.text('Vedlegg – spesifiserte poster', margin, 15);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.text(T('Vedlegg – spesifiserte poster'), margin, 15);
     doc.setTextColor(20, 23, 28); y = 28;
-    line('PROSJEKT: ' + (d.projectName || d.title || ''), 11, 'bold', 7);
+    line(T('PROSJEKT:') + ' ' + (d.projectName || d.title || ''), 11, 'bold', 7);
     // kolonner
     const cx = { post: margin, spec: margin + 16, unit: margin + 108, qty: margin + 124, price: margin + 146, sum: margin + maxW };
     const header = () => {
       doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
-      doc.text('Postnr', cx.post, y); doc.text('Spesifikasjon', cx.spec, y); doc.text('Enh', cx.unit, y);
-      doc.text('Mengde', cx.qty, y); doc.text('Pris', cx.price, y); doc.text('Sum', cx.sum, y, { align: 'right' } as any);
+      doc.text(T('Postnr'), cx.post, y); doc.text(T('Spesifikasjon'), cx.spec, y); doc.text(T('Enh'), cx.unit, y);
+      doc.text(T('Mengde'), cx.qty, y); doc.text(T('Pris'), cx.price, y); doc.text(T('Sum'), cx.sum, y, { align: 'right' } as any);
       y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
     };
     header();
     d.lines.forEach((l: any, i: number) => {
-      const specLines = doc.splitTextToSize(l.spec || '', 88);
+      const specT = T(l.spec || '');
+      const specLines = doc.splitTextToSize(specT, 88);
       const rowH = Math.max(specLines.length * 4.2, 6);
       if (y + rowH > 280) { doc.addPage(); y = margin; header(); }
       const post = '01.' + String(i + 1).padStart(2, '0');
@@ -2995,10 +3018,10 @@ import { hseFormTypes } from '../../../data/ksForms';
     });
     y += 2; doc.setDrawColor(20, 23, 28); doc.setLineWidth(0.4); doc.line(margin + 110, y, margin + maxW, y); y += 6;
     const rt = (label: string, val: string, bold = false) => { doc.setFont('DejaVu', bold ? 'bold' : 'normal'); doc.setFontSize(bold ? 11 : 10); doc.text(label, margin + 112, y); doc.text(val, cx.sum, y, { align: 'right' } as any); y += 6; };
-    rt('Sum eks. mva.', 'kr ' + nok(ex));
-    rt('MVA ' + nok(d.vat) + ' %', 'kr ' + nok(vat));
-    rt('Sum inkl. mva.', 'kr ' + nok(inc), true);
-    await deliverPdf(doc, `Dekmar_Tilbud_${(d.number || '')}_${(d.customer.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Pristilbud ${d.number || ''} – ${d.title || ''}`.trim());
+    rt(T('Sum eks. mva.'), 'kr ' + nok(ex));
+    rt(T('MVA') + ' ' + nok(d.vat) + ' %', 'kr ' + nok(vat));
+    rt(T('Sum inkl. mva.'), 'kr ' + nok(inc), true);
+    await deliverPdf(doc, `Dekmar_Tilbud${lang ? '_' + lang : ''}_${(d.number || '')}_${(d.customer.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${T('Pristilbud')} ${d.number || ''} – ${d.title || ''}`.trim());
   }
 
   // ================= Befaring =================
