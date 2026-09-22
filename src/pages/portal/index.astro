@@ -158,6 +158,11 @@ import { hseFormTypes } from '../../data/ksForms';
   .p-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .p-thumb-del { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border: 0; border-radius: 50%; background: rgba(20,23,28,.75); color: #fff; font-size: .8rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .p-thumb-del:hover { background: var(--brand); }
+  .p-fdv-filter { display: inline-flex; align-items: center; gap: 7px; font-size: .88rem; margin: 0 0 6px; cursor: pointer; }
+  .p-fdv-filter input { width: auto; }
+  .p-fdv-mark { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 22px; padding: 0 7px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; cursor: pointer; border: 1px solid var(--line, #d9dde3); color: var(--muted, #8a909a); background: transparent; transition: background .12s, color .12s, border-color .12s; }
+  .p-fdv-mark:hover { border-color: var(--brand); color: var(--brand); }
+  .p-fdv-mark.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
   .p-section { margin-top: 30px; }
   .p-section > h2 { font-size: 1.25rem; }
   details.p-new { border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
@@ -528,6 +533,10 @@ import { hseFormTypes } from '../../data/ksForms';
     ttFail: { no: 'Tripletex-import feilet:', pl: 'Import z Tripletex nie powiódł się:', en: 'Tripletex import failed:' },
     ttDoneProjects: { no: 'prosjekter importert/oppdatert', pl: 'projektów zaimportowano', en: 'projects imported/updated' },
     ttDoneProducts: { no: 'produkter importert/oppdatert', pl: 'produktów zaimportowano', en: 'products imported/updated' },
+    fdvNeeds: { no: 'Trenger FDV-dokumentasjon', pl: 'Wymaga dokumentacji FDV', en: 'Needs FDV documentation' },
+    fdvOnly: { no: 'Vis kun FDV-produkter', pl: 'Pokaż tylko produkty FDV', en: 'Show only FDV products' },
+    fdvCol: { no: 'FDV', pl: 'FDV', en: 'FDV' },
+    fdvToggleHint: { no: 'Klikk FDV-merket for å slå av/på', pl: 'Kliknij znacznik FDV, aby przełączyć', en: 'Click the FDV mark to toggle' },
     // HMS-skjemaer (SJA/risiko/stillas)
     hseFormsTitle: { no: 'HMS-skjemaer (SJA, risiko, stillas)', pl: 'Formularze BHP (SJA, ryzyko, rusztowanie)', en: 'HSE forms (JSA, risk, scaffold)' },
     newForm: { no: 'Nytt skjema', pl: 'Nowy formularz', en: 'New form' },
@@ -3535,7 +3544,9 @@ import { hseFormTypes } from '../../data/ksForms';
         <div id="imp-out"></div>
       </div>
       <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="mat-search" type="search" placeholder="${esc(p('searchMaterials'))}" autocomplete="off"></div>
-      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('matName'))}</th><th>${esc(p('matSupplier'))}</th><th>${esc(p('matArtNo'))}</th><th>${esc(p('matUnit'))}</th><th style="text-align:right">${esc(p('matCost'))}</th></tr></thead><tbody id="mat-body"></tbody></table></div>
+      <label class="p-fdv-filter"><input type="checkbox" id="mat-fdv-only"> ${esc(p('fdvOnly'))}</label>
+      <p class="p-muted" style="margin:0 0 8px;font-size:.82rem">${esc(p('fdvToggleHint'))}</p>
+      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('matName'))}</th><th>${esc(p('matSupplier'))}</th><th>${esc(p('matArtNo'))}</th><th>${esc(p('matUnit'))}</th><th style="text-align:right">${esc(p('matCost'))}</th><th style="text-align:center">${esc(p('fdvCol'))}</th></tr></thead><tbody id="mat-body"></tbody></table></div>
       <details class="p-new" style="margin-top:14px"><summary>${esc(p('newMaterial'))}</summary>
         <div class="p-grid2"><label class="p-field">${esc(p('matName'))}<input id="nm-name"></label><label class="p-field">${esc(p('matSupplier'))}<input id="nm-sup"></label></div>
         <div class="p-grid2"><label class="p-field">${esc(p('matArtNo'))}<input id="nm-art"></label><label class="p-field">${esc(p('matUnit'))}<input id="nm-unit"></label></div>
@@ -3544,11 +3555,23 @@ import { hseFormTypes } from '../../data/ksForms';
       </details>`;
     const paint = (q = '') => {
       const ql = q.trim().toLowerCase();
-      const list = MATERIALS.filter((m: any) => !ql || [m.name, m.article_no, m.supplier].some((v: any) => (v || '').toLowerCase().includes(ql)));
-      document.getElementById('mat-body')!.innerHTML = list.length ? list.map((m: any) => `<tr data-m="${esc(m.id)}"><td>${esc(m.name)}</td><td>${esc(m.supplier || '')}</td><td>${esc(m.article_no || '')}</td><td>${esc(m.unit || '')}</td><td style="text-align:right">${m.cost_price != null ? 'kr ' + esc(nok(m.cost_price)) : '—'}</td></tr>`).join('') : `<tr><td colspan="5" class="p-muted">${esc(p('noMaterials'))}</td></tr>`;
+      const fdvOnly = (document.getElementById('mat-fdv-only') as HTMLInputElement)?.checked;
+      const list = MATERIALS.filter((m: any) => (!ql || [m.name, m.article_no, m.supplier].some((v: any) => (v || '').toLowerCase().includes(ql))) && (!fdvOnly || m.needs_fdv));
+      const fdvCell = (m: any) => m.needs_fdv
+        ? `<span class="p-fdv-mark is-on" data-fdv="${esc(m.id)}" title="${esc(p('fdvNeeds'))}">${esc(p('fdvCol'))}</span>`
+        : `<span class="p-fdv-mark" data-fdv="${esc(m.id)}" title="${esc(p('fdvNeeds'))}">+</span>`;
+      document.getElementById('mat-body')!.innerHTML = list.length ? list.map((m: any) => `<tr data-m="${esc(m.id)}"><td>${esc(m.name)}</td><td>${esc(m.supplier || '')}</td><td>${esc(m.article_no || '')}</td><td>${esc(m.unit || '')}</td><td style="text-align:right">${m.cost_price != null ? 'kr ' + esc(nok(m.cost_price)) : '—'}</td><td style="text-align:center">${fdvCell(m)}</td></tr>`).join('') : `<tr><td colspan="6" class="p-muted">${esc(p('noMaterials'))}</td></tr>`;
       document.querySelectorAll('#mat-body [data-m]').forEach((tr) => tr.addEventListener('click', () => editMaterial(MATERIALS.find((m: any) => m.id === (tr as HTMLElement).dataset.m))));
+      document.querySelectorAll<HTMLElement>('#mat-body [data-fdv]').forEach((el) => el.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const mm = MATERIALS.find((m: any) => m.id === el.dataset.fdv); if (!mm) return;
+        const next = !mm.needs_fdv; mm.needs_fdv = next;
+        await supabase.from('calc_materials').update({ needs_fdv: next }).eq('id', mm.id);
+        paint((document.getElementById('mat-search') as HTMLInputElement)?.value || '');
+      }));
     };
     document.getElementById('mat-search')!.addEventListener('input', (e) => paint((e.target as HTMLInputElement).value));
+    document.getElementById('mat-fdv-only')!.addEventListener('change', () => paint((document.getElementById('mat-search') as HTMLInputElement)?.value || ''));
     document.getElementById('nm-save')!.addEventListener('click', async () => {
       const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim();
       if (!v('nm-name')) return; const { data: u } = await supabase.auth.getUser();
@@ -3612,11 +3635,12 @@ import { hseFormTypes } from '../../data/ksForms';
       <div class="p-grid2"><label class="p-field">${esc(p('matName'))}<input id="em-name" value="${esc(m.name || '')}"></label><label class="p-field">${esc(p('matSupplier'))}<input id="em-sup" value="${esc(m.supplier || '')}"></label></div>
       <div class="p-grid2"><label class="p-field">${esc(p('matArtNo'))}<input id="em-art" value="${esc(m.article_no || '')}"></label><label class="p-field">${esc(p('matUnit'))}<input id="em-unit" value="${esc(m.unit || '')}"></label></div>
       <div class="p-grid2"><label class="p-field">${esc(p('matCost'))}<input id="em-cost" inputmode="decimal" value="${esc(m.cost_price != null ? String(m.cost_price) : '')}"></label><label class="p-field">${esc(p('matOrderEmail'))}<input id="em-oemail" type="email" value="${esc(m.order_email || '')}"></label></div>
+      <label class="p-check"><input type="checkbox" id="em-fdv"${m.needs_fdv ? ' checked' : ''}> ${esc(p('fdvNeeds'))}</label>
       <div class="q-actions"><button class="btn btn--primary" id="em-save">${esc(p('save'))}</button><button class="btn btn--ghost" id="em-del">${esc(p('removeLabel') || 'Slett')}</button></div>`;
     document.getElementById('em-back')!.addEventListener('click', renderCalc);
     document.getElementById('em-save')!.addEventListener('click', async () => {
       const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim();
-      await supabase.from('calc_materials').update({ name: v('em-name'), supplier: v('em-sup') || null, article_no: v('em-art') || null, unit: v('em-unit') || null, cost_price: v('em-cost') ? numv(v('em-cost')) : null, order_email: v('em-oemail') || null }).eq('id', m.id);
+      await supabase.from('calc_materials').update({ name: v('em-name'), supplier: v('em-sup') || null, article_no: v('em-art') || null, unit: v('em-unit') || null, cost_price: v('em-cost') ? numv(v('em-cost')) : null, order_email: v('em-oemail') || null, needs_fdv: (document.getElementById('em-fdv') as HTMLInputElement).checked }).eq('id', m.id);
       MATERIALS_SEEDED = true; renderCalc();
     });
     document.getElementById('em-del')!.addEventListener('click', async () => { if (!confirm(m.name)) return; await supabase.from('calc_materials').delete().eq('id', m.id); MATERIALS_SEEDED = true; renderCalc(); });
