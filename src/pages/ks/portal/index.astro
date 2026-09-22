@@ -2020,7 +2020,7 @@ import { hseFormTypes } from '../../../data/ksForms';
     await ensureArticles();
     // Offisielle håndbøker (kategori 'handbok') vises som fremhevet blokk øverst
     const { data: hb } = await supabase.from('documents').select('*').eq('category', 'handbok').order('title');
-    const readBtns = getHandbooks().map((b: any) => `<button class="btn btn--ghost" data-hbread="${esc(b.key)}"><span class="app-nav-ic" style="width:16px;height:16px;vertical-align:-3px">${ICONS.handbook}</span> ${esc(p('readElectronic'))}: ${esc(b.title)}</button>`).join('');
+    const readBtns = getHandbooks().map((b: any) => `<button class="btn btn--ghost" data-hbread="${esc(b.key)}"><span class="app-nav-ic" style="width:16px;height:16px;vertical-align:-3px">${ICONS.handbook}</span> ${esc(p('readElectronic'))}: ${esc(bookTitle(b))}</button>`).join('');
     const hbHtml = `
       <div class="p-section">
         <h2>${esc(p('handbooksTitle'))}</h2>
@@ -2062,6 +2062,12 @@ import { hseFormTypes } from '../../../data/ksForms';
 
   // ---------- Elektronisk håndbok-leser (kapittelnavigasjon + søk, NO/PL/EN) ----------
   // Gir «neste gjennomgang» = revisjonsdato + 6 mnd, og varsel når forfalt
+  // Lokalisert boktittel (innholdet i bøkene er trespråklig; tittelen er fast norsk i data)
+  const BOOK_TITLE: Record<string, any> = {
+    hms: { no: 'HMS-håndbok', pl: 'Podręcznik BHP', en: 'HSE handbook' },
+    ks: { no: 'KS-håndbok', pl: 'Podręcznik KS', en: 'QA handbook' },
+  };
+  const bookTitle = (b: any) => (BOOK_TITLE[b.key] ? (BOOK_TITLE[b.key][lang()] || BOOK_TITLE[b.key].no) : b.title);
   function reviewInfo(reviewDate: string) {
     const base = new Date(reviewDate); if (isNaN(+base)) return null;
     const due = new Date(base); due.setMonth(due.getMonth() + 6);
@@ -2083,7 +2089,7 @@ import { hseFormTypes } from '../../../data/ksForms';
       : `<div class="hb-review">${esc(p('nextReview'))}: ${esc(ri.due)}</div>`) : '';
     root.innerHTML = `
       <div class="p-head">
-        <div><h1>${esc(book.title)}</h1><p class="p-muted">${esc(book.revision)}</p></div>
+        <div><h1>${esc(bookTitle(book))}</h1><p class="p-muted">${esc(book.revision)}</p></div>
         <div class="p-user"><button class="btn btn--ghost" id="hbr-back">${esc(p('back'))}</button></div>
       </div>
       ${reviewBanner}
