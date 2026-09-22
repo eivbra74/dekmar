@@ -31,17 +31,23 @@ Deno.serve(async (req) => {
   const targetRaw = String(body.target || 'EN').toUpperCase();
   if (!texts.length) return json({ translations: [] });
 
-  const target_lang = targetRaw === 'PL' ? 'PL' : 'EN-GB';
+  const target_lang = targetRaw === 'PL' ? 'PL' : (targetRaw === 'NB' || targetRaw === 'NO') ? 'NB' : 'EN-GB';
+  // Kildespraak: bruk oppgitt `source` hvis satt, ellers la DeepL auto-detektere
+  // (droppe source_lang). Gir toveis oversettelse NO/EN/PL uansett skrivespraak.
+  const sourceRaw = String(body.source || '').toUpperCase();
+  const source_lang = sourceRaw === 'PL' ? 'PL' : (sourceRaw === 'NB' || sourceRaw === 'NO') ? 'NB' : (sourceRaw.startsWith('EN')) ? 'EN' : '';
   const endpoint = key.endsWith(':fx') ? 'https://api-free.deepl.com/v2/translate' : 'https://api.deepl.com/v2/translate';
 
   // DeepL taaler opptil 50 tekster pr. kall – del opp i biter.
   const out: string[] = [];
   for (let i = 0; i < texts.length; i += 45) {
     const chunk = texts.slice(i, i + 45);
+    const payload: Record<string, unknown> = { text: chunk, target_lang };
+    if (source_lang) payload.source_lang = source_lang;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'DeepL-Auth-Key ' + key, 'content-type': 'application/json' },
-      body: JSON.stringify({ text: chunk, target_lang, source_lang: 'NB' }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

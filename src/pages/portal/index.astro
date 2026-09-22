@@ -577,6 +577,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     chooseType: { no: 'Velg skjematype', pl: 'Wybierz typ', en: 'Choose form type' },
     addRowLabel: { no: '+ Legg til rad', pl: '+ Dodaj wiersz', en: '+ Add row' },
     riskLabel: { no: 'Risiko', pl: 'Ryzyko', en: 'Risk' },
+    pdfNo: { no: 'PDF (norsk)', pl: 'PDF (norweski)', en: 'PDF (Norwegian)' },
     pdfEn: { no: 'PDF (engelsk)', pl: 'PDF (angielski)', en: 'PDF (English)' },
     pdfPl: { no: 'PDF (polsk)', pl: 'PDF (polski)', en: 'PDF (Polish)' },
     translating: { no: 'Oversetter …', pl: 'Tłumaczenie …', en: 'Translating …' },
@@ -1445,7 +1446,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     uniq.forEach((s, i) => m.set(s, tr[i] || s));
     return m;
   }
-  const langName = (t: string) => (t === 'PL' ? 'PL' : 'EN');
+  const langName = (t: string) => (t === 'PL' ? 'PL' : (t === 'NB' || t === 'NO') ? 'NO' : 'EN');
 
   // Kall Tripletex-funksjonen og hent verdier for en gitt action.
   async function tripletexFetch(action: string): Promise<any[]> {
@@ -1715,6 +1716,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         <div class="q-actions">
           <button class="btn btn--primary" id="de-save" type="button">${esc(p('save'))}</button>
           <button class="btn btn--ghost" id="de-pdf" type="button">${esc(p('quotePreviewSend'))}</button>
+          <button class="btn btn--ghost" id="de-pdf-no" type="button">${esc(p('pdfNo'))}</button>
           <button class="btn btn--ghost" id="de-pdf-en" type="button">${esc(p('pdfEn'))}</button>
           <button class="btn btn--ghost" id="de-pdf-pl" type="button">${esc(p('pdfPl'))}</button>
           <button class="btn btn--ghost" id="de-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>
@@ -1748,6 +1750,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       try { const m = await translateMap(strings.filter(Boolean), target); msg.textContent = ''; await makeDeviationPdf(d, (s: string) => m.get(s) || s, langName(target)); }
       catch (e: any) { msg.textContent = (p('translateFail') + ' ' + (e.message || '')).trim(); }
     };
+    document.getElementById('de-pdf-no')!.addEventListener('click', () => dePdfLang('NB'));
     document.getElementById('de-pdf-en')!.addEventListener('click', () => dePdfLang('EN'));
     document.getElementById('de-pdf-pl')!.addEventListener('click', () => dePdfLang('PL'));
     document.getElementById('de-del')!.addEventListener('click', async () => { if (!confirm((d.number || '') + '')) return; await supabase.from('deviations').delete().eq('id', d.id); openProject(projectId); });
