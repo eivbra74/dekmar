@@ -10,6 +10,7 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../data/ks
 import { standardMaterials } from '../../data/ksCalc';
 import { hseFormTypes } from '../../data/ksForms';
 import { inspectionTemplates } from '../../data/ksInspect';
+import { nsStandards, contractDefaults } from '../../data/ksContracts';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -18,7 +19,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials, hseFormTypes, inspectionTemplates })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials, hseFormTypes, inspectionTemplates, nsStandards, contractDefaults })} />
   <script type="application/json" id="ks-handbooks" set:html={JSON.stringify(handbooks)} />
 </KsLayout>
 
@@ -294,6 +295,8 @@ import { inspectionTemplates } from '../../data/ksInspect';
   let QUOTE_ELEMENTS_SEEDED = false;
   const HSE_FORM_TYPES = KSD.hseFormTypes || [];
   const INSPECT_TEMPLATES = KSD.inspectionTemplates || [];
+  const NS_STANDARDS = KSD.nsStandards || [];
+  const CONTRACT_DEFAULTS = KSD.contractDefaults || {};
   const STD_MATERIALS = KSD.materials || [];
   let MATERIALS: any[] = [];
   let MATERIALS_SEEDED = false;
@@ -674,6 +677,36 @@ import { inspectionTemplates } from '../../data/ksInspect';
     egenmeldingCount: { no: 'Egenmeldinger siste 12 mnd', pl: 'Samoczynne (12 mies.)', en: 'Self-certs (last 12 mo)' },
     sickPdf: { no: 'Fraværsoversikt (PDF)', pl: 'Przegląd (PDF)', en: 'Absence overview (PDF)' },
     egenmeldingWarn: { no: 'Merk: over 4 egenmeldinger på 12 mnd', pl: 'Uwaga: ponad 4 w 12 mies.', en: 'Note: over 4 self-certs in 12 mo' },
+    contracts: { no: 'Kontrakter', pl: 'Umowy', en: 'Contracts' },
+    cardContractsDesc: { no: 'NS-avtaledokumenter (8405/8406/8407 m.fl.)', pl: 'Dokumenty umów NS', en: 'NS contract documents' },
+    newContract: { no: 'Ny kontrakt', pl: 'Nowa umowa', en: 'New contract' },
+    noContracts: { no: 'Ingen kontrakter ennå.', pl: 'Brak umów.', en: 'No contracts yet.' },
+    contractTitle: { no: 'Tittel', pl: 'Tytuł', en: 'Title' },
+    contractNo: { no: 'Kontraktsnr', pl: 'Nr umowy', en: 'Contract no' },
+    nsStandard: { no: 'NS-standard', pl: 'Standard NS', en: 'NS standard' },
+    contractRole: { no: 'Vår rolle', pl: 'Nasza rola', en: 'Our role' },
+    roleMain: { no: 'Hovedentreprenør / leverandør', pl: 'Wykonawca główny', en: 'Main contractor' },
+    roleUnder: { no: 'Underentreprenør', pl: 'Podwykonawca', en: 'Subcontractor' },
+    contractSum: { no: 'Kontraktssum (eks. mva)', pl: 'Kwota umowy (bez VAT)', en: 'Contract sum (excl. VAT)' },
+    contractStart: { no: 'Oppstart', pl: 'Rozpoczęcie', en: 'Start' },
+    contractEnd: { no: 'Ferdigstillelse', pl: 'Zakończenie', en: 'Completion' },
+    partyClient: { no: 'Oppdragsgiver / byggherre', pl: 'Zamawiający', en: 'Client / employer' },
+    partyClientOrg: { no: 'Org.nr oppdragsgiver', pl: 'NIP zamawiającego', en: 'Client org. no' },
+    contractBasis: { no: 'Kontraktsgrunnlag', pl: 'Podstawa umowy', en: 'Contract basis' },
+    contractDagmulkt: { no: 'Dagmulkt', pl: 'Kara umowna', en: 'Liquidated damages' },
+    contractSikkerhet: { no: 'Sikkerhet / garanti', pl: 'Zabezpieczenie', en: 'Security / guarantee' },
+    contractBetaling: { no: 'Betaling', pl: 'Płatność', en: 'Payment' },
+    contractEndringer: { no: 'Endringer', pl: 'Zmiany', en: 'Variations' },
+    contractSaerlige: { no: 'Særlige bestemmelser', pl: 'Postanowienia szczególne', en: 'Special provisions' },
+    contractContactClient: { no: 'Kontaktperson oppdragsgiver', pl: 'Kontakt zamawiającego', en: 'Client contact' },
+    contractContactUs: { no: 'Kontaktperson Dekmar', pl: 'Kontakt Dekmar', en: 'Dekmar contact' },
+    contractPdf: { no: 'Avtaledokument (PDF)', pl: 'Dokument umowy (PDF)', en: 'Agreement document (PDF)' },
+    statusSigned: { no: 'Signert', pl: 'Podpisana', en: 'Signed' },
+    contractDoc: { no: 'AVTALEDOKUMENT', pl: 'DOKUMENT UMOWY', en: 'AGREEMENT DOCUMENT' },
+    draftLabel: { no: 'Utkast', pl: 'Szkic', en: 'Draft' },
+    contractEntreprenor: { no: 'Entreprenør', pl: 'Wykonawca', en: 'Contractor' },
+    contractSignatures: { no: 'Underskrifter', pl: 'Podpisy', en: 'Signatures' },
+    contractPlaceDate: { no: 'Sted / dato', pl: 'Miejsce / data', en: 'Place / date' },
     cardInspect: { no: 'Befaring', pl: 'Inspekcja', en: 'Survey' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
@@ -798,6 +831,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     week: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/><path d="m9 14.5 2 2 4-4"/></svg>',
     plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M3 10h6M3 15h6"/><path d="M12.5 9h6M12.5 13h4"/></svg>',
     health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5 5 0 0 0-8.8-1.2A5 5 0 0 0 3.2 9c0 4.5 5.5 8.5 8.8 10.6 1-.6 2.4-1.6 3.7-2.8"/><path d="M15 12h2l1.5 3 2-6 1.2 3H24"/></svg>',
+    contract: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8 13h5"/><path d="m8 17 2 2 4-4"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
     { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
@@ -805,10 +839,12 @@ import { inspectionTemplates } from '../../data/ksInspect';
     { id: 'quotes', icon: 'quote', label: () => p('quotes'), run: () => renderQuotes() },
     { id: 'calc', icon: 'calc', label: () => p('calc'), run: () => renderCalc() },
     { id: 'inspections', icon: 'inspect', label: () => p('inspections'), run: () => renderInspections() },
-    { id: 'time', icon: 'time', label: () => p('timeTracking'), run: () => renderTime() },
-    { id: 'weekcontrol', icon: 'week', label: () => p('weekControl'), run: () => renderWeekControl() },
+    // Midlertidig deaktivert (bruker-ønske): Timer + Ukekontroll. Kode/DB beholdt – fjern kommentar for å slå på igjen.
+    // { id: 'time', icon: 'time', label: () => p('timeTracking'), run: () => renderTime() },
+    // { id: 'weekcontrol', icon: 'week', label: () => p('weekControl'), run: () => renderWeekControl() },
     { id: 'resource', icon: 'plan', label: () => p('resourcePlan'), run: () => renderResourcePlan() },
     { id: 'sick', icon: 'health', label: () => p('sickLeave'), run: () => renderSickLeave() },
+    { id: 'contracts', icon: 'contract', label: () => p('contracts'), run: () => renderContracts() },
     { id: 'customers', icon: 'customer', label: () => p('customers'), run: () => renderCustomers() },
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
@@ -1079,10 +1115,9 @@ import { inspectionTemplates } from '../../data/ksInspect';
         ${card('quotes', 'quote', p('quotes'), p('cardQuotesDesc'))}
         ${card('calc', 'calc', p('calc'), p('cardCalcDesc'))}
         ${card('inspections', 'inspect', p('inspections'), p('cardInspectDesc'))}
-        ${card('time', 'time', p('timeTracking'), p('cardTimeDesc'))}
-        ${card('weekcontrol', 'week', p('weekControl'), p('cardWeekDesc'))}
         ${card('resource', 'plan', p('resourcePlan'), p('cardResourceDesc'))}
         ${card('sick', 'health', p('sickLeave'), p('cardSickDesc'))}
+        ${card('contracts', 'contract', p('contracts'), p('cardContractsDesc'))}
         ${card('customers', 'customer', p('customers'), p('cardCustomersDesc'))}
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
@@ -1251,7 +1286,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     renderProjectForms(id);
     renderChemicals(id);
     renderJobDoc(id);
-    renderProjectTime(id);
+    // renderProjectTime(id); // Midlertidig deaktivert (Timer)
     renderFdvDelivery(id);
   }
 
@@ -3913,6 +3948,154 @@ import { inspectionTemplates } from '../../data/ksInspect';
       y += 5.2;
     });
     await deliverPdf(doc, `Dekmar_Sykefravaer_${year}.pdf`, `${p('sickLeave')} ${year}`);
+  }
+
+  // ================= NS-kontrakter (avtaledokument) =================
+  async function renderContracts() {
+    redraw = renderContracts; await ensureShell('contracts');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [cRes, projRes, custRes] = await Promise.all([
+      supabase.from('contracts').select('*, projects(name), customers(name)').order('created_at', { ascending: false }),
+      supabase.from('projects').select('id,name,address').order('name'),
+      supabase.from('customers').select('id,name').order('name'),
+    ]);
+    const C = cRes.data || []; const PROJ = projRes.data || []; const CUST = custRes.data || [];
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('contracts'))}</h1><div class="p-user"><button class="btn btn--primary" id="c-new">${esc(p('newContract'))}</button></div></div>
+      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('contractNo'))}</th><th>${esc(p('contractTitle'))}</th><th>${esc(p('nsStandard'))}</th><th>${esc(p('colProject'))}</th><th style="text-align:right">${esc(p('contractSum'))}</th><th>${esc(t('status'))}</th></tr></thead><tbody id="c-body">
+        ${C.length ? C.map((c: any) => `<tr data-c="${esc(c.id)}"><td>${esc(c.contract_no || '—')}</td><td>${esc(c.title || '—')}</td><td>${esc(c.ns_standard || '')}</td><td>${esc(c.projects?.name || '—')}</td><td style="text-align:right">${c.sum != null ? esc(nok(c.sum)) : '—'}</td><td><span class="p-badge ${c.status === 'signert' ? 'is-done' : ''}">${esc(c.status === 'signert' ? p('statusSigned') : p('draftLabel'))}</span></td></tr>`).join('') : `<tr><td colspan="6" class="p-muted">${esc(p('noContracts'))}</td></tr>`}
+      </tbody></table></div>`;
+    document.getElementById('c-new')!.addEventListener('click', () => renderContractEditor(null, PROJ, CUST));
+    root.querySelectorAll('#c-body [data-c]').forEach((tr) => tr.addEventListener('click', () => renderContractEditor(C.find((x: any) => x.id === (tr as HTMLElement).dataset.c), PROJ, CUST)));
+  }
+
+  async function renderContractEditor(c: any, PROJ: any[], CUST: any[]) {
+    redraw = () => renderContractEditor(c, PROJ, CUST); await ensureShell('contracts');
+    const co = QUOTE_LETTER.company || {}; const sig0 = (QUOTE_LETTER.signatories || [])[0] || {};
+    const d = (c && c.data) || {};
+    const state: any = {
+      id: c?.id || null, project_id: c?.project_id || '', customer_id: c?.customer_id || '', ns_standard: c?.ns_standard || 'NS 8406',
+      title: c?.title || '', role: c?.role || 'under', sum: c?.sum ?? '', start_date: c?.start_date || '', end_date: c?.end_date || '',
+      status: c?.status || 'draft', number: c?.contract_no || '',
+      data: { clientOrg: d.clientOrg || '', basis: d.basis || '', dagmulkt: d.dagmulkt || '', sikkerhet: d.sikkerhet || '', betaling: d.betaling || '', endringer: d.endringer || '', saerlige: d.saerlige || '', contactClient: d.contactClient || '', contactUs: d.contactUs || sig0.name || '' },
+    };
+    const fillNs = (s: string) => (s || '').replace(/\{ns\}/g, state.ns_standard);
+    if (!c) { state.data.basis = fillNs(CONTRACT_DEFAULTS.basis); state.data.dagmulkt = fillNs(CONTRACT_DEFAULTS.dagmulkt); state.data.sikkerhet = fillNs(CONTRACT_DEFAULTS.sikkerhet); state.data.betaling = CONTRACT_DEFAULTS.betaling || ''; state.data.endringer = fillNs(CONTRACT_DEFAULTS.endringer); }
+    let prevNs = state.ns_standard;
+    const projOpts = PROJ.map((pr: any) => `<option value="${esc(pr.id)}"${pr.id === state.project_id ? ' selected' : ''}>${esc(pr.name)}</option>`).join('');
+    const custOpts = CUST.map((cu: any) => `<option value="${esc(cu.id)}"${cu.id === state.customer_id ? ' selected' : ''}>${esc(cu.name)}</option>`).join('');
+    const nsOpts = NS_STANDARDS.map((n: any) => `<option value="${esc(n.code)}"${n.code === state.ns_standard ? ' selected' : ''}>${esc(n.code)} – ${esc(n.name)}</option>`).join('');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('newContract'))}</h1><div class="p-user"><button class="btn btn--ghost" id="c-back">${esc(p('contracts'))}</button></div></div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('contractTitle'))}<input id="c-title" value="${esc(state.title)}"></label>
+        <label class="p-field">${esc(p('nsStandard'))}<select id="c-ns">${nsOpts}</select><span class="p-muted" id="c-ns-use" style="font-size:.8rem"></span></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('selectProject'))}<select id="c-proj"><option value="">—</option>${projOpts}</select></label>
+        <label class="p-field">${esc(p('contractRole'))}<select id="c-role"><option value="under"${state.role === 'under' ? ' selected' : ''}>${esc(p('roleUnder'))}</option><option value="hoved"${state.role === 'hoved' ? ' selected' : ''}>${esc(p('roleMain'))}</option></select></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('partyClient'))}<select id="c-cust"><option value="">—</option>${custOpts}</select></label>
+        <label class="p-field">${esc(p('partyClientOrg'))}<input id="c-clientorg" value="${esc(state.data.clientOrg)}"></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('contractSum'))}<input id="c-sum" inputmode="decimal" value="${esc(state.sum !== '' ? String(state.sum) : '')}"></label>
+        <label class="p-field">${esc(t('status'))}<select id="c-status"><option value="draft"${state.status === 'draft' ? ' selected' : ''}>${esc(p('draftLabel'))}</option><option value="signert"${state.status === 'signert' ? ' selected' : ''}>${esc(p('statusSigned'))}</option></select></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('contractStart'))}<input id="c-start" type="date" value="${esc(state.start_date || '')}"></label>
+        <label class="p-field">${esc(p('contractEnd'))}<input id="c-end" type="date" value="${esc(state.end_date || '')}"></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('contractContactClient'))}<input id="c-cc" value="${esc(state.data.contactClient)}"></label>
+        <label class="p-field">${esc(p('contractContactUs'))}<input id="c-cu" value="${esc(state.data.contactUs)}"></label>
+      </div>
+      <label class="p-field">${esc(p('contractBasis'))}<textarea id="c-basis" rows="2">${esc(state.data.basis)}</textarea></label>
+      <label class="p-field">${esc(p('contractBetaling'))}<textarea id="c-betaling" rows="2">${esc(state.data.betaling)}</textarea></label>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('contractDagmulkt'))}<textarea id="c-dagmulkt" rows="2">${esc(state.data.dagmulkt)}</textarea></label>
+        <label class="p-field">${esc(p('contractSikkerhet'))}<textarea id="c-sikkerhet" rows="2">${esc(state.data.sikkerhet)}</textarea></label>
+      </div>
+      <label class="p-field">${esc(p('contractEndringer'))}<textarea id="c-endringer" rows="2">${esc(state.data.endringer)}</textarea></label>
+      <label class="p-field">${esc(p('contractSaerlige'))}<textarea id="c-saerlige" rows="3">${esc(state.data.saerlige)}</textarea></label>
+      <div class="q-actions"><button class="btn btn--primary" id="c-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="c-pdf" type="button">${esc(p('contractPdf'))}</button>${state.id ? `<button class="btn btn--ghost" id="c-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="c-msg"></span></div>`;
+    const useEl = document.getElementById('c-ns-use')!; const showUse = () => { const n = NS_STANDARDS.find((x: any) => x.code === state.ns_standard); useEl.textContent = n ? n.use : ''; }; showUse();
+    document.getElementById('c-back')!.addEventListener('click', renderContracts);
+    (document.getElementById('c-ns') as HTMLSelectElement).addEventListener('change', (e) => {
+      const nn = (e.target as HTMLSelectElement).value; state.ns_standard = nn;
+      ['c-basis', 'c-dagmulkt', 'c-sikkerhet', 'c-endringer'].forEach((id) => { const el = document.getElementById(id) as HTMLTextAreaElement; if (el && prevNs) el.value = el.value.split(prevNs).join(nn); });
+      prevNs = nn; showUse();
+    });
+    const readForm = () => {
+      state.title = (document.getElementById('c-title') as HTMLInputElement).value.trim();
+      state.ns_standard = (document.getElementById('c-ns') as HTMLSelectElement).value;
+      state.project_id = (document.getElementById('c-proj') as HTMLSelectElement).value || null;
+      state.role = (document.getElementById('c-role') as HTMLSelectElement).value;
+      state.customer_id = (document.getElementById('c-cust') as HTMLSelectElement).value || null;
+      state.sum = (document.getElementById('c-sum') as HTMLInputElement).value ? numv((document.getElementById('c-sum') as HTMLInputElement).value) : null;
+      state.status = (document.getElementById('c-status') as HTMLSelectElement).value;
+      state.start_date = (document.getElementById('c-start') as HTMLInputElement).value || null;
+      state.end_date = (document.getElementById('c-end') as HTMLInputElement).value || null;
+      state.data = { clientOrg: (document.getElementById('c-clientorg') as HTMLInputElement).value.trim(), contactClient: (document.getElementById('c-cc') as HTMLInputElement).value.trim(), contactUs: (document.getElementById('c-cu') as HTMLInputElement).value.trim(), basis: (document.getElementById('c-basis') as HTMLTextAreaElement).value, betaling: (document.getElementById('c-betaling') as HTMLTextAreaElement).value, dagmulkt: (document.getElementById('c-dagmulkt') as HTMLTextAreaElement).value, sikkerhet: (document.getElementById('c-sikkerhet') as HTMLTextAreaElement).value, endringer: (document.getElementById('c-endringer') as HTMLTextAreaElement).value, saerlige: (document.getElementById('c-saerlige') as HTMLTextAreaElement).value };
+    };
+    const doSave = async () => {
+      readForm(); const msg = document.getElementById('c-msg')!; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      const payload: any = { project_id: state.project_id, customer_id: state.customer_id, ns_standard: state.ns_standard, title: state.title || null, role: state.role, sum: state.sum, start_date: state.start_date, end_date: state.end_date, status: state.status, data: state.data };
+      if (!state.number && !state.id) { const yr = new Date().getFullYear(); const { data: mx } = await supabase.from('contracts').select('contract_no').like('contract_no', `K-${yr}-%`).order('contract_no', { ascending: false }).limit(1); let seq = 1; if (mx && mx[0] && mx[0].contract_no) { const mm = String(mx[0].contract_no).match(/K-\d+-(\d+)/); if (mm) seq = (+mm[1]) + 1; } payload.contract_no = `K-${yr}-${String(seq).padStart(3, '0')}`; state.number = payload.contract_no; }
+      let res; if (state.id) res = await supabase.from('contracts').update(payload).eq('id', state.id).select().single();
+      else { payload.created_by = u.user?.id; res = await supabase.from('contracts').insert(payload).select().single(); }
+      if (res.error) { msg.textContent = res.error.message; return null; }
+      state.id = res.data.id; state.number = res.data.contract_no; msg.textContent = p('savedShort') + (state.number ? ' ' + state.number : ''); return res.data;
+    };
+    document.getElementById('c-save')!.addEventListener('click', doSave);
+    const cdel = document.getElementById('c-del'); if (cdel) cdel.addEventListener('click', async () => { if (!confirm(state.title || '')) return; await supabase.from('contracts').delete().eq('id', state.id); renderContracts(); });
+    document.getElementById('c-pdf')!.addEventListener('click', async () => { await doSave(); const cust = CUST.find((x: any) => x.id === state.customer_id) || {}; const pr = PROJ.find((x: any) => x.id === state.project_id) || {}; state.__projName = pr.name || ''; state.__projAddr = pr.address || ''; await makeContractPdf(state, cust, co); });
+  }
+
+  async function makeContractPdf(state: any, cust: any, co: any) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo();
+    const pageW = 210, margin = 18, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 18, 18); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(co.name || 'Dekmar AS', pageW - margin, y + 4, { align: 'right' } as any);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(8); [co.orgno ? ('Org.nr ' + co.orgno) : '', co.address, co.phone].filter(Boolean).forEach((l: string, i: number) => doc.text(l, pageW - margin, y + 9 + i * 4, { align: 'right' } as any));
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(17); doc.text(p('contractDoc'), margin, y); y += 8;
+    doc.setFontSize(12); doc.text(state.title || '', margin, y); y += 6;
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(9); doc.setTextColor(90, 96, 104);
+    doc.text(`${p('contractNo')}: ${state.number || '—'}   ·   ${p('nsStandard')}: ${state.ns_standard}   ·   ${fmt(new Date().toISOString())}`, margin, y); y += 8; doc.setTextColor(20, 23, 28);
+    // Partene – to kolonner
+    const colW = (maxW - 8) / 2; const dekmarIsEnt = true;
+    const clientBox = [`${p('partyClient')}:`, cust.name || '—', state.data.clientOrg ? ('Org.nr ' + state.data.clientOrg) : '', state.data.contactClient || ''].filter(Boolean);
+    const entBox = [`${p('contractEntreprenor')}:`, co.name || 'Dekmar AS', co.orgno ? ('Org.nr ' + co.orgno) : '', state.data.contactUs || ''].filter(Boolean);
+    const boxTop = y; let yL = y + 5, yR = y + 5;
+    doc.setDrawColor(220); doc.setFillColor(247, 248, 250);
+    const boxH = Math.max(clientBox.length, entBox.length) * 4.8 + 6;
+    doc.rect(margin, boxTop, colW, boxH, 'S'); doc.rect(margin + colW + 8, boxTop, colW, boxH, 'S');
+    clientBox.forEach((l, i) => { doc.setFont('DejaVu', i === 0 ? 'bold' : 'normal'); doc.setFontSize(i === 0 ? 8 : 9.5); doc.setTextColor(i === 0 ? 90 : 20, i === 0 ? 96 : 23, i === 0 ? 104 : 28); doc.text(l, margin + 3, yL + i * 4.8); });
+    entBox.forEach((l, i) => { doc.setFont('DejaVu', i === 0 ? 'bold' : 'normal'); doc.setFontSize(i === 0 ? 8 : 9.5); doc.setTextColor(i === 0 ? 90 : 20, i === 0 ? 96 : 23, i === 0 ? 104 : 28); doc.text(l, margin + colW + 11, yR + i * 4.8); });
+    y = boxTop + boxH + 8; doc.setTextColor(20, 23, 28);
+    const kv = (l: string, v: string) => { if (!v && v !== '0') return; if (y > 272) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20, 23, 28); doc.text(l, margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5); doc.splitTextToSize(String(v), maxW).forEach((ln: string) => { if (y > 280) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3; };
+    const prName = (PROJS: any) => '';
+    kv(p('colProject') + ':', [state.__projName, state.__projAddr].filter(Boolean).join(' · ') || (state.project_id ? '' : ''));
+    if (state.sum != null && state.sum !== '') kv(p('contractSum') + ':', 'kr ' + nok(state.sum));
+    if (state.start_date || state.end_date) kv(p('contractStart') + ' / ' + p('contractEnd') + ':', `${state.start_date ? fmt(state.start_date) : '—'} – ${state.end_date ? fmt(state.end_date) : '—'}`);
+    kv(p('contractBasis') + ':', state.data.basis);
+    kv(p('contractBetaling') + ':', state.data.betaling);
+    kv(p('contractDagmulkt') + ':', state.data.dagmulkt);
+    kv(p('contractSikkerhet') + ':', state.data.sikkerhet);
+    kv(p('contractEndringer') + ':', state.data.endringer);
+    if (state.data.saerlige) kv(p('contractSaerlige') + ':', state.data.saerlige);
+    // signaturer
+    if (y > 235) { doc.addPage(); y = margin; }
+    y += 6; doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('contractSignatures'), margin, y); y += 4;
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(p('contractPlaceDate') + ': ______________________________', margin, y + 6); y += 16; doc.setTextColor(20, 23, 28);
+    const sy = y + 12; const sw = (maxW - 12) / 2;
+    doc.setDrawColor(20, 23, 28); doc.line(margin, sy, margin + sw, sy); doc.line(margin + sw + 12, sy, margin + maxW, sy);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+    doc.text(`${p('partyClient')} – ${cust.name || ''}`, margin, sy + 4); doc.text(`${p('contractEntreprenor')} – ${co.name || 'Dekmar AS'}`, margin + sw + 12, sy + 4);
+    await deliverPdf(doc, `Dekmar_Avtaledokument_${(state.number || state.title || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${p('contractDoc')} ${state.number || ''} – ${state.title || ''}`.trim());
   }
 
   // ================= HMS-skjemaer (SJA / risiko / stillas) =================
