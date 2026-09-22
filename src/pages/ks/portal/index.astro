@@ -530,6 +530,10 @@ import { hseFormTypes } from '../../../data/ksForms';
     chooseType: { no: 'Velg skjematype', pl: 'Wybierz typ', en: 'Choose form type' },
     addRowLabel: { no: '+ Legg til rad', pl: '+ Dodaj wiersz', en: '+ Add row' },
     riskLabel: { no: 'Risiko', pl: 'Ryzyko', en: 'Risk' },
+    pdfEn: { no: 'PDF (engelsk)', pl: 'PDF (angielski)', en: 'PDF (English)' },
+    pdfPl: { no: 'PDF (polsk)', pl: 'PDF (polski)', en: 'PDF (Polish)' },
+    translating: { no: 'Oversetter …', pl: 'Tłumaczenie …', en: 'Translating …' },
+    translateFail: { no: 'Oversettelse feilet:', pl: 'Tłumaczenie nie powiodło się:', en: 'Translation failed:' },
     // Befaring
     inspections: { no: 'Befaring', pl: 'Inspekcja', en: 'Site survey' },
     cardInspectDesc: { no: 'Befaringsrapport med observasjoner og bilder, søkbar.', pl: 'Raport z inspekcji ze zdjęciami, przeszukiwalny.', en: 'Site survey report with observations and photos, searchable.' },
@@ -1194,6 +1198,21 @@ import { hseFormTypes } from '../../../data/ksForms';
 
   // Gjoer en ferdig jsPDF om til base64 (uten data:-prefiks) for e-postvedlegg
   function pdfToBase64(doc: any): string { try { return (doc.output('datauristring') || '').split(',')[1] || ''; } catch (_e) { return ''; } }
+
+  // Oversett en samling norske tekster til EN/PL via DeepL (Edge Function). Returnerer et oppslag NO->oversatt.
+  async function translateMap(strings: string[], target: string): Promise<Map<string, string>> {
+    const uniq = [...new Set(strings.map((s) => String(s == null ? '' : s)).filter((s) => s.trim()))];
+    const m = new Map<string, string>();
+    if (!uniq.length) return m;
+    const { data, error } = await supabase.functions.invoke('translate', { body: { texts: uniq, target } });
+    let errMsg = error ? (error.message || 'error') : ((data && (data as any).error) || '');
+    if (error && (error as any).context && typeof (error as any).context.json === 'function') { try { const b = await (error as any).context.json(); if (b && b.error) errMsg = b.error; } catch (_e) { /* ignore */ } }
+    if (errMsg) throw new Error(errMsg);
+    const tr = ((data as any).translations) || [];
+    uniq.forEach((s, i) => m.set(s, tr[i] || s));
+    return m;
+  }
+  const langName = (t: string) => (t === 'PL' ? 'PL' : 'EN');
 
   // Felles modal: last ned PDF-en ELLER send den paa e-post til HE/prosjekteier.
   // Alle makeXxxPdf-funksjonene ruter sitt sluttresultat gjennom denne.
@@ -3028,7 +3047,7 @@ import { hseFormTypes } from '../../../data/ksForms';
       <label class="p-field" style="margin-top:14px">${esc(p('inspPhotos'))}<input id="i-photos" type="file" accept="image/*" capture="environment" multiple></label>
       <div class="p-thumbs" id="i-thumbs"></div>
       <label class="p-field">${esc(p('inspSummary'))}<textarea id="i-summary" rows="3">${esc(state.summary)}</textarea></label>
-      <div class="q-actions"><button class="btn btn--primary" id="i-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="i-pdf" type="button">${esc(p('downloadPdf'))}</button><button class="btn btn--ghost" id="i-toquote" type="button">${esc(p('inspToQuote'))}</button>${state.id ? `<button class="btn btn--ghost" id="i-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="i-msg"></span></div>`;
+      <div class="q-actions"><button class="btn btn--primary" id="i-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="i-pdf" type="button">${esc(p('downloadPdf'))}</button><button class="btn btn--ghost" id="i-pdf-en" type="button">${esc(p('pdfEn'))}</button><button class="btn btn--ghost" id="i-pdf-pl" type="button">${esc(p('pdfPl'))}</button><button class="btn btn--ghost" id="i-toquote" type="button">${esc(p('inspToQuote'))}</button>${state.id ? `<button class="btn btn--ghost" id="i-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="i-msg"></span></div>`;
     const drawRows = () => {
       const tb = document.getElementById('i-rows')!;
       tb.innerHTML = state.rows.length ? state.rows.map((r: any, i: number) => `<tr><td><input data-i="${i}" data-f="area" value="${esc(r.area || '')}"></td><td><input data-i="${i}" data-f="obs" value="${esc(r.obs || '')}"></td><td><input data-i="${i}" data-f="rec" value="${esc(r.rec || '')}"></td><td><button class="ql-del" data-del="${i}" type="button">✕</button></td></tr>`).join('') : `<tr><td colspan="4" class="p-muted">—</td></tr>`;
@@ -3061,6 +3080,16 @@ import { hseFormTypes } from '../../../data/ksForms';
     document.getElementById('i-save')!.addEventListener('click', doSave);
     const idel = document.getElementById('i-del'); if (idel) idel.addEventListener('click', async () => { if (!confirm(state.title || '')) return; await supabase.from('inspections').delete().eq('id', state.id); renderInspections(); });
     document.getElementById('i-pdf')!.addEventListener('click', async () => { await doSave(); const cust = CUST.find((c: any) => c.id === state.customer_id) || {}; await makeInspectionPdf(state, cust, existingPhotos); });
+    const iPdfLang = async (target: string) => {
+      await doSave(); const cust = CUST.find((c: any) => c.id === state.customer_id) || {};
+      const msg = document.getElementById('i-msg')!; msg.textContent = p('translating');
+      const strings: string[] = ['Befaringsrapport', 'Område', 'Observasjon', 'Anbefaling', p('inspObs'), p('inspSummary'), p('inspPhotos'), state.title, state.summary];
+      state.rows.forEach((r: any) => { strings.push(r.area); strings.push(r.obs); strings.push(r.rec); });
+      try { const m = await translateMap(strings.filter(Boolean), target); msg.textContent = ''; await makeInspectionPdf(state, cust, existingPhotos, (s: string) => m.get(s) || s, langName(target)); }
+      catch (e: any) { msg.textContent = (p('translateFail') + ' ' + (e.message || '')).trim(); }
+    };
+    document.getElementById('i-pdf-en')!.addEventListener('click', () => iPdfLang('EN'));
+    document.getElementById('i-pdf-pl')!.addEventListener('click', () => iPdfLang('PL'));
     document.getElementById('i-toquote')!.addEventListener('click', async () => {
       await doSave(); const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from('quotes').insert({ title: state.title || null, address: state.address || null, customer_id: state.customer_id, project_id: state.project_id, lines: [], terms: STD_QUOTE_TERMS.filter((tm: any) => tm.on).map((tm: any) => tm.text.replace('{rate}', nok(QUOTE_LETTER.hourlyDefault || 850))), vat_rate: 25, valid_days: QUOTE_LETTER.validDaysDefault || 30, hourly_rate: QUOTE_LETTER.hourlyDefault || 850, signatory: (QUOTE_LETTER.signatories[0] || {}).name, status: 'draft', created_by: u.user?.id });
@@ -3069,25 +3098,25 @@ import { hseFormTypes } from '../../../data/ksForms';
     drawRows(); drawThumbs();
   }
 
-  async function makeInspectionPdf(state: any, cust: any, photos: any[]) {
+  async function makeInspectionPdf(state: any, cust: any, photos: any[], T: (s: string) => string = (s) => s, lang = '') {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo(); const co = QUOTE_LETTER.company || {};
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
     if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
-    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text('Befaringsrapport', margin + 26, y + 8);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(T('Befaringsrapport'), margin + 26, y + 8);
     doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104);
     doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
     if (state.number) doc.text(state.number, pageW - margin, y + 11, { align: 'right' } as any);
     y += 26; doc.setTextColor(20, 23, 28);
-    doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text(state.title || '', margin, y); y += 7;
-    const kv = (l: string, v: string) => { if (!v) return; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(l + ':', margin, y); doc.setFont('DejaVu', 'normal'); doc.setTextColor(20, 23, 28); const lns = doc.splitTextToSize(v, maxW - 40); lns.forEach((ln: string, k: number) => doc.text(ln, margin + 40, y + k * 4.6)); y += Math.max(5.2, lns.length * 4.6); };
-    kv('Kunde', cust.name || ''); kv('Adresse', state.address || ''); kv('Befaringsdato', state.insp_date ? fmt(state.insp_date) : ''); kv('Til stede', state.present || '');
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text(T(state.title || ''), margin, y); y += 7;
+    const kv = (l: string, v: string, translateVal = true) => { if (!v) return; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(T(l) + ':', margin, y); doc.setFont('DejaVu', 'normal'); doc.setTextColor(20, 23, 28); const vv = translateVal ? T(v) : v; const lns = doc.splitTextToSize(vv, maxW - 40); lns.forEach((ln: string, k: number) => doc.text(ln, margin + 40, y + k * 4.6)); y += Math.max(5.2, lns.length * 4.6); };
+    kv('Kunde', cust.name || '', false); kv('Adresse', state.address || '', false); kv('Befaringsdato', state.insp_date ? fmt(state.insp_date) : '', false); kv('Til stede', state.present || '', false);
     y += 2;
     if ((state.rows || []).length) {
-      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('inspObs'), margin, y); y += 5;
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(T(p('inspObs')), margin, y); y += 5;
       const xs = [margin, margin + 45, margin + 110]; const ws = [43, 63, maxW - 110];
-      doc.setFontSize(8); doc.setTextColor(90, 96, 104); doc.text('Område', xs[0], y); doc.text('Observasjon', xs[1], y); doc.text('Anbefaling', xs[2], y); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+      doc.setFontSize(8); doc.setTextColor(90, 96, 104); doc.text(T('Område'), xs[0], y); doc.text(T('Observasjon'), xs[1], y); doc.text(T('Anbefaling'), xs[2], y); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
       state.rows.forEach((r: any) => {
-        const t0 = doc.splitTextToSize(r.area || '', ws[0]), t1 = doc.splitTextToSize(r.obs || '', ws[1]), t2 = doc.splitTextToSize(r.rec || '', ws[2]);
+        const t0 = doc.splitTextToSize(T(r.area || ''), ws[0]), t1 = doc.splitTextToSize(T(r.obs || ''), ws[1]), t2 = doc.splitTextToSize(T(r.rec || ''), ws[2]);
         const rowH = Math.max(t0.length, t1.length, t2.length) * 4.2 || 4.2;
         if (y + rowH > 282) { doc.addPage(); y = margin; }
         doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5);
@@ -3096,17 +3125,17 @@ import { hseFormTypes } from '../../../data/ksForms';
       });
       y += 2;
     }
-    if (state.summary) { if (y > 260) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('inspSummary'), margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.splitTextToSize(state.summary, maxW).forEach((ln: string) => { if (y > 285) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3; }
+    if (state.summary) { if (y > 260) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(T(p('inspSummary')), margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.splitTextToSize(T(state.summary), maxW).forEach((ln: string) => { if (y > 285) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3; }
     // bilder
     const imgs: string[] = [];
     for (const ph of photos) { if (ph.__url) { try { const blob = await (await fetch(ph.__url)).blob(); imgs.push(await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); })); } catch (_e) { /* */ } } }
     if (imgs.length) {
       if (y > 240) { doc.addPage(); y = margin; }
-      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 23, 28); doc.text(p('inspPhotos'), margin, y); y += 5;
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 23, 28); doc.text(T(p('inspPhotos')), margin, y); y += 5;
       const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
       imgs.forEach((src) => { if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; } const x = margin + col * (colW + 6); try { doc.addImage(src, 'JPEG', x, y, colW, rowH); } catch (_e) { /* */ } doc.setDrawColor(220); doc.rect(x, y, colW, rowH); if (col === 1) { y += rowH + 6; col = 0; } else col = 1; });
     }
-    await deliverPdf(doc, `Dekmar_Befaring_${(state.number || state.title || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Befaringsrapport ${state.number || ''} – ${state.title || ''}`.trim());
+    await deliverPdf(doc, `Dekmar_Befaring${lang ? '_' + lang : ''}_${(state.number || state.title || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${T('Befaringsrapport')} ${state.number || ''} – ${state.title || ''}`.trim());
   }
 
   // ================= HMS-skjemaer (SJA / risiko / stillas) =================
@@ -3164,7 +3193,7 @@ import { hseFormTypes } from '../../../data/ksForms';
       ${rowsHtml}
       ${checksHtml}
       ${footerHtml}
-      <div class="q-actions"><button class="btn btn--primary" id="hf-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="hf-pdf" type="button">${esc(p('downloadPdf'))}</button>${state.id ? `<button class="btn btn--ghost" id="hf-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="hf-msg"></span></div>`;
+      <div class="q-actions"><button class="btn btn--primary" id="hf-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="hf-pdf" type="button">${esc(p('downloadPdf'))}</button><button class="btn btn--ghost" id="hf-pdf-en" type="button">${esc(p('pdfEn'))}</button><button class="btn btn--ghost" id="hf-pdf-pl" type="button">${esc(p('pdfPl'))}</button>${state.id ? `<button class="btn btn--ghost" id="hf-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="hf-msg"></span></div>`;
     // bind header/footer/checks
     secEl.querySelectorAll('[data-s]').forEach((el) => el.addEventListener('input', (e) => { const t = e.target as HTMLInputElement; state[t.dataset.s!][t.dataset.k!] = t.value; }));
     const drawRows = () => {
@@ -3198,30 +3227,44 @@ import { hseFormTypes } from '../../../data/ksForms';
     document.getElementById('hf-save')!.addEventListener('click', doSave);
     const hdel = document.getElementById('hf-del'); if (hdel) hdel.addEventListener('click', async () => { if (!confirm(tp.title)) return; await supabase.from('hse_forms').delete().eq('id', state.id); renderProjectForms(projectId); });
     document.getElementById('hf-pdf')!.addEventListener('click', async () => { await doSave(); await makeHseFormPdf(tp, state, CURRENT_PROJECT?.name || ''); });
+    const hfPdfLang = async (target: string) => {
+      await doSave();
+      const msg = document.getElementById('hf-msg')!; msg.textContent = p('translating');
+      const strings: string[] = [tp.title, tp.rowsLabel, tp.checksLabel, p('riskLabel')];
+      tp.header.forEach((f: any) => { strings.push(f.label); strings.push(state.header[f.key]); });
+      (tp.rowCols || []).forEach((c: any) => strings.push(c.label));
+      state.rows.forEach((r: any) => (tp.rowCols || []).forEach((c: any) => { if (c.type !== 'sk') strings.push(r[c.key]); }));
+      (tp.checks || []).forEach((c: any) => { strings.push(c.label); strings.push(state.checks[c.key]); });
+      tp.footer.forEach((f: any) => { strings.push(f.label); strings.push(state.footer[f.key]); });
+      try { const m = await translateMap(strings.filter(Boolean), target); msg.textContent = ''; await makeHseFormPdf(tp, state, CURRENT_PROJECT?.name || '', (s: string) => m.get(s) || s, langName(target)); }
+      catch (e: any) { msg.textContent = (p('translateFail') + ' ' + (e.message || '')).trim(); }
+    };
+    document.getElementById('hf-pdf-en')!.addEventListener('click', () => hfPdfLang('EN'));
+    document.getElementById('hf-pdf-pl')!.addEventListener('click', () => hfPdfLang('PL'));
     if (tp.rowCols) drawRows();
   }
 
-  async function makeHseFormPdf(tp: any, state: any, projectName: string) {
+  async function makeHseFormPdf(tp: any, state: any, projectName: string, T: (s: string) => string = (s) => s, lang = '') {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo();
     const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
     if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
-    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(tp.title, margin + 26, y + 8);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(T(tp.title), margin + 26, y + 8);
     doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104); doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
     y += 26; doc.setTextColor(20, 23, 28);
     doc.setFont('DejaVu', 'bold'); doc.setFontSize(11); doc.text(projectName || '', margin, y); y += 7;
-    const kv = (label: string, val: string) => { if (!val) return; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(label + ':', margin, y); doc.setFont('DejaVu', 'normal'); doc.setTextColor(20, 23, 28); doc.splitTextToSize(val, maxW - 40).forEach((ln: string, k: number) => doc.text(ln, margin + 40, y + k * 4.6)); y += Math.max(5.2, doc.splitTextToSize(val, maxW - 40).length * 4.6); };
+    const kv = (label: string, val: string) => { if (!val) return; const lv = T(label), vv = T(val); doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(lv + ':', margin, y); doc.setFont('DejaVu', 'normal'); doc.setTextColor(20, 23, 28); doc.splitTextToSize(vv, maxW - 40).forEach((ln: string, k: number) => doc.text(ln, margin + 40, y + k * 4.6)); y += Math.max(5.2, doc.splitTextToSize(vv, maxW - 40).length * 4.6); };
     tp.header.forEach((f: any) => kv(f.label, state.header[f.key] || ''));
     y += 2;
     if (tp.rowCols && state.rows.length) {
-      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(tp.rowsLabel || '', margin, y); y += 5;
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(T(tp.rowsLabel || ''), margin, y); y += 5;
       const cols = tp.rowCols.concat(tp.rowMode === 'risk' ? [{ key: '__risk', label: p('riskLabel'), w: 10 }] : []);
       const totalW = cols.reduce((s: number, c: any) => s + (c.w || 15), 0);
       let x = margin; const xs = cols.map((c: any) => { const cx = x; x += (c.w || 15) / totalW * maxW; return cx; });
       doc.setFontSize(8); doc.setTextColor(90, 96, 104);
-      cols.forEach((c: any, i: number) => doc.text(String(c.label), xs[i], y)); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+      cols.forEach((c: any, i: number) => doc.text(T(String(c.label)), xs[i], y)); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
       state.rows.forEach((r: any) => {
         const cellW = (i: number) => (cols[i].w || 15) / totalW * maxW - 2;
-        const texts = cols.map((c: any, i: number) => { let v = c.key === '__risk' ? String((parseInt(r.s) || 0) * (parseInt(r.k) || 0) || '') : (r[c.key] || ''); return doc.splitTextToSize(String(v), cellW(i)); });
+        const texts = cols.map((c: any, i: number) => { const raw = c.key === '__risk' ? String((parseInt(r.s) || 0) * (parseInt(r.k) || 0) || '') : (r[c.key] || ''); const v = (c.type === 'sk' || c.key === '__risk') ? String(raw) : T(String(raw)); return doc.splitTextToSize(v, cellW(i)); });
         const rowH = Math.max(...texts.map((t: string[]) => t.length)) * 4.2 || 4.2;
         if (y + rowH > 285) { doc.addPage(); y = margin; }
         doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5);
@@ -3232,14 +3275,14 @@ import { hseFormTypes } from '../../../data/ksForms';
     }
     if (tp.checks) {
       if (y > 250) { doc.addPage(); y = margin; }
-      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(tp.checksLabel || '', margin, y); y += 5;
-      tp.checks.forEach((c: any) => { if (y > 285) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'normal'); doc.setFontSize(9); const lns = doc.splitTextToSize(c.label, maxW - 34); lns.forEach((ln: string, k: number) => doc.text(ln, margin, y + k * 4.4)); doc.setFont('DejaVu', 'bold'); doc.text(state.checks[c.key] || '—', margin + maxW, y, { align: 'right' } as any); y += Math.max(5, lns.length * 4.4); });
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(T(tp.checksLabel || ''), margin, y); y += 5;
+      tp.checks.forEach((c: any) => { if (y > 285) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'normal'); doc.setFontSize(9); const lns = doc.splitTextToSize(T(c.label), maxW - 34); lns.forEach((ln: string, k: number) => doc.text(ln, margin, y + k * 4.4)); doc.setFont('DejaVu', 'bold'); doc.text(state.checks[c.key] ? T(state.checks[c.key]) : '—', margin + maxW, y, { align: 'right' } as any); y += Math.max(5, lns.length * 4.4); });
       y += 2;
     }
     if (y > 265) { doc.addPage(); y = margin; }
     doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.4); doc.line(margin, y, margin + maxW, y); y += 6;
     tp.footer.forEach((f: any) => kv(f.label, state.footer[f.key] || ''));
-    await deliverPdf(doc, `Dekmar_${tp.type}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${tp.title} – ${projectName || ''}`);
+    await deliverPdf(doc, `Dekmar_${tp.type}${lang ? '_' + lang : ''}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${T(tp.title)} – ${projectName || ''}`);
   }
 
   // ================= Kalkulasjonsverktøy =================
