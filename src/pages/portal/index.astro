@@ -169,6 +169,12 @@ import { inspectionTemplates } from '../../data/ksInspect';
   .i-tg-tg1 { color: #8a6a00; }
   .i-tg-tg2 { color: #b5510a; }
   .i-tg-tg3 { color: #cc1f2a; }
+  .p-bar { height: 8px; border-radius: 999px; background: #e7e9ee; overflow: hidden; margin: 6px 0; }
+  .p-bar span { display: block; height: 100%; border-radius: 999px; }
+  .p-timestats { display: flex; flex-wrap: wrap; gap: 18px; margin: 8px 0 2px; font-size: .95rem; }
+  .p-timestats strong { font-size: 1.15rem; }
+  tr.p-click { cursor: pointer; }
+  tr.p-click:hover td { background: rgba(0,0,0,.03); }
   .p-section { margin-top: 30px; }
   .p-section > h2 { font-size: 1.25rem; }
   details.p-new { border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
@@ -592,6 +598,28 @@ import { inspectionTemplates } from '../../data/ksInspect';
     prioLong: { no: 'Over 5 år', pl: 'Ponad 5 lat', en: 'Over 5 years' },
     prioWatch: { no: 'Overvåk', pl: 'Monitoruj', en: 'Monitor' },
     inspProjectCreated: { no: 'Prosjekt opprettet', pl: 'Utworzono projekt', en: 'Project created' },
+    timeTracking: { no: 'Timer', pl: 'Godziny', en: 'Hours' },
+    cardTimeDesc: { no: 'Før timer og følg timebudsjett per prosjekt', pl: 'Rejestruj godziny i budżet na projekt', en: 'Log hours and track budget per project' },
+    logHours: { no: 'Registrer timer', pl: 'Zarejestruj godziny', en: 'Log hours' },
+    timeDate: { no: 'Dato', pl: 'Data', en: 'Date' },
+    timeHours: { no: 'Timer', pl: 'Godziny', en: 'Hours' },
+    timeActivity: { no: 'Aktivitet', pl: 'Czynność', en: 'Activity' },
+    timeEmployee: { no: 'Ansatt', pl: 'Pracownik', en: 'Employee' },
+    timeNote: { no: 'Merknad', pl: 'Uwaga', en: 'Note' },
+    myHours: { no: 'Mine siste timer', pl: 'Moje ostatnie godziny', en: 'My recent hours' },
+    noHours: { no: 'Ingen timer registrert ennå.', pl: 'Brak godzin.', en: 'No hours logged yet.' },
+    timeOverview: { no: 'Timeoversikt per prosjekt', pl: 'Przegląd godzin wg projektu', en: 'Hours per project' },
+    budgetHours: { no: 'Timebudsjett', pl: 'Budżet godzin', en: 'Budget hours' },
+    loggedHours: { no: 'Ført', pl: 'Zarejestrowane', en: 'Logged' },
+    remainingHours: { no: 'Gjenstår', pl: 'Pozostało', en: 'Remaining' },
+    overBudget: { no: 'Over budsjett', pl: 'Przekroczono', en: 'Over budget' },
+    calcHours: { no: 'Kalkulerte timer', pl: 'Godziny z kalkulacji', en: 'Costed hours' },
+    useCalcHours: { no: 'Bruk kalkulerte timer', pl: 'Użyj z kalkulacji', en: 'Use costed hours' },
+    saveBudget: { no: 'Lagre budsjett', pl: 'Zapisz budżet', en: 'Save budget' },
+    timeSection: { no: 'Timer og timebudsjett', pl: 'Godziny i budżet', en: 'Hours & budget' },
+    timeListPdf: { no: 'Timeliste (PDF)', pl: 'Lista godzin (PDF)', en: 'Timesheet (PDF)' },
+    totalHours: { no: 'Sum timer', pl: 'Suma godzin', en: 'Total hours' },
+    hoursShort: { no: 't', pl: 'godz', en: 'h' },
     cardInspect: { no: 'Befaring', pl: 'Inspekcja', en: 'Survey' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
@@ -712,6 +740,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
     calc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v3M8 18h4"/></svg>',
     inspect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6a1 1 0 0 1 1 1v1h1a2 2 0 0 1 2 2v6"/><path d="M16 5H8a0 0 0 0 0 0 0V4a1 1 0 0 1 1-1"/><rect x="4" y="5" width="12" height="16" rx="2"/><circle cx="12.5" cy="13" r="2.5"/><path d="m14.4 14.9 1.6 1.6"/></svg>',
+    time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
     { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
@@ -719,6 +748,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     { id: 'quotes', icon: 'quote', label: () => p('quotes'), run: () => renderQuotes() },
     { id: 'calc', icon: 'calc', label: () => p('calc'), run: () => renderCalc() },
     { id: 'inspections', icon: 'inspect', label: () => p('inspections'), run: () => renderInspections() },
+    { id: 'time', icon: 'time', label: () => p('timeTracking'), run: () => renderTime() },
     { id: 'customers', icon: 'customer', label: () => p('customers'), run: () => renderCustomers() },
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
@@ -989,6 +1019,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
         ${card('quotes', 'quote', p('quotes'), p('cardQuotesDesc'))}
         ${card('calc', 'calc', p('calc'), p('cardCalcDesc'))}
         ${card('inspections', 'inspect', p('inspections'), p('cardInspectDesc'))}
+        ${card('time', 'time', p('timeTracking'), p('cardTimeDesc'))}
         ${card('customers', 'customer', p('customers'), p('cardCustomersDesc'))}
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
@@ -1141,6 +1172,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
       <div class="p-section" id="sec-forms"></div>
       <div class="p-section" id="sec-chemicals"></div>
       <div class="p-section" id="sec-jobdoc"></div>
+      <div class="p-section" id="sec-time"></div>
       <div class="p-section" id="sec-fdv"></div>`;
     document.getElementById('back')!.addEventListener('click', renderProjects);
     document.getElementById('pr-deliver')!.addEventListener('click', async () => {
@@ -1156,6 +1188,7 @@ import { inspectionTemplates } from '../../data/ksInspect';
     renderProjectForms(id);
     renderChemicals(id);
     renderJobDoc(id);
+    renderProjectTime(id);
     renderFdvDelivery(id);
   }
 
@@ -3370,6 +3403,156 @@ import { inspectionTemplates } from '../../data/ksInspect';
       imgs.forEach((src) => { if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; } const x = margin + col * (colW + 6); try { doc.addImage(src, 'JPEG', x, y, colW, rowH); } catch (_e) { /* */ } doc.setDrawColor(220); doc.rect(x, y, colW, rowH); if (col === 1) { y += rowH + 6; col = 0; } else col = 1; });
     }
     await deliverPdf(doc, `Dekmar_Befaring${lang ? '_' + lang : ''}_${(state.number || state.title || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${T('Befaringsrapport')} ${state.number || ''} – ${state.title || ''}`.trim());
+  }
+
+  // ================= Timeføring / timebudsjett =================
+  const TIME_ACTIVITIES = ['Riving', 'Tekking', 'Membran', 'Blikk/beslag', 'Isolasjon', 'Rigg og drift', 'Transport/kjøring', 'Befaring', 'Opprydding', 'Dokumentasjon'];
+  function timeBar(logged: number, budget: number): string {
+    if (!(budget > 0)) return '';
+    const pct = Math.min(100, Math.round((logged / budget) * 100));
+    const col = logged > budget ? '#cc1f2a' : (logged >= budget * 0.9 ? '#b5510a' : '#1a7f37');
+    return `<div class="p-bar" title="${esc(nok(logged))} / ${esc(nok(budget))}"><span style="width:${pct}%;background:${col}"></span></div>`;
+  }
+
+  async function renderTime() {
+    redraw = renderTime; await ensureShell('time');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [projRes, entRes] = await Promise.all([
+      supabase.from('projects').select('id,name,budget_hours,status').order('name'),
+      supabase.from('time_entries').select('*').order('work_date', { ascending: false }).limit(500),
+    ]);
+    const PROJ = projRes.data || []; const ENT = entRes.data || [];
+    const email = await currentEmailSafe();
+    const projName = (id: string) => (PROJ.find((x: any) => x.id === id) || {}).name || '—';
+    const sumBy: Record<string, number> = {}; ENT.forEach((e: any) => { sumBy[e.project_id] = (sumBy[e.project_id] || 0) + numv(e.hours); });
+    const activeProj = PROJ.filter((pr: any) => pr.status !== 'delivered');
+    const projOpts = activeProj.map((pr: any) => `<option value="${esc(pr.id)}">${esc(pr.name)}</option>`).join('');
+    const actOpts = TIME_ACTIVITIES.map((a) => `<option value="${esc(a)}">`).join('');
+    const myEnt = ENT.filter((e: any) => (e.employee || '') === email).slice(0, 25);
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('timeTracking'))}</h1></div>
+      <div class="p-card">
+        <h2 style="margin:0 0 10px">${esc(p('logHours'))}</h2>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('selectProject'))}<select id="te-proj"><option value="">—</option>${projOpts}</select></label>
+          <label class="p-field">${esc(p('timeDate'))}<input id="te-date" type="date" value="${new Date().toISOString().slice(0, 10)}"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('timeHours'))}<input id="te-hours" inputmode="decimal" placeholder="7,5"></label>
+          <label class="p-field">${esc(p('timeActivity'))}<input id="te-act" list="te-act-list"><datalist id="te-act-list">${actOpts}</datalist></label>
+        </div>
+        <label class="p-field">${esc(p('timeNote'))}<input id="te-note"></label>
+        <button class="btn btn--primary" id="te-save" type="button">${esc(p('logHours'))}</button>
+        <span class="p-muted" id="te-msg" style="margin-left:8px"></span>
+      </div>
+      <div class="p-section"><h2>${esc(p('timeOverview'))}</h2>
+        <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('colProject'))}</th><th style="text-align:right">${esc(p('budgetHours'))}</th><th style="text-align:right">${esc(p('loggedHours'))}</th><th style="text-align:right">${esc(p('remainingHours'))}</th><th style="width:120px"></th></tr></thead><tbody>
+          ${activeProj.map((pr: any) => { const logged = sumBy[pr.id] || 0; const budget = numv(pr.budget_hours); const rem = budget - logged; const over = budget > 0 && rem < 0;
+            return `<tr class="p-click" data-goproj="${esc(pr.id)}"><td>${esc(pr.name)}</td><td style="text-align:right">${budget > 0 ? esc(nok(budget)) : '—'}</td><td style="text-align:right">${esc(nok(logged))}</td><td style="text-align:right${over ? ';color:#cc1f2a;font-weight:600' : ''}">${budget > 0 ? (over ? esc(p('overBudget')) + ' ' + esc(nok(-rem)) : esc(nok(rem))) : '—'}</td><td>${timeBar(logged, budget)}</td></tr>`;
+          }).join('') || `<tr><td colspan="5" class="p-muted">—</td></tr>`}
+        </tbody></table></div>
+      </div>
+      <div class="p-section"><h2>${esc(p('myHours'))}</h2>
+        ${myEnt.length ? `<div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('timeDate'))}</th><th>${esc(p('colProject'))}</th><th>${esc(p('timeActivity'))}</th><th style="text-align:right">${esc(p('timeHours'))}</th><th></th></tr></thead><tbody>
+          ${myEnt.map((e: any) => `<tr><td>${esc(fmt(e.work_date))}</td><td>${esc(projName(e.project_id))}</td><td>${esc(e.activity || '')}${e.note ? ' · ' + esc(e.note) : ''}</td><td style="text-align:right">${esc(nok(numv(e.hours)))}</td><td><button class="ql-del" data-delent="${esc(e.id)}" type="button">✕</button></td></tr>`).join('')}
+        </tbody></table></div>` : `<p class="p-muted">${esc(p('noHours'))}</p>`}
+      </div>`;
+    document.getElementById('te-save')!.addEventListener('click', async () => {
+      const pid = (document.getElementById('te-proj') as HTMLSelectElement).value;
+      const hours = numv((document.getElementById('te-hours') as HTMLInputElement).value);
+      const msg = document.getElementById('te-msg')!;
+      if (!pid || !hours) { msg.textContent = p('selectProject') + ' + ' + p('timeHours'); return; }
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('time_entries').insert({ project_id: pid, work_date: (document.getElementById('te-date') as HTMLInputElement).value || new Date().toISOString().slice(0, 10), hours, activity: (document.getElementById('te-act') as HTMLInputElement).value.trim() || null, note: (document.getElementById('te-note') as HTMLInputElement).value.trim() || null, employee: email, created_by: u.user?.id });
+      if (error) { msg.textContent = error.message; return; }
+      renderTime();
+    });
+    root.querySelectorAll<HTMLElement>('[data-goproj]').forEach((tr) => tr.addEventListener('click', () => openProject(tr.dataset.goproj!)));
+    root.querySelectorAll<HTMLElement>('[data-delent]').forEach((b) => b.addEventListener('click', async () => { await supabase.from('time_entries').delete().eq('id', b.dataset.delent!); renderTime(); }));
+  }
+
+  // Timeseksjon i prosjektvisningen: budsjett + ført + fremdrift + føringer + timeliste-PDF
+  async function renderProjectTime(projectId: string) {
+    const secEl = document.getElementById('sec-time'); if (!secEl) return;
+    const [{ data: pr }, { data: ent }, { data: calcs }] = await Promise.all([
+      supabase.from('projects').select('budget_hours').eq('id', projectId).single(),
+      supabase.from('time_entries').select('*').eq('project_id', projectId).order('work_date', { ascending: false }),
+      supabase.from('calculations').select('lines').eq('project_id', projectId),
+    ]);
+    const entries = ent || [];
+    const logged = entries.reduce((s: number, e: any) => s + numv(e.hours), 0);
+    const budget = numv(pr?.budget_hours);
+    const calcHours = (calcs || []).reduce((s: number, c: any) => s + (c.lines || []).filter((l: any) => l.type === 'arbeid').reduce((a: number, l: any) => a + numv(l.qty), 0), 0);
+    const rem = budget - logged; const over = budget > 0 && rem < 0;
+    const email = await currentEmailSafe();
+    const actList = TIME_ACTIVITIES.map((a) => `<option value="${esc(a)}">`).join('');
+    secEl.innerHTML = `
+      <h2>${esc(p('timeSection'))}</h2>
+      <div class="p-grid2" style="align-items:end">
+        <label class="p-field">${esc(p('budgetHours'))}<input id="pt-budget" inputmode="decimal" value="${esc(budget ? String(budget) : '')}"></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn--ghost p-sm" id="pt-budget-save" type="button">${esc(p('saveBudget'))}</button>
+          ${calcHours > 0 ? `<button class="btn btn--ghost p-sm" id="pt-usecalc" type="button">${esc(p('useCalcHours'))} (${esc(nok(calcHours))})</button>` : ''}
+        </div>
+      </div>
+      <div class="p-timestats">
+        <span><strong>${esc(nok(logged))}</strong> ${esc(p('loggedHours'))}</span>
+        ${budget > 0 ? `<span><strong>${esc(nok(budget))}</strong> ${esc(p('budgetHours'))}</span><span style="${over ? 'color:#cc1f2a;font-weight:600' : ''}">${over ? esc(p('overBudget')) + ' ' + esc(nok(-rem)) : esc(nok(rem)) + ' ' + esc(p('remainingHours'))}</span>` : ''}
+      </div>
+      ${timeBar(logged, budget)}
+      <div class="p-card" style="margin-top:12px">
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('timeDate'))}<input id="pt-date" type="date" value="${new Date().toISOString().slice(0, 10)}"></label>
+          <label class="p-field">${esc(p('timeHours'))}<input id="pt-hours" inputmode="decimal" placeholder="7,5"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('timeActivity'))}<input id="pt-act" list="pt-act-list"><datalist id="pt-act-list">${actList}</datalist></label>
+          <label class="p-field">${esc(p('timeNote'))}<input id="pt-note"></label>
+        </div>
+        <button class="btn btn--primary p-sm" id="pt-add" type="button">${esc(p('logHours'))}</button>
+        <span class="p-muted" id="pt-msg" style="margin-left:8px"></span>
+      </div>
+      ${entries.length ? `<div class="p-tablewrap" style="margin-top:12px"><table class="p-table"><thead><tr><th>${esc(p('timeDate'))}</th><th>${esc(p('timeEmployee'))}</th><th>${esc(p('timeActivity'))}</th><th style="text-align:right">${esc(p('timeHours'))}</th><th></th></tr></thead><tbody>
+        ${entries.map((e: any) => `<tr><td>${esc(fmt(e.work_date))}</td><td>${esc(e.employee || '')}</td><td>${esc(e.activity || '')}${e.note ? ' · ' + esc(e.note) : ''}</td><td style="text-align:right">${esc(nok(numv(e.hours)))}</td><td><button class="ql-del" data-delpt="${esc(e.id)}" type="button">✕</button></td></tr>`).join('')}
+        <tr><td colspan="3" style="text-align:right;font-weight:600">${esc(p('totalHours'))}</td><td style="text-align:right;font-weight:600">${esc(nok(logged))}</td><td></td></tr>
+      </tbody></table></div>
+      <button class="btn btn--ghost p-sm" id="pt-pdf" type="button" style="margin-top:10px">${esc(p('timeListPdf'))}</button>` : `<p class="p-muted" style="margin-top:10px">${esc(p('noHours'))}</p>`}`;
+    document.getElementById('pt-budget-save')!.addEventListener('click', async () => { const v = (document.getElementById('pt-budget') as HTMLInputElement).value; await supabase.from('projects').update({ budget_hours: v ? numv(v) : null }).eq('id', projectId); renderProjectTime(projectId); });
+    const uc = document.getElementById('pt-usecalc'); if (uc) uc.addEventListener('click', async () => { await supabase.from('projects').update({ budget_hours: calcHours }).eq('id', projectId); renderProjectTime(projectId); });
+    document.getElementById('pt-add')!.addEventListener('click', async () => {
+      const hours = numv((document.getElementById('pt-hours') as HTMLInputElement).value); const msg = document.getElementById('pt-msg')!;
+      if (!hours) { msg.textContent = p('timeHours'); return; }
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('time_entries').insert({ project_id: projectId, work_date: (document.getElementById('pt-date') as HTMLInputElement).value || new Date().toISOString().slice(0, 10), hours, activity: (document.getElementById('pt-act') as HTMLInputElement).value.trim() || null, note: (document.getElementById('pt-note') as HTMLInputElement).value.trim() || null, employee: email, created_by: u.user?.id });
+      if (error) { msg.textContent = error.message; return; } renderProjectTime(projectId);
+    });
+    secEl.querySelectorAll<HTMLElement>('[data-delpt]').forEach((b) => b.addEventListener('click', async () => { await supabase.from('time_entries').delete().eq('id', b.dataset.delpt!); renderProjectTime(projectId); }));
+    const pdfBtn = document.getElementById('pt-pdf'); if (pdfBtn) pdfBtn.addEventListener('click', () => makeTimesheetPdf(CURRENT_PROJECT, entries, logged, budget));
+  }
+
+  async function makeTimesheetPdf(pr: any, entries: any[], logged: number, budget: number) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo();
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(p('timeListPdf'), margin + 26, y + 8);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104); doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text([pr?.name, pr?.address].filter(Boolean).join('  ·  '), margin, y); y += 8;
+    const cx = { date: margin, emp: margin + 28, act: margin + 78, hrs: margin + maxW };
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+    doc.text(p('timeDate'), cx.date, y); doc.text(p('timeEmployee'), cx.emp, y); doc.text(p('timeActivity'), cx.act, y); doc.text(p('timeHours'), cx.hrs, y, { align: 'right' } as any);
+    y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+    [...entries].reverse().forEach((e: any) => {
+      const act = doc.splitTextToSize((e.activity || '') + (e.note ? ' · ' + e.note : ''), maxW - 78 - 18); const rowH = Math.max(act.length * 4.2, 5);
+      if (y + rowH > 282) { doc.addPage(); y = margin; }
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5);
+      doc.text(fmt(e.work_date), cx.date, y); doc.text(String(e.employee || ''), cx.emp, y); act.forEach((ln: string, k: number) => doc.text(ln, cx.act, y + k * 4.2)); doc.text(nok(numv(e.hours)), cx.hrs, y, { align: 'right' } as any);
+      y += rowH + 1.5;
+    });
+    y += 2; doc.setDrawColor(20, 23, 28); doc.line(margin + 78, y, margin + maxW, y); y += 5;
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('totalHours'), margin + 78, y); doc.text(nok(logged), margin + maxW, y, { align: 'right' } as any); y += 6;
+    if (budget > 0) { doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5); doc.text(p('budgetHours') + ': ' + nok(budget) + '  ·  ' + (logged > budget ? p('overBudget') + ' ' + nok(logged - budget) : p('remainingHours') + ' ' + nok(budget - logged)), margin + 78, y); }
+    await deliverPdf(doc, `Dekmar_Timeliste_${(pr?.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${p('timeListPdf')} – ${pr?.name || ''}`);
   }
 
   // ================= HMS-skjemaer (SJA / risiko / stillas) =================
