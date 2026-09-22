@@ -8,6 +8,7 @@ import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../da
 import { handbooks } from '../../../data/ksHandbooks';
 import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data/ksQuote';
 import { standardMaterials } from '../../../data/ksCalc';
+import { hseFormTypes } from '../../../data/ksForms';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -16,7 +17,7 @@ import { standardMaterials } from '../../../data/ksCalc';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials, hseFormTypes })} />
   <script type="application/json" id="ks-handbooks" set:html={JSON.stringify(handbooks)} />
 </KsLayout>
 
@@ -260,6 +261,7 @@ import { standardMaterials } from '../../../data/ksCalc';
   const QUOTE_LETTER = KSD.quoteLetter || { signatories: [], company: {} };
   let QUOTE_ELEMENTS: any[] = [];
   let QUOTE_ELEMENTS_SEEDED = false;
+  const HSE_FORM_TYPES = KSD.hseFormTypes || [];
   const STD_MATERIALS = KSD.materials || [];
   let MATERIALS: any[] = [];
   let MATERIALS_SEEDED = false;
@@ -513,6 +515,13 @@ import { standardMaterials } from '../../../data/ksCalc';
     orderNo: { no: 'Bestillingsnr', pl: 'Nr zamówienia', en: 'Order no' },
     noLinesYet: { no: 'Ingen linjer ennå. Legg til materiale eller arbeid.', pl: 'Brak pozycji. Dodaj materiał lub pracę.', en: 'No lines yet. Add material or labour.' },
     rowsFound: { no: 'rader funnet', pl: 'wierszy', en: 'rows found' },
+    // HMS-skjemaer (SJA/risiko/stillas)
+    hseFormsTitle: { no: 'HMS-skjemaer (SJA, risiko, stillas)', pl: 'Formularze BHP (SJA, ryzyko, rusztowanie)', en: 'HSE forms (JSA, risk, scaffold)' },
+    newForm: { no: 'Nytt skjema', pl: 'Nowy formularz', en: 'New form' },
+    noForms: { no: 'Ingen skjemaer registrert på dette prosjektet.', pl: 'Brak formularzy w tym projekcie.', en: 'No forms on this project.' },
+    chooseType: { no: 'Velg skjematype', pl: 'Wybierz typ', en: 'Choose form type' },
+    addRowLabel: { no: '+ Legg til rad', pl: '+ Dodaj wiersz', en: '+ Add row' },
+    riskLabel: { no: 'Risiko', pl: 'Ryzyko', en: 'Risk' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
     statistics: { no: 'Statistikk', pl: 'Statystyki', en: 'Statistics' },
@@ -1054,6 +1063,7 @@ import { standardMaterials } from '../../../data/ksCalc';
       <div class="p-section" id="sec-sha"></div>
       <div class="p-section" id="sec-checklist"></div>
       <div class="p-section" id="sec-verneround"></div>
+      <div class="p-section" id="sec-forms"></div>
       <div class="p-section" id="sec-chemicals"></div>
       <div class="p-section" id="sec-jobdoc"></div>`;
     document.getElementById('back')!.addEventListener('click', renderProjects);
@@ -1067,6 +1077,7 @@ import { standardMaterials } from '../../../data/ksCalc';
     renderShaEntry(id);
     renderForms('checklist', id);
     renderForms('verneround', id);
+    renderProjectForms(id);
     renderChemicals(id);
     renderJobDoc(id);
   }
@@ -2814,6 +2825,139 @@ import { standardMaterials } from '../../../data/ksCalc';
     rt('MVA ' + nok(d.vat) + ' %', 'kr ' + nok(vat));
     rt('Sum inkl. mva.', 'kr ' + nok(inc), true);
     await deliverPdf(doc, `Dekmar_Tilbud_${(d.number || '')}_${(d.customer.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Pristilbud ${d.number || ''} – ${d.title || ''}`.trim());
+  }
+
+  // ================= HMS-skjemaer (SJA / risiko / stillas) =================
+  const hseType = (k: string) => HSE_FORM_TYPES.find((x: any) => x.type === k);
+  function riskStyle(v: number) {
+    if (!v) return '';
+    if (v <= 4) return 'background:#e4f4e8;color:#1a7f37';
+    if (v <= 9) return 'background:#fff6e0;color:#8a6a00';
+    if (v <= 14) return 'background:#ffe9d6;color:#b5510a';
+    return 'background:#fdeaec;color:#cc1f2a';
+  }
+
+  async function renderProjectForms(projectId: string) {
+    const secEl = document.getElementById('sec-forms'); if (!secEl) return;
+    const { data: forms } = await supabase.from('hse_forms').select('*').eq('project_id', projectId).order('created_at', { ascending: false });
+    const list = forms || [];
+    const typeBtns = HSE_FORM_TYPES.map((tp: any) => `<button class="btn btn--ghost p-sm" data-newform="${esc(tp.type)}">${esc(tp.title)}</button>`).join(' ');
+    const rows = list.map((f: any) => {
+      const tp = hseType(f.form_type);
+      return `<li class="p-item" data-form="${esc(f.id)}"><div><h3>${esc(tp ? tp.title : f.form_type)}</h3><p>${esc([f.title, fmt(f.created_at)].filter(Boolean).join(' · '))}</p></div><span class="p-go">${ICONS.chevron}</span></li>`;
+    }).join('');
+    secEl.innerHTML = `
+      <h2>${esc(p('hseFormsTitle'))}</h2>
+      ${rows ? `<ul class="p-list">${rows}</ul>` : `<p class="p-muted">${esc(p('noForms'))}</p>`}
+      <div style="margin-top:10px"><span class="p-muted" style="font-size:.85rem">${esc(p('newForm'))}:</span><br>${typeBtns}</div>`;
+    secEl.querySelectorAll('[data-newform]').forEach((b) => b.addEventListener('click', () => openHseFormEditor(projectId, (b as HTMLElement).dataset.newform!, null)));
+    secEl.querySelectorAll('.p-item[data-form]').forEach((el) => el.addEventListener('click', () => { const f = list.find((x: any) => x.id === (el as HTMLElement).dataset.form); openHseFormEditor(projectId, f.form_type, f); }));
+  }
+
+  function openHseFormEditor(projectId: string, typeKey: string, form: any) {
+    const tp = hseType(typeKey); if (!tp) return;
+    const secEl = document.getElementById('sec-forms'); if (!secEl) return;
+    const d = (form && form.data) || {};
+    const state: any = { id: form?.id || null, header: { ...(d.header || {}) }, rows: (d.rows || []).map((r: any) => ({ ...r })), checks: { ...(d.checks || {}) }, footer: { ...(d.footer || {}) } };
+    const field = (f: any, scope: string) => {
+      const val = state[scope][f.key] || '';
+      const inner = f.type === 'textarea' ? `<textarea data-s="${scope}" data-k="${f.key}" rows="2">${esc(val)}</textarea>`
+        : f.type === 'select' ? `<select data-s="${scope}" data-k="${f.key}"><option value="">—</option>${(f.options || []).map((o: string) => `<option${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+        : `<input type="${f.type === 'date' ? 'date' : 'text'}" data-s="${scope}" data-k="${f.key}" value="${esc(val)}">`;
+      return `<label class="p-field"${f.full ? ' style="grid-column:1/-1"' : ''}>${esc(f.label)}${inner}</label>`;
+    };
+    const headerHtml = `<div class="p-grid2">${tp.header.map((f: any) => field(f, 'header')).join('')}</div>`;
+    const footerHtml = `<div class="p-grid2">${tp.footer.map((f: any) => field(f, 'footer')).join('')}</div>`;
+    const checksHtml = tp.checks ? `<p class="p-subhead">${esc(tp.checksLabel || '')}</p>${tp.checks.map((c: any) => `
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">
+        <span style="flex:1;font-size:.92rem">${esc(c.label)}</span>
+        <select data-s="checks" data-k="${c.key}" style="max-width:150px"><option value="">—</option>${(tp.checkScale || []).map((o: string) => `<option${state.checks[c.key] === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>
+      </div>`).join('')}` : '';
+    const rowsHtml = tp.rowCols ? `<p class="p-subhead">${esc(tp.rowsLabel || '')}</p><div class="p-tablewrap"><table class="ql-table"><thead><tr>${tp.rowCols.map((c: any) => `<th>${esc(c.label)}</th>`).join('')}${tp.rowMode === 'risk' ? `<th>${esc(p('riskLabel'))}</th>` : ''}<th></th></tr></thead><tbody id="hf-rows"></tbody></table></div><button class="btn btn--ghost p-sm" id="hf-addrow" type="button" style="margin-top:6px">${esc(p('addRowLabel'))}</button>` : '';
+    secEl.innerHTML = `
+      <button class="btn btn--ghost p-sm" id="hf-back" style="margin-bottom:12px">← ${esc(p('hseFormsTitle'))}</button>
+      <h2 style="margin-top:0">${esc(tp.title)}</h2>
+      ${tp.intro ? `<p class="p-muted" style="font-size:.85rem">${esc(tp.intro)}</p>` : ''}
+      ${headerHtml}
+      ${rowsHtml}
+      ${checksHtml}
+      ${footerHtml}
+      <div class="q-actions"><button class="btn btn--primary" id="hf-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="hf-pdf" type="button">${esc(p('downloadPdf'))}</button>${state.id ? `<button class="btn btn--ghost" id="hf-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="hf-msg"></span></div>`;
+    // bind header/footer/checks
+    secEl.querySelectorAll('[data-s]').forEach((el) => el.addEventListener('input', (e) => { const t = e.target as HTMLInputElement; state[t.dataset.s!][t.dataset.k!] = t.value; }));
+    const drawRows = () => {
+      const tb = document.getElementById('hf-rows'); if (!tb) return;
+      tb.innerHTML = state.rows.map((r: any, i: number) => {
+        const cells = tp.rowCols!.map((c: any) => {
+          if (c.type === 'sk') return `<td><select data-ri="${i}" data-rk="${c.key}" style="width:52px"><option value="">–</option>${(c.options || []).map((o: string) => `<option${String(r[c.key]) === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></td>`;
+          return `<td><input data-ri="${i}" data-rk="${c.key}" value="${esc(r[c.key] || '')}"></td>`;
+        }).join('');
+        const riskCell = tp.rowMode === 'risk' ? (() => { const v = (parseInt(r.s) || 0) * (parseInt(r.k) || 0); return `<td class="hf-risk" style="text-align:center;font-weight:700;${riskStyle(v)}">${v || ''}</td>`; })() : '';
+        return `<tr>${cells}${riskCell}<td><button class="ql-del" data-rdel="${i}" type="button">✕</button></td></tr>`;
+      }).join('') || `<tr><td colspan="${tp.rowCols!.length + (tp.rowMode === 'risk' ? 2 : 1)}" class="p-muted">—</td></tr>`;
+      tb.querySelectorAll('[data-ri]').forEach((inp) => inp.addEventListener('input', (e) => {
+        const el = e.target as HTMLInputElement; state.rows[+el.dataset.ri!][el.dataset.rk!] = el.value;
+        if (tp.rowMode === 'risk' && (el.dataset.rk === 's' || el.dataset.rk === 'k')) { const tr = el.closest('tr')!; const rr = state.rows[+el.dataset.ri!]; const v = (parseInt(rr.s) || 0) * (parseInt(rr.k) || 0); const rc = tr.querySelector('.hf-risk') as HTMLElement; if (rc) { rc.textContent = v ? String(v) : ''; rc.setAttribute('style', 'text-align:center;font-weight:700;' + riskStyle(v)); } }
+      }));
+      tb.querySelectorAll('[data-rdel]').forEach((b) => b.addEventListener('click', (e) => { state.rows.splice(+(e.target as HTMLElement).dataset.rdel!, 1); drawRows(); }));
+    };
+    const addRowBtn = document.getElementById('hf-addrow'); if (addRowBtn) addRowBtn.addEventListener('click', () => { state.rows.push({}); drawRows(); });
+    document.getElementById('hf-back')!.addEventListener('click', () => renderProjectForms(projectId));
+    const titleOf = () => (tp.type === 'sja' ? (state.header.oppgave || '') : tp.type === 'stillas' ? (state.header.plassering || '') : (state.header.omrade || '')) || fmt(new Date().toISOString());
+    const doSave = async () => {
+      const msg = document.getElementById('hf-msg')!; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      const payload: any = { project_id: projectId, form_type: tp.type, title: titleOf(), data: { header: state.header, rows: state.rows, checks: state.checks, footer: state.footer } };
+      let res; if (state.id) res = await supabase.from('hse_forms').update(payload).eq('id', state.id).select().single();
+      else { payload.created_by = u.user?.id; res = await supabase.from('hse_forms').insert(payload).select().single(); }
+      if (res.error) { msg.textContent = res.error.message; return null; }
+      state.id = res.data.id; msg.textContent = p('savedShort'); return res.data;
+    };
+    document.getElementById('hf-save')!.addEventListener('click', doSave);
+    const hdel = document.getElementById('hf-del'); if (hdel) hdel.addEventListener('click', async () => { if (!confirm(tp.title)) return; await supabase.from('hse_forms').delete().eq('id', state.id); renderProjectForms(projectId); });
+    document.getElementById('hf-pdf')!.addEventListener('click', async () => { await doSave(); await makeHseFormPdf(tp, state, CURRENT_PROJECT?.name || ''); });
+    if (tp.rowCols) drawRows();
+  }
+
+  async function makeHseFormPdf(tp: any, state: any, projectName: string) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo();
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(tp.title, margin + 26, y + 8);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104); doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(11); doc.text(projectName || '', margin, y); y += 7;
+    const kv = (label: string, val: string) => { if (!val) return; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(label + ':', margin, y); doc.setFont('DejaVu', 'normal'); doc.setTextColor(20, 23, 28); doc.splitTextToSize(val, maxW - 40).forEach((ln: string, k: number) => doc.text(ln, margin + 40, y + k * 4.6)); y += Math.max(5.2, doc.splitTextToSize(val, maxW - 40).length * 4.6); };
+    tp.header.forEach((f: any) => kv(f.label, state.header[f.key] || ''));
+    y += 2;
+    if (tp.rowCols && state.rows.length) {
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(tp.rowsLabel || '', margin, y); y += 5;
+      const cols = tp.rowCols.concat(tp.rowMode === 'risk' ? [{ key: '__risk', label: p('riskLabel'), w: 10 }] : []);
+      const totalW = cols.reduce((s: number, c: any) => s + (c.w || 15), 0);
+      let x = margin; const xs = cols.map((c: any) => { const cx = x; x += (c.w || 15) / totalW * maxW; return cx; });
+      doc.setFontSize(8); doc.setTextColor(90, 96, 104);
+      cols.forEach((c: any, i: number) => doc.text(String(c.label), xs[i], y)); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+      state.rows.forEach((r: any) => {
+        const cellW = (i: number) => (cols[i].w || 15) / totalW * maxW - 2;
+        const texts = cols.map((c: any, i: number) => { let v = c.key === '__risk' ? String((parseInt(r.s) || 0) * (parseInt(r.k) || 0) || '') : (r[c.key] || ''); return doc.splitTextToSize(String(v), cellW(i)); });
+        const rowH = Math.max(...texts.map((t: string[]) => t.length)) * 4.2 || 4.2;
+        if (y + rowH > 285) { doc.addPage(); y = margin; }
+        doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5);
+        texts.forEach((t: string[], i: number) => t.forEach((ln: string, k: number) => doc.text(ln, xs[i], y + k * 4.2)));
+        y += rowH + 2;
+      });
+      y += 2;
+    }
+    if (tp.checks) {
+      if (y > 250) { doc.addPage(); y = margin; }
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(tp.checksLabel || '', margin, y); y += 5;
+      tp.checks.forEach((c: any) => { if (y > 285) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'normal'); doc.setFontSize(9); const lns = doc.splitTextToSize(c.label, maxW - 34); lns.forEach((ln: string, k: number) => doc.text(ln, margin, y + k * 4.4)); doc.setFont('DejaVu', 'bold'); doc.text(state.checks[c.key] || '—', margin + maxW, y, { align: 'right' } as any); y += Math.max(5, lns.length * 4.4); });
+      y += 2;
+    }
+    if (y > 265) { doc.addPage(); y = margin; }
+    doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.4); doc.line(margin, y, margin + maxW, y); y += 6;
+    tp.footer.forEach((f: any) => kv(f.label, state.footer[f.key] || ''));
+    await deliverPdf(doc, `Dekmar_${tp.type}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${tp.title} – ${projectName || ''}`);
   }
 
   // ================= Kalkulasjonsverktøy =================
