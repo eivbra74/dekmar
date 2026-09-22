@@ -6,6 +6,7 @@ import { standardArticles } from '../../../data/ksArticles';
 import { standardFdv } from '../../../data/ksFdv';
 import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../data/ksSha';
 import { handbooks } from '../../../data/ksHandbooks';
+import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data/ksQuote';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -14,7 +15,7 @@ import { handbooks } from '../../../data/ksHandbooks';
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive } })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter })} />
   <script type="application/json" id="ks-handbooks" set:html={JSON.stringify(handbooks)} />
 </KsLayout>
 
@@ -206,6 +207,29 @@ import { handbooks } from '../../../data/ksHandbooks';
   .p-table th { font-family: var(--font-head); font-weight: 700; background: var(--surface); }
   .p-table tbody tr[data-form] { cursor: pointer; }
   .p-table tbody tr[data-form]:hover { background: var(--surface); }
+  .p-table tbody tr[data-q], .p-table tbody tr[data-doc] { cursor: pointer; }
+  .p-table tbody tr[data-q]:hover { background: var(--surface); }
+  .q-badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: .78rem; font-weight: 700; font-family: var(--font-head); }
+  .q-draft { background: #eceef1; color: #5a606c; }
+  .q-sent { background: #e7f0fb; color: #1a5fb4; }
+  .q-accepted { background: #e4f4e8; color: #1a7f37; }
+  .q-declined { background: #fdeaec; color: var(--brand); }
+  /* Tilbudslinjer */
+  .ql-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .ql-table th { text-align: left; font-family: var(--font-head); font-size: .78rem; color: var(--muted); font-weight: 700; padding: 4px 6px; }
+  .ql-table td { padding: 3px 4px; vertical-align: top; }
+  .ql-table input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; font: inherit; box-sizing: border-box; }
+  .ql-spec { min-width: 220px; }
+  .ql-num { width: 92px; }
+  .ql-sum { text-align: right; white-space: nowrap; padding-top: 12px; font-variant-numeric: tabular-nums; }
+  .ql-del { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 6px; }
+  .ql-del:hover { color: var(--brand); }
+  .ql-totals { margin: 10px 0; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; font-variant-numeric: tabular-nums; }
+  .ql-totals .grand { font-size: 1.1rem; font-weight: 800; font-family: var(--font-head); }
+  .q-term { display: flex; gap: 9px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .q-term textarea { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: inherit; min-height: 40px; resize: vertical; }
+  .q-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .p-logo { height: 40px; width: auto; }
 </style>
 
 <script>
@@ -224,6 +248,11 @@ import { handbooks } from '../../../data/ksHandbooks';
   let FDV: any[] = [];
   let FDV_SEEDED = false;
   const STD_SHA = KSD.sha || { roles: [], milestones: [], specific: [], preventive: [] };
+  const STD_QUOTE_ELEMENTS = KSD.quoteElements || [];
+  const STD_QUOTE_TERMS = KSD.quoteTerms || [];
+  const QUOTE_LETTER = KSD.quoteLetter || { signatories: [], company: {} };
+  let QUOTE_ELEMENTS: any[] = [];
+  let QUOTE_ELEMENTS_SEEDED = false;
   let HANDBOOKS: any[] | null = null;
   const getHandbooks = () => { if (!HANDBOOKS) { try { HANDBOOKS = JSON.parse(document.getElementById('ks-handbooks')!.textContent || '[]'); } catch (_e) { HANDBOOKS = []; } } return HANDBOOKS!; };
   let TEMPLATES: any[] = [];
@@ -379,6 +408,56 @@ import { handbooks } from '../../../data/ksHandbooks';
     devPreventive: { no: 'Forebyggende tiltak (hindre gjentakelse)', pl: 'Działania zapobiegawcze (zapobieganie powtórzeniu)', en: 'Preventive measures (prevent recurrence)' },
     devReporterInformed: { no: 'Avviksmelder informert (dato)', pl: 'Zgłaszający poinformowany (data)', en: 'Reporter informed (date)' },
     devClosedDate: { no: 'Avviket lukket (dato)', pl: 'Niezgodność zamknięta (data)', en: 'Deviation closed (date)' },
+    // Pristilbud / kunder
+    quotes: { no: 'Tilbud', pl: 'Oferty', en: 'Quotes' },
+    customers: { no: 'Kunder', pl: 'Klienci', en: 'Customers' },
+    newQuote: { no: 'Nytt tilbud', pl: 'Nowa oferta', en: 'New quote' },
+    newCustomer: { no: 'Ny kunde', pl: 'Nowy klient', en: 'New customer' },
+    editCustomer: { no: 'Rediger kunde', pl: 'Edytuj klienta', en: 'Edit customer' },
+    noQuotes: { no: 'Ingen tilbud ennå. Opprett det første.', pl: 'Brak ofert. Utwórz pierwszą.', en: 'No quotes yet. Create the first.' },
+    noCustomers: { no: 'Ingen kunder ennå. Opprett den første.', pl: 'Brak klientów. Utwórz pierwszego.', en: 'No customers yet. Create the first.' },
+    searchQuotes: { no: 'Søk (tilbudsnr, kunde, prosjekt, emne)', pl: 'Szukaj (nr oferty, klient, projekt, temat)', en: 'Search (quote no, customer, project, subject)' },
+    searchCustomers: { no: 'Søk (navn, kontakt, e-post)', pl: 'Szukaj (nazwa, kontakt, e-mail)', en: 'Search (name, contact, email)' },
+    custName: { no: 'Kundenavn', pl: 'Nazwa klienta', en: 'Customer name' },
+    custOrgNo: { no: 'Org.nr', pl: 'Nr org.', en: 'Org. no' },
+    custContact: { no: 'Kontaktperson', pl: 'Osoba kontaktowa', en: 'Contact person' },
+    custPhone: { no: 'Telefon', pl: 'Telefon', en: 'Phone' },
+    custAddress: { no: 'Adresse', pl: 'Adres', en: 'Address' },
+    custNotes: { no: 'Notater', pl: 'Notatki', en: 'Notes' },
+    selectCustomer: { no: 'Velg kunde', pl: 'Wybierz klienta', en: 'Select customer' },
+    selectProject: { no: 'Prosjekt (valgfritt)', pl: 'Projekt (opcjonalnie)', en: 'Project (optional)' },
+    quoteNo: { no: 'Tilbudsnr', pl: 'Nr oferty', en: 'Quote no' },
+    quoteSubject: { no: 'Emne', pl: 'Temat', en: 'Subject' },
+    quoteAddress: { no: 'Prosjektadresse', pl: 'Adres projektu', en: 'Project address' },
+    quoteIntro: { no: 'Innledning', pl: 'Wprowadzenie', en: 'Introduction' },
+    quoteStartNote: { no: 'Oppstart / varighet (valgfritt)', pl: 'Rozpoczęcie / czas (opcjonalnie)', en: 'Start / duration (optional)' },
+    quoteValidDays: { no: 'Gyldighet (dager)', pl: 'Ważność (dni)', en: 'Valid (days)' },
+    quoteHourly: { no: 'Timerate eks. mva', pl: 'Stawka godz. bez VAT', en: 'Hourly rate excl. VAT' },
+    quoteVat: { no: 'MVA-sats (%)', pl: 'Stawka VAT (%)', en: 'VAT rate (%)' },
+    quoteSignatory: { no: 'Underskriver', pl: 'Podpisujący', en: 'Signatory' },
+    quoteLinesLabel: { no: 'Tilbudsposter', pl: 'Pozycje oferty', en: 'Quote items' },
+    addFromLibrary: { no: '+ Fra bibliotek', pl: '+ Z biblioteki', en: '+ From library' },
+    addLine: { no: '+ Tom linje', pl: '+ Pusta linia', en: '+ Blank line' },
+    colSpec: { no: 'Spesifikasjon', pl: 'Specyfikacja', en: 'Specification' },
+    colUnit: { no: 'Enh.', pl: 'Jedn.', en: 'Unit' },
+    colQty: { no: 'Mengde', pl: 'Ilość', en: 'Qty' },
+    colUnitPrice: { no: 'Enhetspris', pl: 'Cena jedn.', en: 'Unit price' },
+    colSum: { no: 'Sum', pl: 'Suma', en: 'Sum' },
+    sumExVat: { no: 'Sum eks. mva', pl: 'Suma bez VAT', en: 'Total excl. VAT' },
+    vatLabel: { no: 'MVA', pl: 'VAT', en: 'VAT' },
+    sumIncVat: { no: 'Sum inkl. mva', pl: 'Suma z VAT', en: 'Total incl. VAT' },
+    quoteTermsLabel: { no: 'Forbehold', pl: 'Zastrzeżenia', en: 'Reservations' },
+    addTerm: { no: '+ Eget forbehold', pl: '+ Własne zastrzeżenie', en: '+ Custom reservation' },
+    qStatusDraft: { no: 'Utkast', pl: 'Szkic', en: 'Draft' },
+    qStatusSent: { no: 'Sendt', pl: 'Wysłana', en: 'Sent' },
+    qStatusAccepted: { no: 'Akseptert', pl: 'Zaakceptowana', en: 'Accepted' },
+    qStatusDeclined: { no: 'Avslått', pl: 'Odrzucona', en: 'Declined' },
+    quotePreviewSend: { no: 'Lag PDF / send', pl: 'Utwórz PDF / wyślij', en: 'Create PDF / send' },
+    allStatuses: { no: 'Alle statuser', pl: 'Wszystkie statusy', en: 'All statuses' },
+    colAmount: { no: 'Beløp (eks. mva)', pl: 'Kwota (bez VAT)', en: 'Amount (excl. VAT)' },
+    savedShort: { no: 'Lagret.', pl: 'Zapisano.', en: 'Saved.' },
+    cardQuotesDesc: { no: 'Lag pristilbud, send til kunde og arkiver.', pl: 'Twórz oferty, wysyłaj do klienta i archiwizuj.', en: 'Create quotes, send to customer and archive.' },
+    cardCustomersDesc: { no: 'Kunderegister med kontaktinfo, søkbart.', pl: 'Rejestr klientów z danymi kontaktowymi, przeszukiwalny.', en: 'Customer register with contacts, searchable.' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
     statistics: { no: 'Statistikk', pl: 'Statystyki', en: 'Statistics' },
@@ -494,10 +573,14 @@ import { handbooks } from '../../../data/ksHandbooks';
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>',
     fdv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
     chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+    quote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/><path d="M12 9.5v-1"/></svg>',
+    customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
     { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
     { id: 'projects', icon: 'projects', label: () => p('projects'), run: () => renderProjects() },
+    { id: 'quotes', icon: 'quote', label: () => p('quotes'), run: () => renderQuotes() },
+    { id: 'customers', icon: 'customer', label: () => p('customers'), run: () => renderCustomers() },
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
     { id: 'documents', icon: 'documents', label: () => p('documents'), run: () => renderDocuments() },
@@ -764,6 +847,8 @@ import { handbooks } from '../../../data/ksHandbooks';
       </div>
       <div class="dash-grid">
         ${card('projects', 'projects', p('projects'), p('cardProjectsDesc'))}
+        ${card('quotes', 'quote', p('quotes'), p('cardQuotesDesc'))}
+        ${card('customers', 'customer', p('customers'), p('cardCustomersDesc'))}
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
         ${card('documents', 'documents', p('documents'), p('cardDocumentsDesc'))}
@@ -2264,6 +2349,399 @@ import { handbooks } from '../../../data/ksHandbooks';
     };
     ['d-search', 'd-cat', 'd-sort'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
     draw();
+  }
+
+  // ================= Pristilbud + kunderegister =================
+  const nok = (n: number) => (isFinite(n) ? n : 0).toLocaleString('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const numv = (v: any) => { const n = parseFloat(String(v).replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+  const qStatusLabel = (s: string) => (({ draft: p('qStatusDraft'), sent: p('qStatusSent'), accepted: p('qStatusAccepted'), declined: p('qStatusDeclined') } as any)[s] || s);
+
+  async function seedQuoteElements() {
+    try {
+      if (!QUOTE_ELEMENTS_SEEDED) {
+        const { data: existing } = await supabase.from('quote_elements').select('slug');
+        const have = new Set((existing || []).map((x: any) => x.slug));
+        const missing = STD_QUOTE_ELEMENTS.filter((e: any) => !have.has(e.slug));
+        if (missing.length) await supabase.from('quote_elements').insert(missing.map((e: any) => ({ category: e.category, spec: e.spec, unit: e.unit, price: e.price, slug: e.slug, sort: e.sort, is_standard: true })));
+        QUOTE_ELEMENTS_SEEDED = true;
+      }
+    } catch (_e) { /* ignore */ }
+    const { data } = await supabase.from('quote_elements').select('*').order('sort').order('category');
+    QUOTE_ELEMENTS = data && data.length ? data : STD_QUOTE_ELEMENTS;
+  }
+
+  let LOGO_CACHE: string | null = null;
+  async function ensureLogo(): Promise<string> {
+    if (LOGO_CACHE !== null) return LOGO_CACHE;
+    try {
+      const blob = await (await fetch('/dekmar-logo.png')).blob();
+      LOGO_CACHE = await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); });
+    } catch (_e) { LOGO_CACHE = ''; }
+    return LOGO_CACHE;
+  }
+
+  // ---------- Kunderegister ----------
+  async function renderCustomers() {
+    redraw = renderCustomers;
+    await ensureShell('customers');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const { data: rows } = await supabase.from('customers').select('*').order('name');
+    const CUST = rows || [];
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('customers'))}</h1></div>
+      ${CUST.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="c-search" type="search" placeholder="${esc(p('searchCustomers'))}" autocomplete="off"></div>` : ''}
+      <ul class="p-list" id="c-list"></ul>
+      <details class="p-new"><summary>${esc(p('newCustomer'))}</summary>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('custName'))}<input id="c-name" type="text"></label>
+          <label class="p-field">${esc(p('custOrgNo'))}<input id="c-org" type="text"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('custContact'))}<input id="c-contact" type="text"></label>
+          <label class="p-field">${esc(p('email'))}<input id="c-email" type="email"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('custPhone'))}<input id="c-phone" type="text"></label>
+          <label class="p-field">${esc(p('custAddress'))}<input id="c-address" type="text"></label>
+        </div>
+        <label class="p-field">${esc(p('custNotes'))}<textarea id="c-notes" rows="2"></textarea></label>
+        <button class="btn btn--primary" id="c-save" type="button">${esc(p('save'))}</button>
+      </details>`;
+    const paint = (q = '') => {
+      const ql = q.trim().toLowerCase();
+      const list = CUST.filter((c: any) => !ql || [c.name, c.contact, c.email, c.org_no].some((v: any) => (v || '').toLowerCase().includes(ql)));
+      document.getElementById('c-list')!.innerHTML = list.length ? list.map((c: any) => `
+        <li class="p-item" data-cust="${esc(c.id)}"><div><h3>${esc(c.name)}</h3><p>${esc([c.contact, c.email, c.phone].filter(Boolean).join(' · '))}</p></div><span class="p-go">${ICONS.chevron}</span></li>`).join('') : `<li class="p-muted">${esc(p('noCustomers'))}</li>`;
+      document.querySelectorAll('#c-list [data-cust]').forEach((el) => el.addEventListener('click', () => editCustomer(CUST.find((c: any) => c.id === (el as HTMLElement).dataset.cust))));
+    };
+    const s = document.getElementById('c-search'); if (s) s.addEventListener('input', (e) => paint((e.target as HTMLInputElement).value));
+    document.getElementById('c-save')!.addEventListener('click', async () => {
+      const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim() || null;
+      if (!v('c-name')) { alert(p('custName')); return; }
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('customers').insert({ name: v('c-name'), org_no: v('c-org'), contact: v('c-contact'), email: v('c-email'), phone: v('c-phone'), address: v('c-address'), notes: v('c-notes'), created_by: u.user?.id });
+      if (error) { alert(error.message); return; }
+      renderCustomers();
+    });
+    paint();
+  }
+
+  async function editCustomer(c: any) {
+    if (!c) return;
+    redraw = () => editCustomer(c);
+    await ensureShell('customers');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('editCustomer'))}</h1><div class="p-user"><button class="btn btn--ghost" id="c-back">${esc(p('customers'))}</button></div></div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('custName'))}<input id="e-name" type="text" value="${esc(c.name || '')}"></label>
+        <label class="p-field">${esc(p('custOrgNo'))}<input id="e-org" type="text" value="${esc(c.org_no || '')}"></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('custContact'))}<input id="e-contact" type="text" value="${esc(c.contact || '')}"></label>
+        <label class="p-field">${esc(p('email'))}<input id="e-email" type="email" value="${esc(c.email || '')}"></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('custPhone'))}<input id="e-phone" type="text" value="${esc(c.phone || '')}"></label>
+        <label class="p-field">${esc(p('custAddress'))}<input id="e-address" type="text" value="${esc(c.address || '')}"></label>
+      </div>
+      <label class="p-field">${esc(p('custNotes'))}<textarea id="e-notes" rows="2">${esc(c.notes || '')}</textarea></label>
+      <div class="q-actions"><button class="btn btn--primary" id="e-save">${esc(p('save'))}</button><button class="btn btn--ghost" id="e-del">${esc(p('removeLabel') || 'Slett')}</button></div>`;
+    document.getElementById('c-back')!.addEventListener('click', renderCustomers);
+    document.getElementById('e-save')!.addEventListener('click', async () => {
+      const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim() || null;
+      const { error } = await supabase.from('customers').update({ name: v('e-name'), org_no: v('e-org'), contact: v('e-contact'), email: v('e-email'), phone: v('e-phone'), address: v('e-address'), notes: v('e-notes') }).eq('id', c.id);
+      if (error) { alert(error.message); return; }
+      renderCustomers();
+    });
+    document.getElementById('e-del')!.addEventListener('click', async () => {
+      if (!confirm(c.name)) return;
+      await supabase.from('customers').delete().eq('id', c.id); renderCustomers();
+    });
+  }
+
+  // ---------- Tilbud (arkiv) ----------
+  async function renderQuotes() {
+    redraw = renderQuotes;
+    await ensureShell('quotes');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [qRes, cRes, pRes] = await Promise.all([
+      supabase.from('quotes').select('*, customers(name), projects(name)').order('created_at', { ascending: false }),
+      supabase.from('customers').select('*').order('name'),
+      supabase.from('projects').select('id,name,address,client').order('name'),
+    ]);
+    const Q = qRes.data || []; const CUST = cRes.data || []; const PROJ = pRes.data || [];
+    const sumOf = (q: any) => (q.lines || []).reduce((s: number, l: any) => s + numv(l.qty) * numv(l.price), 0);
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('quotes'))}</h1><div class="p-user"><button class="btn btn--primary" id="q-new">${esc(p('newQuote'))}</button></div></div>
+      <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="q-search" type="search" placeholder="${esc(p('searchQuotes'))}" autocomplete="off"></div>
+      <label class="p-field" style="max-width:220px;margin-bottom:14px">${esc(t('status'))}<select id="q-fstatus"><option value="">${esc(p('allStatuses'))}</option><option value="draft">${esc(p('qStatusDraft'))}</option><option value="sent">${esc(p('qStatusSent'))}</option><option value="accepted">${esc(p('qStatusAccepted'))}</option><option value="declined">${esc(p('qStatusDeclined'))}</option></select></label>
+      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('quoteNo'))}</th><th>${esc(p('colDate'))}</th><th>${esc(p('customers'))}</th><th>${esc(p('colProject'))}</th><th>${esc(p('quoteSubject'))}</th><th>${esc(p('colAmount'))}</th><th>${esc(t('status'))}</th></tr></thead><tbody id="q-body"></tbody></table></div>`;
+    document.getElementById('q-new')!.addEventListener('click', () => renderQuoteEditor(null, CUST, PROJ));
+    const draw = () => {
+      const ql = (document.getElementById('q-search') as HTMLInputElement).value.trim().toLowerCase();
+      const fs = (document.getElementById('q-fstatus') as HTMLSelectElement).value;
+      const list = Q.filter((q: any) => { const hay = [q.number, q.customers?.name, q.projects?.name, q.title].map((v: any) => (v || '').toLowerCase()).join(' '); return (!ql || hay.includes(ql)) && (!fs || q.status === fs); });
+      document.getElementById('q-body')!.innerHTML = list.length ? list.map((q: any) => `
+        <tr data-q="${esc(q.id)}"><td>${esc(q.number || '—')}</td><td>${esc(fmt(q.created_at))}</td><td>${esc(q.customers?.name || '—')}</td><td>${esc(q.projects?.name || '—')}</td><td>${esc(q.title || '')}</td><td style="text-align:right">${esc(nok(sumOf(q)))}</td><td><span class="q-badge q-${esc(q.status)}">${esc(qStatusLabel(q.status))}</span></td></tr>`).join('') : `<tr><td colspan="7" class="p-muted">${esc(Q.length ? p('noResults') : p('noQuotes'))}</td></tr>`;
+      document.querySelectorAll('#q-body [data-q]').forEach((tr) => tr.addEventListener('click', () => renderQuoteEditor(Q.find((x: any) => x.id === (tr as HTMLElement).dataset.q), CUST, PROJ)));
+    };
+    ['q-search', 'q-fstatus'].forEach((id) => document.getElementById(id)!.addEventListener('input', draw));
+    draw();
+  }
+
+  // ---------- Tilbudseditor ----------
+  async function renderQuoteEditor(q: any, CUST: any[], PROJ: any[]) {
+    redraw = () => renderQuoteEditor(q, CUST, PROJ);
+    await ensureShell('quotes');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    await seedQuoteElements();
+    const isNew = !q;
+    const sig0 = (QUOTE_LETTER.signatories && QUOTE_LETTER.signatories[0]) || {};
+    const state: any = {
+      id: q?.id || null,
+      number: q?.number || '',
+      customer_id: q?.customer_id || '',
+      project_id: q?.project_id || '',
+      title: q?.title || '',
+      address: q?.address || '',
+      intro: q?.intro || QUOTE_LETTER.intro || '',
+      start_note: q?.start_note || '',
+      valid_days: q?.valid_days ?? (QUOTE_LETTER.validDaysDefault || 30),
+      hourly_rate: q?.hourly_rate ?? (QUOTE_LETTER.hourlyDefault || 850),
+      vat_rate: q?.vat_rate ?? (QUOTE_LETTER.vatDefault || 25),
+      status: q?.status || 'draft',
+      signatory: q?.signatory || sig0.name || '',
+      lines: (q?.lines && q.lines.length ? q.lines : []).map((l: any) => ({ ...l })),
+      terms: null as any,
+    };
+    // Terms-modell: {text,on}. Ny = standard; eksisterende = lagrede (alle on) + standard som ikke finnes (av).
+    const resolveRate = (txt: string) => txt.replace('{rate}', nok(numv(state.hourly_rate)));
+    if (q?.terms && q.terms.length) {
+      state.terms = q.terms.map((tx: string) => ({ text: tx, on: true }));
+    } else {
+      state.terms = STD_QUOTE_TERMS.map((tm: any) => ({ text: resolveRate(tm.text), on: !!tm.on }));
+    }
+    const custOpts = CUST.map((c: any) => `<option value="${esc(c.id)}"${c.id === state.customer_id ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+    const projOpts = PROJ.map((pr: any) => `<option value="${esc(pr.id)}"${pr.id === state.project_id ? ' selected' : ''}>${esc(pr.name)}</option>`).join('');
+    const sigOpts = (QUOTE_LETTER.signatories || []).map((s: any) => `<option value="${esc(s.name)}"${s.name === state.signatory ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
+    const libOpts = (() => {
+      const byCat: Record<string, any[]> = {};
+      QUOTE_ELEMENTS.forEach((e: any) => { (byCat[e.category] = byCat[e.category] || []).push(e); });
+      return Object.keys(byCat).map((cat) => `<optgroup label="${esc(cat)}">${byCat[cat].map((e: any) => `<option value="${esc(e.slug)}">${esc(e.spec)} (${esc(e.unit)})</option>`).join('')}</optgroup>`).join('');
+    })();
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('newQuote'))}${state.number ? ' · ' + esc(state.number) : ''}</h1><div class="p-user"><button class="btn btn--ghost" id="q-back">${esc(p('quotes'))}</button></div></div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('selectCustomer'))}<select id="q-cust"><option value="">—</option>${custOpts}</select></label>
+        <label class="p-field">${esc(p('selectProject'))}<select id="q-proj"><option value="">—</option>${projOpts}</select></label>
+      </div>
+      <label class="p-field">${esc(p('quoteSubject'))} <span class="p-muted" style="font-weight:400">(f.eks. «Takomlegg og blikkenslagerarbeider på Akersgata 38»)</span><input id="q-title" type="text" value="${esc(state.title)}"></label>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('quoteAddress'))}<input id="q-address" type="text" value="${esc(state.address)}"></label>
+        <label class="p-field">${esc(p('quoteSignatory'))}<select id="q-sig">${sigOpts}</select></label>
+      </div>
+      <label class="p-field">${esc(p('quoteIntro'))}<textarea id="q-intro" rows="3">${esc(state.intro)}</textarea></label>
+      <label class="p-field">${esc(p('quoteStartNote'))}<input id="q-start" type="text" value="${esc(state.start_note)}" placeholder="Vi har kapasitet til å påbegynne arbeidene …. Vi beregner å bruke ca … uker."></label>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('quoteValidDays'))}<input id="q-valid" type="number" value="${esc(String(state.valid_days))}"></label>
+        <label class="p-field">${esc(p('quoteHourly'))}<input id="q-hourly" type="number" value="${esc(String(state.hourly_rate))}"></label>
+      </div>
+      <p class="p-subhead">${esc(p('quoteLinesLabel'))}</p>
+      <div class="p-grid2" style="align-items:end">
+        <label class="p-field">${esc(p('addFromLibrary'))}<select id="q-lib"><option value="">—</option>${libOpts}</select></label>
+        <div><button class="btn btn--ghost" id="q-addblank" type="button">${esc(p('addLine'))}</button></div>
+      </div>
+      <div class="p-tablewrap"><table class="ql-table"><thead><tr><th class="ql-spec">${esc(p('colSpec'))}</th><th>${esc(p('colUnit'))}</th><th>${esc(p('colQty'))}</th><th>${esc(p('colUnitPrice'))}</th><th style="text-align:right">${esc(p('colSum'))}</th><th></th></tr></thead><tbody id="q-lines"></tbody></table></div>
+      <div class="ql-totals" id="q-totals"></div>
+      <p class="p-subhead">${esc(p('quoteTermsLabel'))}</p>
+      <div id="q-terms"></div>
+      <button class="btn btn--ghost" id="q-addterm" type="button" style="margin-top:8px">${esc(p('addTerm'))}</button>
+      <div class="q-actions">
+        <button class="btn btn--primary" id="q-save" type="button">${esc(p('save'))}</button>
+        <button class="btn btn--ghost" id="q-pdf" type="button">${esc(p('quotePreviewSend'))}</button>
+        <select id="q-status">${['draft', 'sent', 'accepted', 'declined'].map((s) => `<option value="${s}"${s === state.status ? ' selected' : ''}>${esc(qStatusLabel(s))}</option>`).join('')}</select>
+        ${state.id ? `<button class="btn btn--ghost" id="q-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}
+        <span class="p-muted" id="q-msg"></span>
+      </div>`;
+    // sync helpers
+    const g = (id: string) => document.getElementById(id) as HTMLInputElement;
+    const readTop = () => {
+      state.customer_id = g('q-cust').value || null; state.project_id = g('q-proj').value || null;
+      state.title = g('q-title').value.trim(); state.address = g('q-address').value.trim();
+      state.intro = (g('q-intro') as any).value; state.start_note = g('q-start').value.trim();
+      state.valid_days = numv(g('q-valid').value); state.hourly_rate = numv(g('q-hourly').value);
+      state.signatory = g('q-sig').value; state.status = g('q-status').value;
+    };
+    const drawLines = () => {
+      const tb = document.getElementById('q-lines')!;
+      tb.innerHTML = state.lines.map((l: any, i: number) => `
+        <tr>
+          <td class="ql-spec"><input data-i="${i}" data-f="spec" value="${esc(l.spec || '')}"></td>
+          <td><input class="ql-num" data-i="${i}" data-f="unit" value="${esc(l.unit || '')}" style="width:56px"></td>
+          <td><input class="ql-num" data-i="${i}" data-f="qty" value="${esc(String(l.qty ?? ''))}" style="width:70px" inputmode="decimal"></td>
+          <td><input class="ql-num" data-i="${i}" data-f="price" value="${esc(String(l.price ?? ''))}" style="width:90px" inputmode="decimal"></td>
+          <td class="ql-sum">${esc(nok(numv(l.qty) * numv(l.price)))}</td>
+          <td><button class="ql-del" data-del="${i}" type="button" title="Slett">✕</button></td>
+        </tr>`).join('') || `<tr><td colspan="6" class="p-muted">—</td></tr>`;
+      tb.querySelectorAll('input[data-i]').forEach((inp) => inp.addEventListener('input', (e) => {
+        const el = e.target as HTMLInputElement; const i = +el.dataset.i!; const f = el.dataset.f!;
+        state.lines[i][f] = (f === 'qty' || f === 'price') ? el.value : el.value;
+        if (f === 'qty' || f === 'price') { drawTotals(); const cell = el.closest('tr')!.querySelector('.ql-sum')!; cell.textContent = nok(numv(state.lines[i].qty) * numv(state.lines[i].price)); }
+      }));
+      tb.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', (e) => { state.lines.splice(+(e.target as HTMLElement).dataset.del!, 1); drawLines(); drawTotals(); }));
+    };
+    const drawTotals = () => {
+      const ex = state.lines.reduce((s: number, l: any) => s + numv(l.qty) * numv(l.price), 0);
+      const vat = ex * numv(state.vat_rate) / 100; const inc = ex + vat;
+      document.getElementById('q-totals')!.innerHTML = `
+        <div>${esc(p('sumExVat'))}: <strong>kr ${esc(nok(ex))}</strong></div>
+        <div>${esc(p('vatLabel'))} ${esc(nok(numv(state.vat_rate)))} %: kr ${esc(nok(vat))}</div>
+        <div class="grand">${esc(p('sumIncVat'))}: kr ${esc(nok(inc))}</div>`;
+    };
+    const drawTerms = () => {
+      const box = document.getElementById('q-terms')!;
+      box.innerHTML = state.terms.map((tm: any, i: number) => `
+        <div class="q-term"><input type="checkbox" data-ton="${i}"${tm.on ? ' checked' : ''}><textarea data-ttx="${i}" rows="2">${esc(tm.text)}</textarea></div>`).join('');
+      box.querySelectorAll('[data-ton]').forEach((c) => c.addEventListener('change', (e) => { state.terms[(+(e.target as HTMLElement).dataset.ton!)].on = (e.target as HTMLInputElement).checked; }));
+      box.querySelectorAll('[data-ttx]').forEach((tx) => tx.addEventListener('input', (e) => { state.terms[(+(e.target as HTMLElement).dataset.ttx!)].text = (e.target as HTMLTextAreaElement).value; }));
+    };
+    document.getElementById('q-back')!.addEventListener('click', renderQuotes);
+    g('q-lib').addEventListener('change', (e) => {
+      const slug = (e.target as HTMLSelectElement).value; if (!slug) return;
+      const el = QUOTE_ELEMENTS.find((x: any) => x.slug === slug); if (el) state.lines.push({ spec: el.spec, unit: el.unit, qty: 1, price: el.price });
+      (e.target as HTMLSelectElement).value = ''; drawLines(); drawTotals();
+    });
+    document.getElementById('q-addblank')!.addEventListener('click', () => { state.lines.push({ spec: '', unit: '', qty: '', price: '' }); drawLines(); });
+    document.getElementById('q-addterm')!.addEventListener('click', () => { state.terms.push({ text: '', on: true }); drawTerms(); });
+    g('q-hourly').addEventListener('input', () => { /* timerate endres i lagrede standard-forbehold kun ved ny */ });
+    const collectForSave = () => {
+      readTop();
+      return {
+        customer_id: state.customer_id || null, project_id: state.project_id || null,
+        title: state.title || null, address: state.address || null, intro: state.intro || null, start_note: state.start_note || null,
+        valid_days: state.valid_days, hourly_rate: state.hourly_rate, vat_rate: state.vat_rate,
+        signatory: state.signatory || null, status: state.status,
+        lines: state.lines.filter((l: any) => (l.spec || '').trim()).map((l: any) => ({ spec: l.spec, unit: l.unit, qty: numv(l.qty), price: numv(l.price) })),
+        terms: state.terms.filter((tm: any) => tm.on && (tm.text || '').trim()).map((tm: any) => tm.text.trim()),
+      };
+    };
+    const doSave = async () => {
+      const msg = document.getElementById('q-msg')!; msg.textContent = p('saving');
+      const payload: any = collectForSave();
+      const { data: u } = await supabase.auth.getUser();
+      // tildel løpenummer hvis mangler
+      if (!state.number) {
+        const year = new Date().getFullYear();
+        const { data: mx } = await supabase.from('quotes').select('seq').eq('year', year).order('seq', { ascending: false }).limit(1);
+        const seq = ((mx && mx[0] && mx[0].seq) || 0) + 1;
+        state.number = `${year}-${String(seq).padStart(3, '0')}`; payload.year = year; payload.seq = seq; payload.number = state.number;
+      }
+      if (payload.status === 'sent') payload.sent_at = new Date().toISOString();
+      let res;
+      if (state.id) { res = await supabase.from('quotes').update(payload).eq('id', state.id).select().single(); }
+      else { payload.created_by = u.user?.id; res = await supabase.from('quotes').insert(payload).select().single(); }
+      if (res.error) { msg.textContent = res.error.message; return null; }
+      state.id = res.data.id; state.number = res.data.number || state.number;
+      msg.textContent = p('savedShort') + (state.number ? ' ' + state.number : '');
+      return res.data;
+    };
+    document.getElementById('q-save')!.addEventListener('click', doSave);
+    const qdel = document.getElementById('q-del'); if (qdel) qdel.addEventListener('click', async () => { if (!confirm(state.number || '')) return; await supabase.from('quotes').delete().eq('id', state.id); renderQuotes(); });
+    document.getElementById('q-pdf')!.addEventListener('click', async () => {
+      await doSave();
+      const cust = CUST.find((c: any) => c.id === state.customer_id) || {};
+      const proj = PROJ.find((pr: any) => pr.id === state.project_id) || {};
+      const sig = (QUOTE_LETTER.signatories || []).find((s: any) => s.name === state.signatory) || (QUOTE_LETTER.signatories || [])[0] || {};
+      await makeQuotePdf({
+        number: state.number, dateISO: new Date().toISOString(), customer: cust, projectName: proj.name || state.title || '',
+        address: state.address || proj.address || '', title: state.title || '', intro: state.intro || '', startNote: state.start_note || '',
+        terms: state.terms.filter((tm: any) => tm.on && (tm.text || '').trim()).map((tm: any) => tm.text.trim()),
+        lines: state.lines.filter((l: any) => (l.spec || '').trim()), vat: numv(state.vat_rate), validDays: numv(state.valid_days), sig,
+      });
+    });
+    drawLines(); drawTotals(); drawTerms();
+  }
+
+  async function makeQuotePdf(d: any) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    await ensurePdfFont(doc);
+    const logo = await ensureLogo();
+    const co = QUOTE_LETTER.company || {};
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    const line = (txt: string, size = 10, style = 'normal', gap = 5, color: number[] = [20, 23, 28]) => {
+      doc.setFont('DejaVu', style as any); doc.setFontSize(size); doc.setTextColor(color[0], color[1], color[2]);
+      doc.splitTextToSize(txt || '', maxW).forEach((ln: string) => { if (y > 275) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += gap; });
+    };
+    // topp: logo + dato
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 22, 22); } catch (_e) { /* ignore */ } }
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104);
+    doc.text('Oslo ' + fmt(d.dateISO), pageW - margin, y + 4, { align: 'right' } as any);
+    if (d.number) doc.text('Tilbudsnr ' + d.number, pageW - margin, y + 9, { align: 'right' } as any);
+    y += 28;
+    // kunde
+    doc.setTextColor(20, 23, 28);
+    line(d.customer.name || '', 11, 'bold', 5.5);
+    if (d.customer.address) line(d.customer.address, 10, 'normal', 5, [90, 96, 104]);
+    if (d.customer.contact || d.customer.email || d.customer.phone) line([d.customer.contact, d.customer.email, d.customer.phone].filter(Boolean).join('  '), 9.5, 'normal', 6, [90, 96, 104]);
+    y += 2;
+    line('Pristilbud – ' + (d.title || ''), 13, 'bold', 7);
+    line(d.intro, 10, 'normal', 5); y += 1;
+    // total
+    const ex = d.lines.reduce((s: number, l: any) => s + numv(l.qty) * numv(l.price), 0);
+    const vat = ex * d.vat / 100; const inc = ex + vat;
+    line('Total pris som beskrevet i vedlegg:', 10, 'normal', 5);
+    line('•  kr ' + nok(ex) + ',- eks. mva.', 11, 'bold', 7);
+    if (d.startNote) { line(d.startNote, 10, 'normal', 5); y += 1; }
+    // forbehold
+    (d.terms || []).forEach((tx: string) => line('•  ' + tx, 9.5, 'normal', 4.8));
+    y += 2;
+    line(QUOTE_LETTER.guarantee || '', 10, 'normal', 5);
+    line((QUOTE_LETTER.validityLine || '').replace('{days}', String(d.validDays || 30)), 10, 'normal', 6);
+    y += 2; line('Mvh.', 10, 'normal', 5); line('for ' + (co.name || 'Dekmar AS'), 10, 'normal', 5);
+    line(d.sig.name || '', 10, 'bold', 4.8); line(d.sig.title || '', 9.5, 'normal', 4.6, [90, 96, 104]);
+    if (d.sig.phone) line('Tlf: ' + d.sig.phone, 9.5, 'normal', 4.6, [90, 96, 104]);
+    if (d.sig.email) line('e-post: ' + d.sig.email, 9.5, 'normal', 5, [90, 96, 104]);
+    // footer
+    doc.setDrawColor(220); doc.setLineWidth(0.3); doc.line(margin, 285, margin + maxW, 285);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(8); doc.setTextColor(120);
+    doc.text(`${co.name}, ${co.address} · Tlf ${co.phone} · ${co.web}`, pageW / 2, 289, { align: 'center' } as any);
+    doc.text(`Orgnr ${co.orgno} · Bank ${co.bank} · Startbank ID ${co.startbank}`, pageW / 2, 293, { align: 'center' } as any);
+    // side 2: postliste
+    doc.addPage(); y = margin;
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 20, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(13); doc.text('Dekmar AS', margin, 9);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.text('Vedlegg – spesifiserte poster', margin, 15);
+    doc.setTextColor(20, 23, 28); y = 28;
+    line('PROSJEKT: ' + (d.projectName || d.title || ''), 11, 'bold', 7);
+    // kolonner
+    const cx = { post: margin, spec: margin + 16, unit: margin + 108, qty: margin + 124, price: margin + 146, sum: margin + maxW };
+    const header = () => {
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+      doc.text('Postnr', cx.post, y); doc.text('Spesifikasjon', cx.spec, y); doc.text('Enh', cx.unit, y);
+      doc.text('Mengde', cx.qty, y); doc.text('Pris', cx.price, y); doc.text('Sum', cx.sum, y, { align: 'right' } as any);
+      y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+    };
+    header();
+    d.lines.forEach((l: any, i: number) => {
+      const specLines = doc.splitTextToSize(l.spec || '', 88);
+      const rowH = Math.max(specLines.length * 4.2, 6);
+      if (y + rowH > 280) { doc.addPage(); y = margin; header(); }
+      const post = '01.' + String(i + 1).padStart(2, '0');
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(9);
+      doc.text(post, cx.post, y);
+      specLines.forEach((sl: string, k: number) => doc.text(sl, cx.spec, y + k * 4.2));
+      doc.text(String(l.unit || ''), cx.unit, y);
+      doc.text(nok(numv(l.qty)), cx.qty, y);
+      doc.text(nok(numv(l.price)), cx.price, y);
+      doc.text(nok(numv(l.qty) * numv(l.price)), cx.sum, y, { align: 'right' } as any);
+      y += rowH + 2;
+    });
+    y += 2; doc.setDrawColor(20, 23, 28); doc.setLineWidth(0.4); doc.line(margin + 110, y, margin + maxW, y); y += 6;
+    const rt = (label: string, val: string, bold = false) => { doc.setFont('DejaVu', bold ? 'bold' : 'normal'); doc.setFontSize(bold ? 11 : 10); doc.text(label, margin + 112, y); doc.text(val, cx.sum, y, { align: 'right' } as any); y += 6; };
+    rt('Sum eks. mva.', 'kr ' + nok(ex));
+    rt('MVA ' + nok(d.vat) + ' %', 'kr ' + nok(vat));
+    rt('Sum inkl. mva.', 'kr ' + nok(inc), true);
+    await deliverPdf(doc, `Dekmar_Tilbud_${(d.number || '')}_${(d.customer.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Pristilbud ${d.number || ''} – ${d.title || ''}`.trim());
   }
 
   route();
