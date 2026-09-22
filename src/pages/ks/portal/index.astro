@@ -426,6 +426,12 @@ import { hseFormTypes } from '../../../data/ksForms';
     devPreventive: { no: 'Forebyggende tiltak (hindre gjentakelse)', pl: 'Działania zapobiegawcze (zapobieganie powtórzeniu)', en: 'Preventive measures (prevent recurrence)' },
     devReporterInformed: { no: 'Avviksmelder informert (dato)', pl: 'Zgłaszający poinformowany (data)', en: 'Reporter informed (date)' },
     devClosedDate: { no: 'Avviket lukket (dato)', pl: 'Niezgodność zamknięta (data)', en: 'Deviation closed (date)' },
+    notifyTitle: { no: 'Automatisk avviksvarsling (e-post)', pl: 'Automatyczne powiadomienia (e-mail)', en: 'Automatic deviation alerts (email)' },
+    notifyHelp: { no: 'Send e-postvarsel til ansvarlig(e) når et nytt avvik registreres.', pl: 'Wyślij powiadomienie e-mail przy nowej niezgodności.', en: 'Send an email alert when a new deviation is registered.' },
+    notifyEnable: { no: 'Aktiver varsling', pl: 'Włącz powiadomienia', en: 'Enable alerts' },
+    notifyEmails: { no: 'Mottakere (komma mellom flere)', pl: 'Odbiorcy (oddziel przecinkami)', en: 'Recipients (comma-separated)' },
+    notifyOnlyHigh: { no: 'Varsle kun ved alvorlighetsgrad Høy', pl: 'Tylko przy wysokim stopniu', en: 'Only for High severity' },
+    notifySent: { no: 'Varsel sendt', pl: 'Powiadomienie wysłane', en: 'Alert sent' },
     // Pristilbud / kunder
     quotes: { no: 'Tilbud', pl: 'Oferty', en: 'Quotes' },
     customers: { no: 'Kunder', pl: 'Klienci', en: 'Customers' },
@@ -1334,6 +1340,7 @@ import { hseFormTypes } from '../../../data/ksForms';
           if (!up.error) await supabase.from('photos').insert({ project_id: projectId, deviation_id: dev.id, storage_path: path, created_by: u.user?.id });
         }
       }
+      await notifyNewDeviation(dev, CURRENT_PROJECT?.name || '');
       openProject(projectId);
     });
 
@@ -2223,6 +2230,15 @@ import { hseFormTypes } from '../../../data/ksForms';
             <div class="p-grid-inline"><input id="dc-newresp" type="text" placeholder="${esc(t('responsible'))}"><button class="btn btn--ghost p-sm" id="dc-addresp">${esc(p('addLabel'))}</button></div>
           </div>
         </div>
+        <div class="p-card" style="margin-top:14px">
+          <h3 style="margin-top:0">${esc(p('notifyTitle'))}</h3>
+          <p class="p-muted" style="font-size:.85rem;margin-top:0">${esc(p('notifyHelp'))}</p>
+          <label class="p-field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="dc-notify-on"> ${esc(p('notifyEnable'))}</label>
+          <label class="p-field">${esc(p('notifyEmails'))}<input id="dc-notify-emails" type="text" placeholder="hms@dekmar.no, post@dekmar.no"></label>
+          <label class="p-field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="dc-notify-high"> ${esc(p('notifyOnlyHigh'))}</label>
+          <button class="btn btn--primary p-sm" id="dc-notify-save">${esc(p('save'))}</button>
+          <span class="p-muted" id="dc-notify-msg" style="margin-left:8px"></span>
+        </div>
       </div>`;
     document.getElementById('dc-back')!.addEventListener('click', renderProjects);
     const listEl = document.getElementById('dc-list')!;
@@ -2267,6 +2283,43 @@ import { hseFormTypes } from '../../../data/ksForms';
       await supabase.from('deviation_responsibles').insert({ name, sort: DEV_RESP.length });
       inp.value = ''; await ensureDevConfig(); drawResps();
     });
+    // Automatisk avviksvarsling
+    (async () => {
+      const { data: s } = await supabase.from('app_settings').select('value').eq('key', 'deviation_notify').maybeSingle();
+      const cfg = (s && (s as any).value) || {};
+      (document.getElementById('dc-notify-on') as HTMLInputElement).checked = !!cfg.enabled;
+      (document.getElementById('dc-notify-emails') as HTMLInputElement).value = (cfg.emails || []).join(', ');
+      (document.getElementById('dc-notify-high') as HTMLInputElement).checked = !!cfg.onlyHigh;
+    })();
+    document.getElementById('dc-notify-save')!.addEventListener('click', async () => {
+      const msg = document.getElementById('dc-notify-msg')!;
+      const emails = (document.getElementById('dc-notify-emails') as HTMLInputElement).value.split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+      const value = { enabled: (document.getElementById('dc-notify-on') as HTMLInputElement).checked, emails, onlyHigh: (document.getElementById('dc-notify-high') as HTMLInputElement).checked };
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('app_settings').upsert({ key: 'deviation_notify', value, updated_at: new Date().toISOString(), updated_by: u.user?.id }, { onConflict: 'key' });
+      msg.textContent = error ? error.message : p('savedShort');
+    });
+  }
+
+  async function notifyNewDeviation(dev: any, projectName: string) {
+    try {
+      const { data: st } = await supabase.from('app_settings').select('value').eq('key', 'deviation_notify').maybeSingle();
+      const cfg = (st && (st as any).value) || {};
+      if (!cfg.enabled || !(cfg.emails || []).length) return;
+      if (cfg.onlyHigh && dev.severity !== 'hoy') return;
+      const subject = `Nytt avvik ${dev.number || ''} – ${projectName}`.trim();
+      const meta = [
+        `Prosjekt: ${projectName}`,
+        `Avviksnr: ${dev.number || '—'}`,
+        dev.category ? `Kategori: ${devCatLabel(dev.category)}` : null,
+        dev.severity ? `Alvorlighetsgrad: ${devSeverityLabel(dev.severity)}` : null,
+        dev.location ? `Sted: ${dev.location}` : null,
+        dev.responsible ? `Ansvarlig: ${dev.responsible}` : null,
+        dev.due_date ? `Frist: ${dev.due_date}` : null,
+      ].filter(Boolean).join('\n');
+      const body = `Det er registrert et nytt avvik i Dekmars HMS- og KS-system.\n\n${meta}\n\nBeskrivelse:\n${dev.description || '—'}\n\nLogg inn i portalen for full rapport: https://dekmar.no/ks/portal/`;
+      await supabase.functions.invoke('send-report', { body: { to: cfg.emails, subject, message: body } });
+    } catch (_e) { /* varsling skal aldri blokkere lagring */ }
   }
 
   // ---------- Arkiv (alle lagrede sjekklister/vernerunder) ----------
