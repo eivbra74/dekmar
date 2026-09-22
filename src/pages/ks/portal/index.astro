@@ -41,6 +41,24 @@ import { handbooks } from '../../../data/ksHandbooks';
   .app-body { min-width: 0; }
   .app-topbar { display: none; }
   .app-main { min-width: 0; }
+  /* PDF-lever / send-modal */
+  .pdf-ov { position: fixed; inset: 0; z-index: 200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .pdf-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 520px; max-height: calc(100vh - 40px); overflow: auto; box-shadow: 0 24px 60px rgba(10,12,16,.3); }
+  .pdf-modal-hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+  .pdf-modal-hd h3 { margin: 0; font-family: var(--font-head); font-size: 1.12rem; }
+  .pdf-modal-x { background: transparent; border: 0; font-size: 1.5rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px; }
+  .pdf-modal-bd { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .pdf-modal-file { font-size: .86rem; color: var(--muted); word-break: break-all; }
+  .pdf-modal-sep { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .82rem; }
+  .pdf-modal-sep::before, .pdf-modal-sep::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .pdf-field { display: flex; flex-direction: column; gap: 5px; }
+  .pdf-field label { font-family: var(--font-head); font-weight: 600; font-size: .84rem; }
+  .pdf-field input, .pdf-field textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font: inherit; box-sizing: border-box; }
+  .pdf-field textarea { min-height: 78px; resize: vertical; }
+  .pdf-field .hint { font-size: .76rem; color: var(--muted); }
+  .pdf-modal-msg { font-size: .86rem; min-height: 1.2em; }
+  .pdf-modal-msg.ok { color: #1a7f37; }
+  .pdf-modal-msg.err { color: var(--brand); }
   @media (max-width: 860px) {
     .app { display: block; }
     .app-topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
@@ -262,6 +280,20 @@ import { handbooks } from '../../../data/ksHandbooks';
     category: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
     allCategories: { no: 'Alle kategorier', pl: 'Wszystkie kategorie', en: 'All categories' },
     download: { no: 'Last ned', pl: 'Pobierz', en: 'Download' },
+    pdfReady: { no: 'PDF er klar', pl: 'PDF gotowy', en: 'PDF ready' },
+    downloadPdf: { no: 'Last ned PDF', pl: 'Pobierz PDF', en: 'Download PDF' },
+    orSendEmail: { no: 'eller send til hovedentreprenør / prosjekteier', pl: 'lub wyślij do generalnego wykonawcy / inwestora', en: 'or send to main contractor / project owner' },
+    emailTo: { no: 'Til (e-post)', pl: 'Do (e-mail)', en: 'To (email)' },
+    emailToHint: { no: 'Skill flere mottakere med komma', pl: 'Oddziel odbiorców przecinkami', en: 'Separate multiple recipients with commas' },
+    emailCc: { no: 'Kopi til (valgfritt)', pl: 'DW (opcjonalnie)', en: 'Cc (optional)' },
+    emailSubject: { no: 'Emne', pl: 'Temat', en: 'Subject' },
+    emailMessage: { no: 'Melding', pl: 'Wiadomość', en: 'Message' },
+    emailSend: { no: 'Send e-post', pl: 'Wyślij e-mail', en: 'Send email' },
+    emailSending: { no: 'Sender …', pl: 'Wysyłanie …', en: 'Sending …' },
+    emailSent: { no: 'E-posten er sendt.', pl: 'E-mail został wysłany.', en: 'The email has been sent.' },
+    emailNeedTo: { no: 'Fyll inn en gyldig mottaker-e-post.', pl: 'Podaj prawidłowy adres odbiorcy.', en: 'Enter a valid recipient email.' },
+    emailDefaultMsg: { no: 'Hei,\n\nVedlagt følger dokumentasjon fra Dekmar AS. Ta gjerne kontakt ved spørsmål.', pl: 'Dzień dobry,\n\nW załączeniu przesyłamy dokumentację od Dekmar AS. W razie pytań prosimy o kontakt.', en: 'Hello,\n\nPlease find attached documentation from Dekmar AS. Feel free to contact us with any questions.' },
+    close: { no: 'Lukk', pl: 'Zamknij', en: 'Close' },
     uploadedBy: { no: 'Lastet opp av', pl: 'Przesłał', en: 'Uploaded by' },
     noDocuments: { no: 'Ingen dokumenter ennå. Last opp det første nedenfor.', pl: 'Brak dokumentów. Prześlij pierwszy poniżej.', en: 'No documents yet. Upload the first below.' },
     file: { no: 'Fil', pl: 'Plik', en: 'File' },
@@ -947,6 +979,64 @@ import { handbooks } from '../../../data/ksHandbooks';
     draw();
   }
 
+  // Gjoer en ferdig jsPDF om til base64 (uten data:-prefiks) for e-postvedlegg
+  function pdfToBase64(doc: any): string { try { return (doc.output('datauristring') || '').split(',')[1] || ''; } catch (_e) { return ''; } }
+
+  // Felles modal: last ned PDF-en ELLER send den paa e-post til HE/prosjekteier.
+  // Alle makeXxxPdf-funksjonene ruter sitt sluttresultat gjennom denne.
+  function deliverPdf(doc: any, filename: string, subjectPreset: string): Promise<void> {
+    return new Promise((resolve) => {
+      const ov = document.createElement('div');
+      ov.className = 'pdf-ov';
+      ov.innerHTML =
+        `<div class="pdf-modal" role="dialog" aria-modal="true">` +
+        `<div class="pdf-modal-hd"><h3>${esc(p('pdfReady'))}</h3><button class="pdf-modal-x" id="pm-x" aria-label="${esc(p('close'))}">×</button></div>` +
+        `<div class="pdf-modal-bd">` +
+        `<div class="pdf-modal-file">${esc(filename)}</div>` +
+        `<button class="btn btn--ghost" id="pm-dl">${esc(p('downloadPdf'))}</button>` +
+        `<div class="pdf-modal-sep">${esc(p('orSendEmail'))}</div>` +
+        `<div class="pdf-field"><label for="pm-to">${esc(p('emailTo'))}</label><input id="pm-to" type="email" placeholder="navn@firma.no"><span class="hint">${esc(p('emailToHint'))}</span></div>` +
+        `<div class="pdf-field"><label for="pm-cc">${esc(p('emailCc'))}</label><input id="pm-cc" type="text"></div>` +
+        `<div class="pdf-field"><label for="pm-sub">${esc(p('emailSubject'))}</label><input id="pm-sub" type="text"></div>` +
+        `<div class="pdf-field"><label for="pm-msg">${esc(p('emailMessage'))}</label><textarea id="pm-msg"></textarea></div>` +
+        `<div class="pdf-modal-msg" id="pm-st"></div>` +
+        `<button class="btn btn--primary" id="pm-send">${esc(p('emailSend'))}</button>` +
+        `</div></div>`;
+      document.body.appendChild(ov);
+      const q = (id: string) => ov.querySelector('#' + id) as HTMLInputElement;
+      (q('pm-sub') as HTMLInputElement).value = subjectPreset || '';
+      (q('pm-msg') as HTMLTextAreaElement).value = p('emailDefaultMsg');
+      const close = () => { ov.remove(); resolve(); };
+      q('pm-x').addEventListener('click', close);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      q('pm-dl').addEventListener('click', () => { try { doc.save(filename); } catch (_e) { /* ignore */ } });
+      q('pm-send').addEventListener('click', async () => {
+        const st = ov.querySelector('#pm-st') as HTMLElement;
+        const to = (q('pm-to') as HTMLInputElement).value.trim();
+        if (!to) { st.className = 'pdf-modal-msg err'; st.textContent = p('emailNeedTo'); return; }
+        const btn = q('pm-send') as HTMLButtonElement; btn.disabled = true;
+        st.className = 'pdf-modal-msg'; st.textContent = p('emailSending');
+        try {
+          const { data, error } = await supabase.functions.invoke('send-report', {
+            body: {
+              to, cc: (q('pm-cc') as HTMLInputElement).value.trim(),
+              subject: (q('pm-sub') as HTMLInputElement).value.trim() || subjectPreset,
+              message: (q('pm-msg') as HTMLTextAreaElement).value,
+              pdfBase64: pdfToBase64(doc), pdfFilename: filename,
+            },
+          });
+          let errMsg = error ? (error.message || 'error') : ((data && (data as any).error) || '');
+          if (error && (error as any).context && typeof (error as any).context.json === 'function') {
+            try { const b = await (error as any).context.json(); if (b && b.error) errMsg = b.error; } catch (_e) { /* ignore */ }
+          }
+          if (errMsg) { st.className = 'pdf-modal-msg err'; st.textContent = errMsg; btn.disabled = false; return; }
+          st.className = 'pdf-modal-msg ok'; st.textContent = p('emailSent');
+          setTimeout(close, 1300);
+        } catch (e: any) { st.className = 'pdf-modal-msg err'; st.textContent = (e && e.message) || String(e); btn.disabled = false; }
+      });
+    });
+  }
+
   async function makeShaPdf(d: any, pr: any, rev: number) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     await ensurePdfFont(doc);
@@ -978,7 +1068,7 @@ import { handbooks } from '../../../data/ksHandbooks';
     });
     hd(p('shaPreventiveT'));
     (d.preventive || []).forEach((v: any, i: number) => line(`${i + 1}. ${v.measure || ''}${v.responsible ? '  (' + v.responsible + ')' : ''}`, 10, 'normal', 5));
-    doc.save(`Dekmar_SHA-plan_${(pr?.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+    await deliverPdf(doc, `Dekmar_SHA-plan_${(pr?.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `SHA-plan – ${pr?.name || ''}`);
   }
 
   // downscale image File -> {blob, dataUrl}
@@ -1115,7 +1205,7 @@ import { handbooks } from '../../../data/ksHandbooks';
         if (col === 1) { y += rowH + 6; col = 0; } else col = 1;
       });
     }
-    doc.save(`Dekmar_Avvik_${(d.number || 'nr')}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+    await deliverPdf(doc, `Dekmar_Avvik_${(d.number || 'nr')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Avviksrapport ${d.number || ''} – ${CURRENT_PROJECT?.name || ''}`.trim());
   }
 
   // ---------- Sjekklister & vernerunder per prosjekt (malbasert) ----------
@@ -1228,7 +1318,7 @@ import { handbooks } from '../../../data/ksHandbooks';
         line(`${mark}  ${(it.text[lang()] || it.text.no || '')}${note ? '  — ' + note : ''}`, 10, 'normal', 5);
       });
     });
-    doc.save(`Dekmar_${titleLabel}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+    await deliverPdf(doc, `Dekmar_${titleLabel}_${projectName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${titleLabel} – ${projectName || ''}`);
   }
 
   // ---------- Maladministrasjon (maler) ----------
@@ -1517,7 +1607,7 @@ import { handbooks } from '../../../data/ksHandbooks';
       if (c.notes) { doc.splitTextToSize(c.notes, maxW).forEach((ln: string) => { if (y > 285) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 4.5; }); }
       y += 2;
     });
-    doc.save(`Dekmar_Stoffkartotek_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+    await deliverPdf(doc, `Dekmar_Stoffkartotek_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Stoffkartotek – ${CURRENT_PROJECT?.name || ''}`);
   }
 
   // ---------- Dokumentasjon av utført arbeid (bilder til sluttkunde) ----------
@@ -1598,7 +1688,7 @@ import { handbooks } from '../../../data/ksHandbooks';
       if (cap.trim()) { doc.setFontSize(8); doc.setTextColor(80); doc.text(doc.splitTextToSize(cap, colW), x, y + rowH + 3.5); doc.setTextColor(20, 23, 28); }
       if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
     }
-    doc.save(`Dekmar_Sluttdokumentasjon_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'));
+    await deliverPdf(doc, `Dekmar_Sluttdokumentasjon_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Sluttdokumentasjon – ${CURRENT_PROJECT?.name || ''}`);
   }
 
   // ---------- HMS-håndbok (artikler) ----------
