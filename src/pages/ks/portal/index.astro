@@ -522,6 +522,23 @@ import { hseFormTypes } from '../../../data/ksForms';
     chooseType: { no: 'Velg skjematype', pl: 'Wybierz typ', en: 'Choose form type' },
     addRowLabel: { no: '+ Legg til rad', pl: '+ Dodaj wiersz', en: '+ Add row' },
     riskLabel: { no: 'Risiko', pl: 'Ryzyko', en: 'Risk' },
+    // Befaring
+    inspections: { no: 'Befaring', pl: 'Inspekcja', en: 'Site survey' },
+    cardInspectDesc: { no: 'Befaringsrapport med observasjoner og bilder, søkbar.', pl: 'Raport z inspekcji ze zdjęciami, przeszukiwalny.', en: 'Site survey report with observations and photos, searchable.' },
+    newInspection: { no: 'Ny befaring', pl: 'Nowa inspekcja', en: 'New survey' },
+    noInspections: { no: 'Ingen befaringer ennå. Opprett den første.', pl: 'Brak inspekcji. Utwórz pierwszą.', en: 'No surveys yet. Create the first.' },
+    searchInspections: { no: 'Søk (tittel, adresse, kunde)', pl: 'Szukaj (tytuł, adres, klient)', en: 'Search (title, address, customer)' },
+    inspTitle: { no: 'Tittel', pl: 'Tytuł', en: 'Title' },
+    inspDate: { no: 'Befaringsdato', pl: 'Data inspekcji', en: 'Survey date' },
+    inspPresent: { no: 'Til stede', pl: 'Obecni', en: 'Present' },
+    inspSummary: { no: 'Sammendrag / konklusjon', pl: 'Podsumowanie / wniosek', en: 'Summary / conclusion' },
+    inspObs: { no: 'Observasjoner', pl: 'Obserwacje', en: 'Observations' },
+    colArea: { no: 'Område / bygningsdel', pl: 'Obszar / element', en: 'Area / part' },
+    colObservation: { no: 'Observasjon', pl: 'Obserwacja', en: 'Observation' },
+    colRecommendation: { no: 'Anbefaling / tiltak', pl: 'Zalecenie / działanie', en: 'Recommendation / action' },
+    inspPhotos: { no: 'Bilder', pl: 'Zdjęcia', en: 'Photos' },
+    inspToQuote: { no: 'Lag tilbud fra befaring', pl: 'Utwórz ofertę z inspekcji', en: 'Create quote from survey' },
+    cardInspect: { no: 'Befaring', pl: 'Inspekcja', en: 'Survey' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
     statistics: { no: 'Statistikk', pl: 'Statystyki', en: 'Statistics' },
@@ -640,12 +657,14 @@ import { hseFormTypes } from '../../../data/ksForms';
     quote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/><path d="M12 9.5v-1"/></svg>',
     customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
     calc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v3M8 18h4"/></svg>',
+    inspect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6a1 1 0 0 1 1 1v1h1a2 2 0 0 1 2 2v6"/><path d="M16 5H8a0 0 0 0 0 0 0V4a1 1 0 0 1 1-1"/><rect x="4" y="5" width="12" height="16" rx="2"/><circle cx="12.5" cy="13" r="2.5"/><path d="m14.4 14.9 1.6 1.6"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
     { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
     { id: 'projects', icon: 'projects', label: () => p('projects'), run: () => renderProjects() },
     { id: 'quotes', icon: 'quote', label: () => p('quotes'), run: () => renderQuotes() },
     { id: 'calc', icon: 'calc', label: () => p('calc'), run: () => renderCalc() },
+    { id: 'inspections', icon: 'inspect', label: () => p('inspections'), run: () => renderInspections() },
     { id: 'customers', icon: 'customer', label: () => p('customers'), run: () => renderCustomers() },
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
@@ -915,6 +934,7 @@ import { hseFormTypes } from '../../../data/ksForms';
         ${card('projects', 'projects', p('projects'), p('cardProjectsDesc'))}
         ${card('quotes', 'quote', p('quotes'), p('cardQuotesDesc'))}
         ${card('calc', 'calc', p('calc'), p('cardCalcDesc'))}
+        ${card('inspections', 'inspect', p('inspections'), p('cardInspectDesc'))}
         ${card('customers', 'customer', p('customers'), p('cardCustomersDesc'))}
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
@@ -2825,6 +2845,139 @@ import { hseFormTypes } from '../../../data/ksForms';
     rt('MVA ' + nok(d.vat) + ' %', 'kr ' + nok(vat));
     rt('Sum inkl. mva.', 'kr ' + nok(inc), true);
     await deliverPdf(doc, `Dekmar_Tilbud_${(d.number || '')}_${(d.customer.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Pristilbud ${d.number || ''} – ${d.title || ''}`.trim());
+  }
+
+  // ================= Befaring =================
+  async function renderInspections() {
+    redraw = renderInspections; await ensureShell('inspections');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [iRes, cRes, pRes] = await Promise.all([
+      supabase.from('inspections').select('*, customers(name), projects(name)').order('created_at', { ascending: false }),
+      supabase.from('customers').select('*').order('name'),
+      supabase.from('projects').select('id,name,address,client').order('name'),
+    ]);
+    const I = iRes.data || []; const CUST = cRes.data || []; const PROJ = pRes.data || [];
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('inspections'))}</h1><div class="p-user"><button class="btn btn--primary" id="i-new">${esc(p('newInspection'))}</button></div></div>
+      <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="i-search" type="search" placeholder="${esc(p('searchInspections'))}" autocomplete="off"></div>
+      <ul class="p-list" id="i-list"></ul>`;
+    document.getElementById('i-new')!.addEventListener('click', () => renderInspectionEditor(null, CUST, PROJ));
+    const paint = (q = '') => {
+      const ql = q.trim().toLowerCase();
+      const list = I.filter((x: any) => !ql || [x.title, x.address, x.customers?.name].some((v: any) => (v || '').toLowerCase().includes(ql)));
+      document.getElementById('i-list')!.innerHTML = list.length ? list.map((x: any) => `<li class="p-item" data-i="${esc(x.id)}"><div><h3>${esc(x.title || x.number || '—')}</h3><p>${esc([x.insp_date ? fmt(x.insp_date) : '', x.address, x.customers?.name].filter(Boolean).join(' · '))}</p></div><span class="p-go">${ICONS.chevron}</span></li>`).join('') : `<li class="p-muted" style="list-style:none">${esc(p('noInspections'))}</li>`;
+      document.querySelectorAll('#i-list [data-i]').forEach((el) => el.addEventListener('click', () => renderInspectionEditor(I.find((x: any) => x.id === (el as HTMLElement).dataset.i), CUST, PROJ)));
+    };
+    document.getElementById('i-search')!.addEventListener('input', (e) => paint((e.target as HTMLInputElement).value));
+    paint();
+  }
+
+  async function renderInspectionEditor(insp: any, CUST: any[], PROJ: any[]) {
+    redraw = () => renderInspectionEditor(insp, CUST, PROJ); await ensureShell('inspections');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const state: any = { id: insp?.id || null, customer_id: insp?.customer_id || '', project_id: insp?.project_id || '', title: insp?.title || '', address: insp?.address || '', insp_date: insp?.insp_date || '', present: insp?.present || '', summary: insp?.summary || '', rows: (insp?.rows || []).map((r: any) => ({ ...r })) };
+    let existingPhotos: any[] = [];
+    if (state.id) { const { data: ph } = await supabase.from('photos').select('*').eq('inspection_id', state.id); existingPhotos = ph || []; }
+    const pending: { blob: Blob; dataUrl: string }[] = [];
+    const custOpts = CUST.map((c: any) => `<option value="${esc(c.id)}"${c.id === state.customer_id ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+    const projOpts = PROJ.map((pr: any) => `<option value="${esc(pr.id)}"${pr.id === state.project_id ? ' selected' : ''}>${esc(pr.name)}</option>`).join('');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('newInspection'))}</h1><div class="p-user"><button class="btn btn--ghost" id="i-back">${esc(p('inspections'))}</button></div></div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('inspTitle'))}<input id="i-title" value="${esc(state.title)}"></label>
+        <label class="p-field">${esc(p('inspDate'))}<input id="i-date" type="date" value="${esc(state.insp_date)}"></label>
+      </div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('selectCustomer'))}<select id="i-cust"><option value="">—</option>${custOpts}</select></label>
+        <label class="p-field">${esc(p('selectProject'))}<select id="i-proj"><option value="">—</option>${projOpts}</select></label>
+      </div>
+      <label class="p-field">${esc(p('quoteAddress'))}<input id="i-address" value="${esc(state.address)}"></label>
+      <label class="p-field">${esc(p('inspPresent'))}<input id="i-present" value="${esc(state.present)}"></label>
+      <p class="p-subhead">${esc(p('inspObs'))}</p>
+      <div class="p-tablewrap"><table class="ql-table"><thead><tr><th>${esc(p('colArea'))}</th><th>${esc(p('colObservation'))}</th><th>${esc(p('colRecommendation'))}</th><th></th></tr></thead><tbody id="i-rows"></tbody></table></div>
+      <button class="btn btn--ghost p-sm" id="i-addrow" type="button" style="margin-top:6px">${esc(p('addRowLabel'))}</button>
+      <label class="p-field" style="margin-top:14px">${esc(p('inspPhotos'))}<input id="i-photos" type="file" accept="image/*" capture="environment" multiple></label>
+      <div class="p-thumbs" id="i-thumbs"></div>
+      <label class="p-field">${esc(p('inspSummary'))}<textarea id="i-summary" rows="3">${esc(state.summary)}</textarea></label>
+      <div class="q-actions"><button class="btn btn--primary" id="i-save" type="button">${esc(p('save'))}</button><button class="btn btn--ghost" id="i-pdf" type="button">${esc(p('downloadPdf'))}</button><button class="btn btn--ghost" id="i-toquote" type="button">${esc(p('inspToQuote'))}</button>${state.id ? `<button class="btn btn--ghost" id="i-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}<span class="p-muted" id="i-msg"></span></div>`;
+    const drawRows = () => {
+      const tb = document.getElementById('i-rows')!;
+      tb.innerHTML = state.rows.length ? state.rows.map((r: any, i: number) => `<tr><td><input data-i="${i}" data-f="area" value="${esc(r.area || '')}"></td><td><input data-i="${i}" data-f="obs" value="${esc(r.obs || '')}"></td><td><input data-i="${i}" data-f="rec" value="${esc(r.rec || '')}"></td><td><button class="ql-del" data-del="${i}" type="button">✕</button></td></tr>`).join('') : `<tr><td colspan="4" class="p-muted">—</td></tr>`;
+      tb.querySelectorAll('input[data-i]').forEach((inp) => inp.addEventListener('input', (e) => { const el = e.target as HTMLInputElement; state.rows[+el.dataset.i!][el.dataset.f!] = el.value; }));
+      tb.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', (e) => { state.rows.splice(+(e.target as HTMLElement).dataset.del!, 1); drawRows(); }));
+    };
+    const drawThumbs = () => { document.getElementById('i-thumbs')!.innerHTML = existingPhotos.map((ph: any) => `<div class="p-thumb" data-exist="${esc(ph.id)}"><img src="${esc(ph.__url || '')}"><button class="p-thumb-del" data-pdel="${esc(ph.id)}" type="button">✕</button></div>`).join('') + pending.map((x, i) => `<div class="p-thumb"><img src="${x.dataUrl}"><button class="p-thumb-del" data-pend="${i}" type="button">✕</button></div>`).join(''); bindThumbs(); };
+    const bindThumbs = () => {
+      document.querySelectorAll('#i-thumbs [data-pend]').forEach((b) => b.addEventListener('click', (e) => { pending.splice(+(e.target as HTMLElement).dataset.pend!, 1); drawThumbs(); }));
+      document.querySelectorAll('#i-thumbs [data-pdel]').forEach((b) => b.addEventListener('click', async (e) => { const id = (e.target as HTMLElement).dataset.pdel!; const ph = existingPhotos.find((x: any) => x.id === id); if (ph) { await supabase.storage.from(KS_PHOTO_BUCKET).remove([ph.storage_path]); await supabase.from('photos').delete().eq('id', id); existingPhotos = existingPhotos.filter((x: any) => x.id !== id); drawThumbs(); } }));
+    };
+    // last inn signerte URL-er for eksisterende bilder
+    for (const ph of existingPhotos) { const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 3600); ph.__url = s?.signedUrl || ''; }
+    document.getElementById('i-back')!.addEventListener('click', renderInspections);
+    document.getElementById('i-addrow')!.addEventListener('click', () => { state.rows.push({}); drawRows(); });
+    (document.getElementById('i-photos') as HTMLInputElement).addEventListener('change', async (e) => { const inp = e.target as HTMLInputElement; for (const f of Array.from(inp.files || [])) { const s = await shrink(f); pending.push(s); } inp.value = ''; drawThumbs(); });
+    const readTop = () => { state.title = (document.getElementById('i-title') as HTMLInputElement).value.trim(); state.insp_date = (document.getElementById('i-date') as HTMLInputElement).value || null; state.customer_id = (document.getElementById('i-cust') as HTMLSelectElement).value || null; state.project_id = (document.getElementById('i-proj') as HTMLSelectElement).value || null; state.address = (document.getElementById('i-address') as HTMLInputElement).value.trim(); state.present = (document.getElementById('i-present') as HTMLInputElement).value.trim(); state.summary = (document.getElementById('i-summary') as HTMLTextAreaElement).value; };
+    const doSave = async () => {
+      readTop(); const msg = document.getElementById('i-msg')!; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      const payload: any = { customer_id: state.customer_id, project_id: state.project_id, title: state.title || null, address: state.address || null, insp_date: state.insp_date, present: state.present || null, summary: state.summary || null, rows: state.rows.filter((r: any) => r.area || r.obs || r.rec) };
+      if (!state.number && !state.id) { const year = new Date().getFullYear(); const { data: mx } = await supabase.from('inspections').select('number').like('number', `BEF-${year}-%`).order('number', { ascending: false }).limit(1); let seq = 1; if (mx && mx[0] && mx[0].number) { const mm = String(mx[0].number).match(/BEF-\d+-(\d+)/); if (mm) seq = (+mm[1]) + 1; } payload.number = `BEF-${year}-${String(seq).padStart(3, '0')}`; state.number = payload.number; }
+      let res; if (state.id) res = await supabase.from('inspections').update(payload).eq('id', state.id).select().single();
+      else { payload.created_by = u.user?.id; res = await supabase.from('inspections').insert(payload).select().single(); }
+      if (res.error) { msg.textContent = res.error.message; return null; }
+      state.id = res.data.id; state.number = res.data.number;
+      if (pending.length) { msg.textContent = p('uploading'); for (const ph of pending) { const path = `inspections/${state.id}/${crypto.randomUUID()}.jpg`; const up = await supabase.storage.from(KS_PHOTO_BUCKET).upload(path, ph.blob, { contentType: 'image/jpeg' }); if (!up.error) { const ins = await supabase.from('photos').insert({ project_id: state.project_id, inspection_id: state.id, storage_path: path, created_by: u.user?.id }).select().single(); const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(path, 3600); if (ins.data) existingPhotos.push({ ...ins.data, __url: s?.signedUrl || '' }); } } pending.length = 0; drawThumbs(); }
+      msg.textContent = p('savedShort') + (state.number ? ' ' + state.number : ''); return res.data;
+    };
+    document.getElementById('i-save')!.addEventListener('click', doSave);
+    const idel = document.getElementById('i-del'); if (idel) idel.addEventListener('click', async () => { if (!confirm(state.title || '')) return; await supabase.from('inspections').delete().eq('id', state.id); renderInspections(); });
+    document.getElementById('i-pdf')!.addEventListener('click', async () => { await doSave(); const cust = CUST.find((c: any) => c.id === state.customer_id) || {}; await makeInspectionPdf(state, cust, existingPhotos); });
+    document.getElementById('i-toquote')!.addEventListener('click', async () => {
+      await doSave(); const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from('quotes').insert({ title: state.title || null, address: state.address || null, customer_id: state.customer_id, project_id: state.project_id, lines: [], terms: STD_QUOTE_TERMS.filter((tm: any) => tm.on).map((tm: any) => tm.text.replace('{rate}', nok(QUOTE_LETTER.hourlyDefault || 850))), vat_rate: 25, valid_days: QUOTE_LETTER.validDaysDefault || 30, hourly_rate: QUOTE_LETTER.hourlyDefault || 850, signatory: (QUOTE_LETTER.signatories[0] || {}).name, status: 'draft', created_by: u.user?.id });
+      const msg = document.getElementById('i-msg')!; if (error) msg.textContent = error.message; else { ACTIVE_NAV = 'quotes'; paintShellChrome(); renderQuotes(); }
+    });
+    drawRows(); drawThumbs();
+  }
+
+  async function makeInspectionPdf(state: any, cust: any, photos: any[]) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo(); const co = QUOTE_LETTER.company || {};
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text('Befaringsrapport', margin + 26, y + 8);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104);
+    doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
+    if (state.number) doc.text(state.number, pageW - margin, y + 11, { align: 'right' } as any);
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text(state.title || '', margin, y); y += 7;
+    const kv = (l: string, v: string) => { if (!v) return; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9); doc.setTextColor(90, 96, 104); doc.text(l + ':', margin, y); doc.setFont('DejaVu', 'normal'); doc.setTextColor(20, 23, 28); const lns = doc.splitTextToSize(v, maxW - 40); lns.forEach((ln: string, k: number) => doc.text(ln, margin + 40, y + k * 4.6)); y += Math.max(5.2, lns.length * 4.6); };
+    kv('Kunde', cust.name || ''); kv('Adresse', state.address || ''); kv('Befaringsdato', state.insp_date ? fmt(state.insp_date) : ''); kv('Til stede', state.present || '');
+    y += 2;
+    if ((state.rows || []).length) {
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('inspObs'), margin, y); y += 5;
+      const xs = [margin, margin + 45, margin + 110]; const ws = [43, 63, maxW - 110];
+      doc.setFontSize(8); doc.setTextColor(90, 96, 104); doc.text('Område', xs[0], y); doc.text('Observasjon', xs[1], y); doc.text('Anbefaling', xs[2], y); y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+      state.rows.forEach((r: any) => {
+        const t0 = doc.splitTextToSize(r.area || '', ws[0]), t1 = doc.splitTextToSize(r.obs || '', ws[1]), t2 = doc.splitTextToSize(r.rec || '', ws[2]);
+        const rowH = Math.max(t0.length, t1.length, t2.length) * 4.2 || 4.2;
+        if (y + rowH > 282) { doc.addPage(); y = margin; }
+        doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5);
+        t0.forEach((ln: string, k: number) => doc.text(ln, xs[0], y + k * 4.2)); t1.forEach((ln: string, k: number) => doc.text(ln, xs[1], y + k * 4.2)); t2.forEach((ln: string, k: number) => doc.text(ln, xs[2], y + k * 4.2));
+        y += rowH + 2;
+      });
+      y += 2;
+    }
+    if (state.summary) { if (y > 260) { doc.addPage(); y = margin; } doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.text(p('inspSummary'), margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.splitTextToSize(state.summary, maxW).forEach((ln: string) => { if (y > 285) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += 5; }); y += 3; }
+    // bilder
+    const imgs: string[] = [];
+    for (const ph of photos) { if (ph.__url) { try { const blob = await (await fetch(ph.__url)).blob(); imgs.push(await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); })); } catch (_e) { /* */ } } }
+    if (imgs.length) {
+      if (y > 240) { doc.addPage(); y = margin; }
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 23, 28); doc.text(p('inspPhotos'), margin, y); y += 5;
+      const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
+      imgs.forEach((src) => { if (y + rowH > 285) { doc.addPage(); y = margin; col = 0; } const x = margin + col * (colW + 6); try { doc.addImage(src, 'JPEG', x, y, colW, rowH); } catch (_e) { /* */ } doc.setDrawColor(220); doc.rect(x, y, colW, rowH); if (col === 1) { y += rowH + 6; col = 0; } else col = 1; });
+    }
+    await deliverPdf(doc, `Dekmar_Befaring_${(state.number || state.title || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Befaringsrapport ${state.number || ''} – ${state.title || ''}`.trim());
   }
 
   // ================= HMS-skjemaer (SJA / risiko / stillas) =================
