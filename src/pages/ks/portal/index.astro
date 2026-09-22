@@ -215,6 +215,7 @@ import { standardMaterials } from '../../../data/ksCalc';
   .q-sent { background: #e7f0fb; color: #1a5fb4; }
   .q-accepted { background: #e4f4e8; color: #1a7f37; }
   .q-declined { background: #fdeaec; color: var(--brand); }
+  .p-badge.is-done { background: #e4f4e8; color: #1a7f37; font-size: .72rem; padding: 2px 8px; border-radius: 999px; vertical-align: middle; }
   /* Tilbudslinjer */
   .ql-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
   .ql-table th { text-align: left; font-family: var(--font-head); font-size: .78rem; color: var(--muted); font-weight: 700; padding: 4px 6px; }
@@ -279,7 +280,7 @@ import { standardMaterials } from '../../../data/ksCalc';
     signOut: { no: 'Logg ut', pl: 'Wyloguj', en: 'Sign out' },
     email: { no: 'E-post', pl: 'E-mail', en: 'Email' },
     password: { no: 'Passord', pl: 'Hasło', en: 'Password' },
-    loginTitle: { no: 'Dekmar KS-portal', pl: 'Portal Dekmar KS', en: 'Dekmar QA portal' },
+    loginTitle: { no: 'Dekmar HMS- og KS-system', pl: 'Dekmar – system BHP i KS', en: 'Dekmar HSE & QA system' },
     loginIntro: { no: 'Innlogging for Dekmar-ansatte.', pl: 'Logowanie dla pracowników Dekmar.', en: 'Sign in for Dekmar staff.' },
     loginErr: { no: 'Feil e-post eller passord.', pl: 'Błędny e-mail lub hasło.', en: 'Wrong email or password.' },
     projects: { no: 'Prosjekter', pl: 'Projekty', en: 'Projects' },
@@ -290,6 +291,11 @@ import { standardMaterials } from '../../../data/ksCalc';
     save: { no: 'Lagre', pl: 'Zapisz', en: 'Save' },
     back: { no: '← Prosjekter', pl: '← Projekty', en: '← Projects' },
     noProjects: { no: 'Ingen prosjekter ennå. Opprett det første nedenfor.', pl: 'Brak projektów. Utwórz pierwszy poniżej.', en: 'No projects yet. Create the first below.' },
+    archivedProjects: { no: 'Leverte / arkiverte prosjekter', pl: 'Dostarczone / zarchiwizowane projekty', en: 'Delivered / archived projects' },
+    deliveredBadge: { no: 'Levert', pl: 'Dostarczony', en: 'Delivered' },
+    markDelivered: { no: 'Marker som levert (arkiver)', pl: 'Oznacz jako dostarczony (archiwizuj)', en: 'Mark as delivered (archive)' },
+    reopenProject: { no: 'Gjenåpne prosjekt', pl: 'Otwórz ponownie', en: 'Reopen project' },
+    noArchived: { no: 'Ingen leverte prosjekter ennå.', pl: 'Brak dostarczonych projektów.', en: 'No delivered projects yet.' },
     deviations: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     newDeviation: { no: 'Nytt avvik', pl: 'Nowa niezgodność', en: 'New deviation' },
     noDeviations: { no: 'Ingen avvik registrert på dette prosjektet.', pl: 'Brak niezgodności w tym projekcie.', en: 'No deviations logged for this project.' },
@@ -652,7 +658,7 @@ import { standardMaterials } from '../../../data/ksCalc';
       <div class="app" data-drawer="closed">
         <div class="app-scrim" id="app-scrim"></div>
         <aside class="app-side" id="app-side">
-          <div class="app-brand"><span class="app-brand-mark">KS</span><span class="app-brand-name">Dekmar</span></div>
+          <div class="app-brand"><span class="app-brand-mark">HMS/KS</span><span class="app-brand-name">Dekmar</span></div>
           <nav class="app-nav" id="app-nav"></nav>
           <div class="app-side-foot">
             <div class="app-user" id="app-user"></div>
@@ -874,7 +880,7 @@ import { standardMaterials } from '../../../data/ksCalc';
     await ensureShell('dashboard');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const [projC, devC, docC] = await Promise.all([
-      supabase.from('projects').select('id', { count: 'exact', head: true }),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       supabase.from('deviations').select('id', { count: 'exact', head: true }).neq('status', 'closed'),
       supabase.from('documents').select('id', { count: 'exact', head: true }),
     ]);
@@ -920,16 +926,19 @@ import { standardMaterials } from '../../../data/ksCalc';
     root.innerHTML = `<p class="portal-loading">${esc(t('generating') || '…')}</p>`;
     const { data: projects, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
     const all = projects || [];
+    const activeAll = all.filter((pr: any) => pr.status !== 'delivered');
+    const archivedAll = all.filter((pr: any) => pr.status === 'delivered');
     const rowHtml = (pr: any) => `
       <li class="p-item" data-id="${esc(pr.id)}">
-        <div><h3>${esc(pr.name)}</h3><p>${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p></div>
+        <div><h3>${esc(pr.name)}${pr.status === 'delivered' ? ` <span class="p-badge is-done">${esc(p('deliveredBadge'))}</span>` : ''}</h3><p>${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p></div>
         <span class="p-go">${ICONS.chevron}</span>
       </li>`;
     root.innerHTML = `
       <div class="p-head"><h1>${esc(p('projects'))}</h1></div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${all.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="pl-search" type="search" placeholder="${esc(p('searchProjects'))}" autocomplete="off"></div>` : ''}
-      <ul class="p-list" id="pl-list">${all.map(rowHtml).join('') || `<p class="p-muted">${esc(p('noProjects'))}</p>`}</ul>
+      <ul class="p-list" id="pl-list">${activeAll.map(rowHtml).join('') || `<p class="p-muted">${esc(p('noProjects'))}</p>`}</ul>
+      ${archivedAll.length ? `<details class="p-new" id="pl-archwrap"><summary>${esc(p('archivedProjects'))} (${archivedAll.length})</summary><ul class="p-list" id="pl-arch">${archivedAll.map(rowHtml).join('')}</ul></details>` : ''}
       <details class="p-new">
         <summary>${esc(p('newProject'))}</summary>
         <form id="np">
@@ -942,11 +951,15 @@ import { standardMaterials } from '../../../data/ksCalc';
         </form>
       </details>`;
     const listEl = document.getElementById('pl-list')!;
+    const archEl = document.getElementById('pl-arch');
+    const bind = (el: Element) => el.querySelectorAll('.p-item').forEach((li) => li.addEventListener('click', () => openProject((li as HTMLElement).dataset.id!)));
     const paintList = (q: string) => {
       const term = q.trim().toLowerCase();
-      const shown = term ? all.filter((pr: any) => [pr.name, pr.address, pr.client].filter(Boolean).join(' ').toLowerCase().includes(term)) : all;
-      listEl.innerHTML = shown.length ? shown.map(rowHtml).join('') : `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noResults'))}</li>`;
-      listEl.querySelectorAll('.p-item').forEach((el) => el.addEventListener('click', () => openProject((el as HTMLElement).dataset.id!)));
+      const flt = (arr: any[]) => term ? arr.filter((pr: any) => [pr.name, pr.address, pr.client].filter(Boolean).join(' ').toLowerCase().includes(term)) : arr;
+      const shownA = flt(activeAll);
+      listEl.innerHTML = shownA.length ? shownA.map(rowHtml).join('') : `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noResults'))}</li>`;
+      bind(listEl);
+      if (archEl) { const shownB = flt(archivedAll); archEl.innerHTML = shownB.map(rowHtml).join('') || `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noArchived'))}</li>`; bind(archEl); }
     };
     paintList('');
     const searchEl = document.getElementById('pl-search') as HTMLInputElement | null;
@@ -988,8 +1001,9 @@ import { standardMaterials } from '../../../data/ksCalc';
     root.innerHTML = `
       <button class="btn btn--ghost" id="back" style="margin-bottom:16px">${esc(p('back'))}</button>
       <div class="p-card">
-        <h1 style="margin:0 0 4px">${esc(pr.name)}</h1>
-        <p class="p-muted">${esc([pr.address, pr.client].filter(Boolean).join(' · '))}</p>
+        <h1 style="margin:0 0 4px">${esc(pr.name)}${pr.status === 'delivered' ? ` <span class="p-badge is-done">${esc(p('deliveredBadge'))}</span>` : ''}</h1>
+        <p class="p-muted">${esc([pr.address, pr.client].filter(Boolean).join(' · '))}${pr.status === 'delivered' && pr.delivered_at ? ' · ' + esc(fmt(pr.delivered_at)) : ''}</p>
+        <button class="btn btn--ghost" id="pr-deliver" style="margin-top:10px">${esc(pr.status === 'delivered' ? p('reopenProject') : p('markDelivered'))}</button>
       </div>
       <div class="p-section">
         <h2>${esc(p('deviations'))}</h2>
@@ -1043,6 +1057,11 @@ import { standardMaterials } from '../../../data/ksCalc';
       <div class="p-section" id="sec-chemicals"></div>
       <div class="p-section" id="sec-jobdoc"></div>`;
     document.getElementById('back')!.addEventListener('click', renderProjects);
+    document.getElementById('pr-deliver')!.addEventListener('click', async () => {
+      const toDelivered = pr.status !== 'delivered';
+      await supabase.from('projects').update({ status: toDelivered ? 'delivered' : 'active', delivered_at: toDelivered ? new Date().toISOString() : null }).eq('id', id);
+      renderProjects();
+    });
     setupDeviationForm(id, devs || []);
     await ensureTemplates();
     renderShaEntry(id);
