@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, values });
     }
     if (action === 'products') {
-      const values = await get('/product?count=2000&fields=id,name,number,costExcludingVatCurrency,priceExcludingVatCurrency,isInactive,elNumber');
+      const values = await get('/product?count=2000&fields=id,name,number,costExcludingVatCurrency,priceExcludingVatCurrency,isInactive,isStockItem,elNumber');
       return json({ ok: true, values });
     }
     return json({ error: 'ukjent action' }, 400);

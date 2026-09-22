@@ -537,6 +537,11 @@ import { hseFormTypes } from '../../data/ksForms';
     fdvOnly: { no: 'Vis kun FDV-produkter', pl: 'Pokaż tylko produkty FDV', en: 'Show only FDV products' },
     fdvCol: { no: 'FDV', pl: 'FDV', en: 'FDV' },
     fdvToggleHint: { no: 'Klikk FDV-merket for å slå av/på', pl: 'Kliknij znacznik FDV, aby przełączyć', en: 'Click the FDV mark to toggle' },
+    fdvFlagged: { no: 'FDV-merket', pl: 'oznaczone FDV', en: 'FDV-flagged' },
+    fdvDelivery: { no: 'FDV-leveranse', pl: 'Dostawa FDV', en: 'FDV package' },
+    fdvDeliveryPdf: { no: 'FDV-dokumentasjon (PDF)', pl: 'Dokumentacja FDV (PDF)', en: 'FDV documentation (PDF)' },
+    fdvNoneInProject: { no: 'Ingen FDV-produkter i prosjektets kalkyler ennå. Merk produkter som «Trenger FDV» i materialbiblioteket, og bruk dem i en kalkyle for prosjektet.', pl: 'Brak produktów FDV w kalkulacjach projektu. Oznacz produkty jako „Wymaga FDV” i użyj ich w kalkulacji.', en: 'No FDV products in this project\'s costings yet. Flag products as “Needs FDV” and use them in a costing for the project.' },
+    fdvIntro: { no: 'Følgende produkter er levert i prosjektet og krever forvaltnings-, drifts- og vedlikeholdsdokumentasjon (FDV):', pl: 'Poniższe produkty dostarczone w projekcie wymagają dokumentacji FDV:', en: 'The following products delivered in this project require FDV (management, operation and maintenance) documentation:' },
     // HMS-skjemaer (SJA/risiko/stillas)
     hseFormsTitle: { no: 'HMS-skjemaer (SJA, risiko, stillas)', pl: 'Formularze BHP (SJA, ryzyko, rusztowanie)', en: 'HSE forms (JSA, risk, scaffold)' },
     newForm: { no: 'Nytt skjema', pl: 'Nowy formularz', en: 'New form' },
@@ -1112,7 +1117,8 @@ import { hseFormTypes } from '../../data/ksForms';
       <div class="p-section" id="sec-verneround"></div>
       <div class="p-section" id="sec-forms"></div>
       <div class="p-section" id="sec-chemicals"></div>
-      <div class="p-section" id="sec-jobdoc"></div>`;
+      <div class="p-section" id="sec-jobdoc"></div>
+      <div class="p-section" id="sec-fdv"></div>`;
     document.getElementById('back')!.addEventListener('click', renderProjects);
     document.getElementById('pr-deliver')!.addEventListener('click', async () => {
       const toDelivered = pr.status !== 'delivered';
@@ -1127,6 +1133,63 @@ import { hseFormTypes } from '../../data/ksForms';
     renderProjectForms(id);
     renderChemicals(id);
     renderJobDoc(id);
+    renderFdvDelivery(id);
+  }
+
+  // FDV-leveranse: samle alle FDV-merkede materialer brukt i prosjektets kalkyler
+  // (dedupe + sum antall) → liste + samlet FDV-dokumentasjon (PDF) til sluttkunde.
+  async function renderFdvDelivery(projectId: string) {
+    const secEl = document.getElementById('sec-fdv'); if (!secEl) return;
+    const [calcRes, matRes] = await Promise.all([
+      supabase.from('calculations').select('lines').eq('project_id', projectId),
+      supabase.from('calc_materials').select('id, name, supplier, article_no, unit').eq('needs_fdv', true),
+    ]);
+    const fdvById: Record<string, any> = {}; (matRes.data || []).forEach((m: any) => { fdvById[m.id] = m; });
+    const agg: Record<string, any> = {};
+    (calcRes.data || []).forEach((c: any) => (c.lines || []).forEach((l: any) => {
+      if (l.type !== 'material' || !l.material_id) return;
+      const m = fdvById[l.material_id]; if (!m) return;
+      if (!agg[l.material_id]) agg[l.material_id] = { name: m.name, supplier: m.supplier || l.supplier || '', article_no: m.article_no || l.article_no || '', unit: m.unit || l.unit || '', qty: 0 };
+      agg[l.material_id].qty += numv(l.qty);
+    }));
+    const items = Object.keys(agg).map((k) => agg[k]).sort((a, b) => (a.supplier || '').localeCompare(b.supplier || '') || (a.name || '').localeCompare(b.name || ''));
+    secEl.innerHTML = `
+      <h2>${esc(p('fdvDelivery'))}</h2>
+      <p class="p-muted">${esc(p('fdvIntro'))}</p>
+      ${items.length ? `<div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('matName'))}</th><th>${esc(p('matSupplier'))}</th><th>${esc(p('matArtNo'))}</th><th>${esc(p('matUnit'))}</th><th style="text-align:right">${esc(p('colQty'))}</th></tr></thead><tbody>
+        ${items.map((it: any) => `<tr><td>${esc(it.name)}</td><td>${esc(it.supplier)}</td><td>${esc(it.article_no)}</td><td>${esc(it.unit)}</td><td style="text-align:right">${esc(it.qty ? nok(it.qty) : '')}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="p-actions" style="margin-top:12px"><button class="btn btn--primary" id="fdv-pdf" type="button">${esc(p('fdvDeliveryPdf'))}</button></div>`
+      : `<p class="p-muted">${esc(p('fdvNoneInProject'))}</p>`}`;
+    const pdfBtn = document.getElementById('fdv-pdf');
+    if (pdfBtn) pdfBtn.addEventListener('click', () => makeFdvDeliveryPdf({ project: CURRENT_PROJECT, items }));
+  }
+
+  async function makeFdvDeliveryPdf(d: any) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo();
+    const pr = d.project || {}; const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text(p('fdvDeliveryPdf'), margin + 26, y + 8);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104); doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text([pr.name, pr.address].filter(Boolean).join('  ·  '), margin, y); y += 8;
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5); doc.setTextColor(60, 66, 74);
+    doc.splitTextToSize(p('fdvIntro'), maxW).forEach((x: string) => { doc.text(x, margin, y); y += 5; }); y += 3; doc.setTextColor(20, 23, 28);
+    const cx = { name: margin, sup: margin + 78, art: margin + 128, unit: margin + 158, qty: margin + maxW };
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+    doc.text(p('matName'), cx.name, y); doc.text(p('matSupplier'), cx.sup, y); doc.text(p('matArtNo'), cx.art, y); doc.text(p('matUnit'), cx.unit, y); doc.text(p('colQty'), cx.qty, y, { align: 'right' } as any);
+    y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+    (d.items || []).forEach((it: any) => {
+      const sl = doc.splitTextToSize(it.name || '', 74); const rowH = Math.max(sl.length * 4.2, 6);
+      if (y + rowH > 280) { doc.addPage(); y = margin; }
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(9);
+      sl.forEach((x: string, k: number) => doc.text(x, cx.name, y + k * 4.2));
+      const sup = doc.splitTextToSize(String(it.supplier || ''), 46);
+      sup.forEach((x: string, k: number) => doc.text(x, cx.sup, y + k * 4.2));
+      doc.text(String(it.article_no || ''), cx.art, y); doc.text(String(it.unit || ''), cx.unit, y); doc.text(it.qty ? nok(numv(it.qty)) : '', cx.qty, y, { align: 'right' } as any);
+      y += rowH + 2;
+    });
+    await deliverPdf(doc, `Dekmar_FDV_${(pr.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${p('fdvDeliveryPdf')} – ${pr.name || ''}`);
   }
 
   // SHA-plan – inngang i prosjektvisningen
@@ -1247,15 +1310,29 @@ import { hseFormTypes } from '../../data/ksForms';
       btn.textContent = rows.length + ' ' + p('ttDoneProjects'); setTimeout(() => renderProjects(), 1200);
     } catch (e: any) { alert(p('ttFail') + ' ' + (e.message || '')); btn.disabled = false; btn.textContent = orig; }
   }
+  // Gjett om et Tripletex-produkt trenger FDV: fysiske varer ja, arbeid/tjenester nei.
+  // Bruker Tripletex `isStockItem` naar den finnes; ellers navne-heuristikk (arbeidsord = nei).
+  const FDV_WORK_RE = /(riving|montering|demontering|arbeid|timepris|\btime[rn]?\b|\brigg\b|frakt|kj[øo]ring|transport|prosjektledelse|prosjektadministrasjon|befaring|oppm[åa]ling|rydding|avfall|kranbil|\blift\b|produksjon|tilpasning|sveising|legging|tekking|dagrigg|mannskap|reise|diett|overtid|kontroll|dokumentasjon)/i;
+  function guessFdv(v: any): boolean {
+    if (v.isStockItem === true) return true;
+    if (v.isStockItem === false) return false;
+    if (FDV_WORK_RE.test(v.name || '')) return false;
+    return v.costExcludingVatCurrency != null; // ukjent + har kostpris → sannsynlig materiale
+  }
+
   async function importTripletexProducts(btn: HTMLButtonElement) {
     const orig = btn.textContent; btn.disabled = true; btn.textContent = p('ttImporting');
     try {
       const vals = (await tripletexFetch('products')).filter((v: any) => !v.isInactive);
       const { data: u } = await supabase.auth.getUser();
-      const rows = vals.map((v: any) => ({ tripletex_id: v.id, name: v.name || ('Produkt ' + v.id), article_no: v.number != null ? String(v.number) : null, cost_price: (v.costExcludingVatCurrency != null ? v.costExcludingVatCurrency : null), supplier: 'Tripletex', category: 'Importert (Tripletex)', slug: 'tt-' + v.id, created_by: u.user?.id }));
+      // Bevar manuelle FDV-valg paa allerede importerte produkter ved re-import.
+      const { data: existing } = await supabase.from('calc_materials').select('tripletex_id, needs_fdv').not('tripletex_id', 'is', null);
+      const prevFdv: Record<string, boolean> = {}; (existing || []).forEach((r: any) => { prevFdv[r.tripletex_id] = r.needs_fdv; });
+      let flagged = 0;
+      const rows = vals.map((v: any) => { const fdv = (v.id in prevFdv) ? prevFdv[v.id] : guessFdv(v); if (fdv) flagged++; return { tripletex_id: v.id, name: v.name || ('Produkt ' + v.id), article_no: v.number != null ? String(v.number) : null, cost_price: (v.costExcludingVatCurrency != null ? v.costExcludingVatCurrency : null), supplier: 'Tripletex', category: 'Importert (Tripletex)', slug: 'tt-' + v.id, needs_fdv: fdv, created_by: u.user?.id }; });
       for (let i = 0; i < rows.length; i += 300) { const chunk = rows.slice(i, i + 300); const { error } = await supabase.from('calc_materials').upsert(chunk, { onConflict: 'tripletex_id' }); if (error) throw new Error(error.message); }
       MATERIALS_SEEDED = true;
-      btn.textContent = rows.length + ' ' + p('ttDoneProducts'); setTimeout(() => renderCalc(), 1200);
+      btn.textContent = rows.length + ' ' + p('ttDoneProducts') + ' · ' + flagged + ' ' + p('fdvFlagged'); setTimeout(() => renderCalc(), 1600);
     } catch (e: any) { alert(p('ttFail') + ' ' + (e.message || '')); btn.disabled = false; btn.textContent = orig; }
   }
 
