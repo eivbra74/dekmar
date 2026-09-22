@@ -251,7 +251,7 @@ export const ksUi: Record<string, T> = {
   vernerounds: { no: 'Vernerunder', pl: 'Obchody BHP', en: 'Safety rounds' },
   checklists: { no: 'Sjekklister', pl: 'Listy kontrolne', en: 'Checklists' },
   brand: { no: 'Dekmar KS', pl: 'Dekmar KS', en: 'Dekmar QA' },
-  home: { no: 'KS-forside', pl: 'Strona główna KS', en: 'QA home' },
+  home: { no: 'KS', pl: 'KS', en: 'KS' },
   checklist: { no: 'Sjekkliste', pl: 'Lista kontrolna', en: 'Checklist' },
   deviation: { no: 'Avviksrapport', pl: 'Raport niezgodności', en: 'Deviation report' },
   help: { no: 'Bruksanvisning', pl: 'Instrukcja obsługi', en: 'User guide' },

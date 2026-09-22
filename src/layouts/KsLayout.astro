@@ -32,11 +32,11 @@ const tri = (k: string) => ksUi[k];
         </a>
 
         <nav class="ks-nav" aria-label="KS">
+          <a href="/portal/" class:list={[{ active: active === 'portal' }]} data-no="Portal" data-pl="Portal" data-en="Portal">Portal</a>
           <a href="/ks/" class:list={[{ active: active === 'home' }]} data-no={tri('home').no} data-pl={tri('home').pl} data-en={tri('home').en}>{tri('home').no}</a>
           <a href="/ks/sjekkliste/" class:list={[{ active: active === 'checklist' }]} data-no={tri('checklist').no} data-pl={tri('checklist').pl} data-en={tri('checklist').en}>{tri('checklist').no}</a>
           <a href="/ks/avvik/" class:list={[{ active: active === 'deviation' }]} data-no={tri('deviation').no} data-pl={tri('deviation').pl} data-en={tri('deviation').en}>{tri('deviation').no}</a>
           <a href="/ks/hjelp/" class:list={[{ active: active === 'help' }]} data-no={tri('help').no} data-pl={tri('help').pl} data-en={tri('help').en}>{tri('help').no}</a>
-          <a href="/portal/" class:list={[{ active: active === 'portal' }]} data-no="Portal" data-pl="Portal" data-en="Portal">Portal</a>
         </nav>
 
         <div class="ks-lang" role="group" aria-label="Språk / Language">
