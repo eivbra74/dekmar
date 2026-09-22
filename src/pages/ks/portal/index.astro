@@ -523,6 +523,11 @@ import { hseFormTypes } from '../../../data/ksForms';
     orderNo: { no: 'Bestillingsnr', pl: 'Nr zamówienia', en: 'Order no' },
     noLinesYet: { no: 'Ingen linjer ennå. Legg til materiale eller arbeid.', pl: 'Brak pozycji. Dodaj materiał lub pracę.', en: 'No lines yet. Add material or labour.' },
     rowsFound: { no: 'rader funnet', pl: 'wierszy', en: 'rows found' },
+    ttImport: { no: 'Importer fra Tripletex', pl: 'Importuj z Tripletex', en: 'Import from Tripletex' },
+    ttImporting: { no: 'Henter fra Tripletex …', pl: 'Pobieranie z Tripletex …', en: 'Fetching from Tripletex …' },
+    ttFail: { no: 'Tripletex-import feilet:', pl: 'Import z Tripletex nie powiódł się:', en: 'Tripletex import failed:' },
+    ttDoneProjects: { no: 'prosjekter importert/oppdatert', pl: 'projektów zaimportowano', en: 'projects imported/updated' },
+    ttDoneProducts: { no: 'produkter importert/oppdatert', pl: 'produktów zaimportowano', en: 'products imported/updated' },
     // HMS-skjemaer (SJA/risiko/stillas)
     hseFormsTitle: { no: 'HMS-skjemaer (SJA, risiko, stillas)', pl: 'Formularze BHP (SJA, ryzyko, rusztowanie)', en: 'HSE forms (JSA, risk, scaffold)' },
     newForm: { no: 'Nytt skjema', pl: 'Nowy formularz', en: 'New form' },
@@ -975,7 +980,7 @@ import { hseFormTypes } from '../../../data/ksForms';
         <span class="p-go">${ICONS.chevron}</span>
       </li>`;
     root.innerHTML = `
-      <div class="p-head"><h1>${esc(p('projects'))}</h1></div>
+      <div class="p-head"><h1>${esc(p('projects'))}</h1><div class="p-user"><button class="btn btn--ghost" id="pl-tt">${esc(p('ttImport'))}</button></div></div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${all.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="pl-search" type="search" placeholder="${esc(p('searchProjects'))}" autocomplete="off"></div>` : ''}
       <ul class="p-list" id="pl-list">${activeAll.map(rowHtml).join('') || `<p class="p-muted">${esc(p('noProjects'))}</p>`}</ul>
@@ -1005,6 +1010,7 @@ import { hseFormTypes } from '../../../data/ksForms';
     paintList('');
     const searchEl = document.getElementById('pl-search') as HTMLInputElement | null;
     if (searchEl) searchEl.addEventListener('input', () => paintList(searchEl.value));
+    document.getElementById('pl-tt')!.addEventListener('click', (e) => importTripletexProjects(e.currentTarget as HTMLButtonElement));
     (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = (document.getElementById('np-name') as HTMLInputElement).value.trim();
@@ -1213,6 +1219,36 @@ import { hseFormTypes } from '../../../data/ksForms';
     return m;
   }
   const langName = (t: string) => (t === 'PL' ? 'PL' : 'EN');
+
+  // Kall Tripletex-funksjonen og hent verdier for en gitt action.
+  async function tripletexFetch(action: string): Promise<any[]> {
+    const { data, error } = await supabase.functions.invoke('tripletex', { body: { action } });
+    let errMsg = error ? (error.message || 'error') : ((data && (data as any).error) || '');
+    if (error && (error as any).context && typeof (error as any).context.json === 'function') { try { const b = await (error as any).context.json(); if (b && b.error) errMsg = b.error; } catch (_e) { /* */ } }
+    if (errMsg) throw new Error(errMsg);
+    return ((data as any).values) || [];
+  }
+  async function importTripletexProjects(btn: HTMLButtonElement) {
+    const orig = btn.textContent; btn.disabled = true; btn.textContent = p('ttImporting');
+    try {
+      const vals = await tripletexFetch('projects');
+      const { data: u } = await supabase.auth.getUser();
+      const rows = vals.map((v: any) => ({ tripletex_id: v.id, name: v.displayName || v.name || ('Prosjekt ' + v.id), client: v.customer?.name || null, address: v.deliveryAddress?.displayName || null, created_by: u.user?.id }));
+      for (let i = 0; i < rows.length; i += 200) { const chunk = rows.slice(i, i + 200); const { error } = await supabase.from('projects').upsert(chunk, { onConflict: 'tripletex_id' }); if (error) throw new Error(error.message); }
+      btn.textContent = rows.length + ' ' + p('ttDoneProjects'); setTimeout(() => renderProjects(), 1200);
+    } catch (e: any) { alert(p('ttFail') + ' ' + (e.message || '')); btn.disabled = false; btn.textContent = orig; }
+  }
+  async function importTripletexProducts(btn: HTMLButtonElement) {
+    const orig = btn.textContent; btn.disabled = true; btn.textContent = p('ttImporting');
+    try {
+      const vals = (await tripletexFetch('products')).filter((v: any) => !v.isInactive);
+      const { data: u } = await supabase.auth.getUser();
+      const rows = vals.map((v: any) => ({ tripletex_id: v.id, name: v.name || ('Produkt ' + v.id), article_no: v.number != null ? String(v.number) : null, cost_price: (v.costExcludingVatCurrency != null ? v.costExcludingVatCurrency : null), supplier: 'Tripletex', category: 'Importert (Tripletex)', slug: 'tt-' + v.id, created_by: u.user?.id }));
+      for (let i = 0; i < rows.length; i += 300) { const chunk = rows.slice(i, i + 300); const { error } = await supabase.from('calc_materials').upsert(chunk, { onConflict: 'tripletex_id' }); if (error) throw new Error(error.message); }
+      MATERIALS_SEEDED = true;
+      btn.textContent = rows.length + ' ' + p('ttDoneProducts'); setTimeout(() => renderCalc(), 1200);
+    } catch (e: any) { alert(p('ttFail') + ' ' + (e.message || '')); btn.disabled = false; btn.textContent = orig; }
+  }
 
   // Oversett et opplastet dokument (Word/PDF/txt) via DeepL dokument-API og last ned resultatet.
   async function translateDoc(r: any, target: string, btn?: HTMLButtonElement) {
@@ -3495,7 +3531,7 @@ import { hseFormTypes } from '../../../data/ksForms';
         <p class="p-muted" style="margin:4px 0 8px;font-size:.86rem">${esc(p('importHelp'))}</p>
         <textarea id="imp-txt" placeholder="Katepal Litebase;1250;rull;Ventistål AS"></textarea>
         <input type="file" id="imp-file" accept=".csv,text/csv,text/plain" style="margin:8px 0">
-        <div><button class="btn btn--ghost" id="imp-prev" type="button">${esc(p('importPreview'))}</button></div>
+        <div><button class="btn btn--ghost" id="imp-prev" type="button">${esc(p('importPreview'))}</button> <button class="btn btn--primary" id="imp-tt" type="button">${esc(p('ttImport'))}</button></div>
         <div id="imp-out"></div>
       </div>
       <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="mat-search" type="search" placeholder="${esc(p('searchMaterials'))}" autocomplete="off"></div>
@@ -3522,6 +3558,7 @@ import { hseFormTypes } from '../../../data/ksForms';
     const fileEl = document.getElementById('imp-file') as HTMLInputElement;
     fileEl.addEventListener('change', async () => { const f = fileEl.files && fileEl.files[0]; if (f) (document.getElementById('imp-txt') as HTMLTextAreaElement).value = await f.text(); });
     document.getElementById('imp-prev')!.addEventListener('click', () => previewImport());
+    document.getElementById('imp-tt')!.addEventListener('click', (e) => importTripletexProducts(e.currentTarget as HTMLButtonElement));
     paint();
   }
 
