@@ -1337,10 +1337,9 @@ import { inspectionTemplates } from '../../data/ksInspect';
   // Bruker Tripletex `isStockItem` naar den finnes; ellers navne-heuristikk (arbeidsord = nei).
   const FDV_WORK_RE = /(riving|montering|demontering|arbeid|timepris|\btime[rn]?\b|\brigg\b|frakt|kj[øo]ring|transport|prosjektledelse|prosjektadministrasjon|befaring|oppm[åa]ling|rydding|avfall|kranbil|\blift\b|produksjon|tilpasning|sveising|legging|tekking|dagrigg|mannskap|reise|diett|overtid|kontroll|dokumentasjon)/i;
   function guessFdv(v: any): boolean {
-    if (v.isStockItem === true) return true;
-    if (v.isStockItem === false) return false;
-    if (FDV_WORK_RE.test(v.name || '')) return false;
-    return v.costExcludingVatCurrency != null; // ukjent + har kostpris → sannsynlig materiale
+    if (FDV_WORK_RE.test(v.name || '')) return false;  // arbeid/tjeneste = ikke FDV
+    if (v.isStockItem === true) return true;            // eksplisitt lagervare = fysisk
+    return v.costExcludingVatCurrency != null;          // ellers: materiale hvis kostpris (isStockItem=false hos Dekmar betyr bare «ikke lagerstyrt», ikke «ikke materiale»)
   }
 
   async function importTripletexProducts(btn: HTMLButtonElement) {
