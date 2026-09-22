@@ -7,6 +7,7 @@ import { standardFdv } from '../../../data/ksFdv';
 import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../data/ksSha';
 import { handbooks } from '../../../data/ksHandbooks';
 import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data/ksQuote';
+import { standardMaterials } from '../../../data/ksCalc';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -15,7 +16,7 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
       <p class="portal-loading">Laster …</p>
     </div>
   </div>
-  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter })} />
+  <script type="application/json" id="ks-data" set:html={JSON.stringify({ ui: ksUi, checklist, safetyRound, standardTemplates, standardArticles, standardFdv, sha: { roles: shaRoles, milestones: shaMilestones, specific: shaSpecific, preventive: shaPreventive }, quoteElements: standardQuoteElements, quoteTerms: standardTerms, quoteLetter, materials: standardMaterials })} />
   <script type="application/json" id="ks-handbooks" set:html={JSON.stringify(handbooks)} />
 </KsLayout>
 
@@ -230,6 +231,11 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
   .q-term textarea { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: inherit; min-height: 40px; resize: vertical; }
   .q-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .p-logo { height: 40px; width: auto; }
+  .calc-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin: 6px 0 18px; flex-wrap: wrap; }
+  .calc-tab { background: transparent; border: 0; border-bottom: 2.5px solid transparent; color: var(--muted); font: inherit; font-family: var(--font-head); font-weight: 600; padding: 9px 12px; cursor: pointer; }
+  .calc-tab.is-active { color: var(--ink); border-bottom-color: var(--brand); }
+  .imp-box { border: 1px dashed var(--line); border-radius: 12px; padding: 14px; margin: 8px 0 16px; background: var(--surface); }
+  .imp-box textarea { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font: 13px/1.4 monospace; box-sizing: border-box; }
 </style>
 
 <script>
@@ -253,6 +259,10 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
   const QUOTE_LETTER = KSD.quoteLetter || { signatories: [], company: {} };
   let QUOTE_ELEMENTS: any[] = [];
   let QUOTE_ELEMENTS_SEEDED = false;
+  const STD_MATERIALS = KSD.materials || [];
+  let MATERIALS: any[] = [];
+  let MATERIALS_SEEDED = false;
+  let CALC_TAB = 'calcs';
   let HANDBOOKS: any[] | null = null;
   const getHandbooks = () => { if (!HANDBOOKS) { try { HANDBOOKS = JSON.parse(document.getElementById('ks-handbooks')!.textContent || '[]'); } catch (_e) { HANDBOOKS = []; } } return HANDBOOKS!; };
   let TEMPLATES: any[] = [];
@@ -458,6 +468,45 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
     savedShort: { no: 'Lagret.', pl: 'Zapisano.', en: 'Saved.' },
     cardQuotesDesc: { no: 'Lag pristilbud, send til kunde og arkiver.', pl: 'Twórz oferty, wysyłaj do klienta i archiwizuj.', en: 'Create quotes, send to customer and archive.' },
     cardCustomersDesc: { no: 'Kunderegister med kontaktinfo, søkbart.', pl: 'Rejestr klientów z danymi kontaktowymi, przeszukiwalny.', en: 'Customer register with contacts, searchable.' },
+    // Kalkyle
+    calc: { no: 'Kalkyle', pl: 'Kalkulacja', en: 'Costing' },
+    cardCalcDesc: { no: 'Kalkyler, materialbibliotek m/ prisimport og bestillingslister.', pl: 'Kalkulacje, biblioteka materiałów z importem cen i listy zamówień.', en: 'Costings, material library with price import and order lists.' },
+    tabCalcs: { no: 'Kalkyler', pl: 'Kalkulacje', en: 'Costings' },
+    tabMaterials: { no: 'Materialbibliotek', pl: 'Biblioteka materiałów', en: 'Material library' },
+    tabOrders: { no: 'Bestillingslister', pl: 'Listy zamówień', en: 'Order lists' },
+    newCalc: { no: 'Ny kalkyle', pl: 'Nowa kalkulacja', en: 'New costing' },
+    calcName: { no: 'Kalkylenavn', pl: 'Nazwa kalkulacji', en: 'Costing name' },
+    noCalcs: { no: 'Ingen kalkyler ennå.', pl: 'Brak kalkulacji.', en: 'No costings yet.' },
+    noMaterials: { no: 'Ingen materialer ennå.', pl: 'Brak materiałów.', en: 'No materials yet.' },
+    noOrders: { no: 'Ingen bestillingslister ennå.', pl: 'Brak list zamówień.', en: 'No order lists yet.' },
+    searchMaterials: { no: 'Søk (navn, art.nr, leverandør)', pl: 'Szukaj (nazwa, nr art., dostawca)', en: 'Search (name, art. no, supplier)' },
+    newMaterial: { no: 'Nytt materiale', pl: 'Nowy materiał', en: 'New material' },
+    matName: { no: 'Materiale', pl: 'Materiał', en: 'Material' },
+    matSupplier: { no: 'Leverandør', pl: 'Dostawca', en: 'Supplier' },
+    matArtNo: { no: 'Art.nr', pl: 'Nr art.', en: 'Art. no' },
+    matUnit: { no: 'Enh.', pl: 'Jedn.', en: 'Unit' },
+    matCost: { no: 'Kostpris', pl: 'Koszt', en: 'Cost' },
+    matOrderEmail: { no: 'Bestillings-e-post', pl: 'E-mail zamówień', en: 'Order email' },
+    importPrices: { no: 'Importer priser', pl: 'Importuj ceny', en: 'Import prices' },
+    importHelp: { no: 'Lim inn fra faktura/regneark (CSV eller tabulator). Kolonner: navn, kostpris – valgfritt art.nr, leverandør, enhet. Overskriftsrad oppdages automatisk.', pl: 'Wklej z faktury/arkusza (CSV lub tab). Kolumny: nazwa, koszt – opcjonalnie nr art., dostawca, jednostka.', en: 'Paste from invoice/spreadsheet (CSV or tab). Columns: name, cost – optionally art. no, supplier, unit.' },
+    importPreview: { no: 'Forhåndsvis', pl: 'Podgląd', en: 'Preview' },
+    importApply: { no: 'Importer', pl: 'Importuj', en: 'Import' },
+    addMaterialLine: { no: '+ Materiale', pl: '+ Materiał', en: '+ Material' },
+    addWorkLine: { no: '+ Arbeid', pl: '+ Praca', en: '+ Labour' },
+    colCost: { no: 'Kostpris', pl: 'Koszt', en: 'Cost' },
+    colMarkup: { no: 'Påslag %', pl: 'Narzut %', en: 'Markup %' },
+    colSale: { no: 'Salgspris', pl: 'Cena sprzedaży', en: 'Sale price' },
+    sumCost: { no: 'Sum kostpris', pl: 'Suma kosztów', en: 'Total cost' },
+    sumSale: { no: 'Sum salgspris', pl: 'Suma sprzedaży', en: 'Total sale' },
+    coverage: { no: 'Dekningsbidrag', pl: 'Marża', en: 'Contribution' },
+    makeOrderList: { no: 'Lag bestillingsliste', pl: 'Utwórz listę zamówień', en: 'Create order list' },
+    toQuote: { no: 'Overfør til tilbud', pl: 'Przenieś do oferty', en: 'Transfer to quote' },
+    exportCalcPdf: { no: 'Eksporter kalkyle (PDF)', pl: 'Eksportuj kalkulację (PDF)', en: 'Export costing (PDF)' },
+    orderNote: { no: 'Merknad til leverandør', pl: 'Uwaga dla dostawcy', en: 'Note to supplier' },
+    sendToSupplier: { no: 'Send til leverandør', pl: 'Wyślij do dostawcy', en: 'Send to supplier' },
+    orderNo: { no: 'Bestillingsnr', pl: 'Nr zamówienia', en: 'Order no' },
+    noLinesYet: { no: 'Ingen linjer ennå. Legg til materiale eller arbeid.', pl: 'Brak pozycji. Dodaj materiał lub pracę.', en: 'No lines yet. Add material or labour.' },
+    rowsFound: { no: 'rader funnet', pl: 'wierszy', en: 'rows found' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
     statistics: { no: 'Statistikk', pl: 'Statystyki', en: 'Statistics' },
@@ -575,11 +624,13 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
     chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
     quote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/><path d="M12 9.5v-1"/></svg>',
     customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+    calc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v3M8 18h4"/></svg>',
   };
   const NAV: { id: string; icon: string; label: () => string; run: () => void }[] = [
     { id: 'dashboard', icon: 'dashboard', label: () => p('overview'), run: () => renderDashboard() },
     { id: 'projects', icon: 'projects', label: () => p('projects'), run: () => renderProjects() },
     { id: 'quotes', icon: 'quote', label: () => p('quotes'), run: () => renderQuotes() },
+    { id: 'calc', icon: 'calc', label: () => p('calc'), run: () => renderCalc() },
     { id: 'customers', icon: 'customer', label: () => p('customers'), run: () => renderCustomers() },
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
@@ -848,6 +899,7 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
       <div class="dash-grid">
         ${card('projects', 'projects', p('projects'), p('cardProjectsDesc'))}
         ${card('quotes', 'quote', p('quotes'), p('cardQuotesDesc'))}
+        ${card('calc', 'calc', p('calc'), p('cardCalcDesc'))}
         ${card('customers', 'customer', p('customers'), p('cardCustomersDesc'))}
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
@@ -1087,7 +1139,7 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
 
   // Felles modal: last ned PDF-en ELLER send den paa e-post til HE/prosjekteier.
   // Alle makeXxxPdf-funksjonene ruter sitt sluttresultat gjennom denne.
-  function deliverPdf(doc: any, filename: string, subjectPreset: string): Promise<void> {
+  function deliverPdf(doc: any, filename: string, subjectPreset: string, opts: any = {}): Promise<void> {
     return new Promise((resolve) => {
       const ov = document.createElement('div');
       ov.className = 'pdf-ov';
@@ -1097,7 +1149,7 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
         `<div class="pdf-modal-bd">` +
         `<div class="pdf-modal-file">${esc(filename)}</div>` +
         `<button class="btn btn--ghost" id="pm-dl">${esc(p('downloadPdf'))}</button>` +
-        `<div class="pdf-modal-sep">${esc(p('orSendEmail'))}</div>` +
+        `<div class="pdf-modal-sep">${esc(opts.sendLabel || p('orSendEmail'))}</div>` +
         `<div class="pdf-field"><label for="pm-to">${esc(p('emailTo'))}</label><input id="pm-to" type="email" placeholder="navn@firma.no"><span class="hint">${esc(p('emailToHint'))}</span></div>` +
         `<div class="pdf-field"><label for="pm-cc">${esc(p('emailCc'))}</label><input id="pm-cc" type="text"></div>` +
         `<div class="pdf-field"><label for="pm-sub">${esc(p('emailSubject'))}</label><input id="pm-sub" type="text"></div>` +
@@ -1108,7 +1160,8 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
       document.body.appendChild(ov);
       const q = (id: string) => ov.querySelector('#' + id) as HTMLInputElement;
       (q('pm-sub') as HTMLInputElement).value = subjectPreset || '';
-      (q('pm-msg') as HTMLTextAreaElement).value = p('emailDefaultMsg');
+      (q('pm-msg') as HTMLTextAreaElement).value = opts.messagePreset || p('emailDefaultMsg');
+      if (opts.toPreset) (q('pm-to') as HTMLInputElement).value = opts.toPreset;
       const close = () => { ov.remove(); resolve(); };
       q('pm-x').addEventListener('click', close);
       ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
@@ -2742,6 +2795,350 @@ import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data
     rt('MVA ' + nok(d.vat) + ' %', 'kr ' + nok(vat));
     rt('Sum inkl. mva.', 'kr ' + nok(inc), true);
     await deliverPdf(doc, `Dekmar_Tilbud_${(d.number || '')}_${(d.customer.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Pristilbud ${d.number || ''} – ${d.title || ''}`.trim());
+  }
+
+  // ================= Kalkulasjonsverktøy =================
+  async function seedMaterials() {
+    try {
+      if (!MATERIALS_SEEDED) {
+        const { data: existing } = await supabase.from('calc_materials').select('slug');
+        const have = new Set((existing || []).map((x: any) => x.slug));
+        const missing = STD_MATERIALS.filter((m: any) => !have.has(m.slug));
+        if (missing.length) await supabase.from('calc_materials').insert(missing.map((m: any) => ({ name: m.name, supplier: m.supplier, unit: m.unit, category: m.category, slug: m.slug, sort: m.sort })));
+        MATERIALS_SEEDED = true;
+      }
+    } catch (_e) { /* ignore */ }
+    const { data } = await supabase.from('calc_materials').select('*').order('sort').order('name');
+    MATERIALS = data || [];
+  }
+  const cb = () => document.getElementById('calc-body');
+
+  async function renderCalc() {
+    redraw = renderCalc; await ensureShell('calc');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('calc'))}</h1></div>
+      <div class="calc-tabs">
+        <button class="calc-tab${CALC_TAB === 'calcs' ? ' is-active' : ''}" data-ct="calcs">${esc(p('tabCalcs'))}</button>
+        <button class="calc-tab${CALC_TAB === 'materials' ? ' is-active' : ''}" data-ct="materials">${esc(p('tabMaterials'))}</button>
+        <button class="calc-tab${CALC_TAB === 'orders' ? ' is-active' : ''}" data-ct="orders">${esc(p('tabOrders'))}</button>
+      </div>
+      <div id="calc-body"><p class="portal-loading">…</p></div>`;
+    root.querySelectorAll('[data-ct]').forEach((b) => b.addEventListener('click', () => { CALC_TAB = (b as HTMLElement).dataset.ct!; renderCalc(); }));
+    if (CALC_TAB === 'materials') return renderMaterialsTab();
+    if (CALC_TAB === 'orders') return renderOrdersTab();
+    return renderCalcsTab();
+  }
+
+  // ---------- Fane: Kalkyler ----------
+  async function renderCalcsTab() {
+    const [cRes, projRes, custRes] = await Promise.all([
+      supabase.from('calculations').select('*, projects(name), customers(name)').order('created_at', { ascending: false }),
+      supabase.from('projects').select('id,name,address').order('name'),
+      supabase.from('customers').select('id,name').order('name'),
+    ]);
+    const C = cRes.data || []; const PROJ = projRes.data || []; const CUST = custRes.data || [];
+    const saleOf = (c: any) => (c.lines || []).reduce((s: number, l: any) => s + numv(l.qty) * numv(l.cost) * (1 + numv(l.markup) / 100), 0);
+    const box = cb(); if (!box) return;
+    box.innerHTML = `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn--primary" id="cl-new">${esc(p('newCalc'))}</button></div>
+      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('colDate'))}</th><th>${esc(p('calcName'))}</th><th>${esc(p('colProject'))}</th><th>${esc(p('sumSale'))}</th><th>${esc(t('status'))}</th></tr></thead><tbody id="cl-body">
+        ${C.length ? C.map((c: any) => `<tr data-c="${esc(c.id)}"><td>${esc(fmt(c.created_at))}</td><td>${esc(c.name || '—')}</td><td>${esc(c.projects?.name || '—')}</td><td style="text-align:right">${esc(nok(saleOf(c)))}</td><td><span class="q-badge q-${esc(c.status)}">${esc(qStatusLabel(c.status))}</span></td></tr>`).join('') : `<tr><td colspan="5" class="p-muted">${esc(p('noCalcs'))}</td></tr>`}
+      </tbody></table></div>`;
+    document.getElementById('cl-new')!.addEventListener('click', () => renderCalcEditor(null, PROJ, CUST));
+    box.querySelectorAll('#cl-body [data-c]').forEach((tr) => tr.addEventListener('click', () => renderCalcEditor(C.find((x: any) => x.id === (tr as HTMLElement).dataset.c), PROJ, CUST)));
+  }
+
+  // ---------- Kalkyle-editor ----------
+  async function renderCalcEditor(c: any, PROJ: any[], CUST: any[]) {
+    redraw = () => renderCalcEditor(c, PROJ, CUST);
+    await ensureShell('calc');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    await Promise.all([seedMaterials(), seedQuoteElements()]);
+    const state: any = { id: c?.id || null, name: c?.name || '', project_id: c?.project_id || '', customer_id: c?.customer_id || '', status: c?.status || 'draft', lines: (c?.lines || []).map((l: any) => ({ ...l })) };
+    const projOpts = PROJ.map((pr: any) => `<option value="${esc(pr.id)}"${pr.id === state.project_id ? ' selected' : ''}>${esc(pr.name)}</option>`).join('');
+    const matOpts = (() => { const by: Record<string, any[]> = {}; MATERIALS.forEach((m: any) => { (by[m.category || '—'] = by[m.category || '—'] || []).push(m); }); return Object.keys(by).map((k) => `<optgroup label="${esc(k)}">${by[k].map((m: any) => `<option value="${esc(m.id)}">${esc(m.name)}${m.cost_price != null ? ' – kr ' + nok(m.cost_price) : ''}</option>`).join('')}</optgroup>`).join(''); })();
+    const workOpts = (() => { const by: Record<string, any[]> = {}; QUOTE_ELEMENTS.forEach((e: any) => { (by[e.category] = by[e.category] || []).push(e); }); return Object.keys(by).map((k) => `<optgroup label="${esc(k)}">${by[k].map((e: any) => `<option value="${esc(e.slug)}">${esc(e.spec)} (${esc(e.unit)})</option>`).join('')}</optgroup>`).join(''); })();
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('newCalc'))}</h1><div class="p-user"><button class="btn btn--ghost" id="ce-back">${esc(p('calc'))}</button></div></div>
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('calcName'))}<input id="ce-name" type="text" value="${esc(state.name)}"></label>
+        <label class="p-field">${esc(p('selectProject'))}<select id="ce-proj"><option value="">—</option>${projOpts}</select></label>
+      </div>
+      <div class="p-grid2" style="align-items:end">
+        <label class="p-field">${esc(p('addMaterialLine'))}<select id="ce-mat"><option value="">—</option>${matOpts}</select></label>
+        <label class="p-field">${esc(p('addWorkLine'))}<select id="ce-work"><option value="">—</option>${workOpts}</select></label>
+      </div>
+      <button class="btn btn--ghost" id="ce-blank" type="button" style="margin-bottom:8px">${esc(p('addLine'))}</button>
+      <div class="p-tablewrap"><table class="ql-table"><thead><tr><th class="ql-spec">${esc(p('colSpec'))}</th><th>${esc(p('colUnit'))}</th><th>${esc(p('colQty'))}</th><th>${esc(p('colCost'))}</th><th>${esc(p('colMarkup'))}</th><th style="text-align:right">${esc(p('colSale'))}</th><th></th></tr></thead><tbody id="ce-lines"></tbody></table></div>
+      <div class="ql-totals" id="ce-totals"></div>
+      <div class="q-actions">
+        <button class="btn btn--primary" id="ce-save" type="button">${esc(p('save'))}</button>
+        <button class="btn btn--ghost" id="ce-pdf" type="button">${esc(p('exportCalcPdf'))}</button>
+        <button class="btn btn--ghost" id="ce-order" type="button">${esc(p('makeOrderList'))}</button>
+        <button class="btn btn--ghost" id="ce-toquote" type="button">${esc(p('toQuote'))}</button>
+        ${state.id ? `<button class="btn btn--ghost" id="ce-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>` : ''}
+        <span class="p-muted" id="ce-msg"></span>
+      </div>`;
+    const drawLines = () => {
+      const tb = document.getElementById('ce-lines')!;
+      tb.innerHTML = state.lines.length ? state.lines.map((l: any, i: number) => `
+        <tr>
+          <td class="ql-spec"><input data-i="${i}" data-f="spec" value="${esc(l.spec || '')}"></td>
+          <td><input data-i="${i}" data-f="unit" value="${esc(l.unit || '')}" style="width:52px"></td>
+          <td><input data-i="${i}" data-f="qty" value="${esc(String(l.qty ?? ''))}" style="width:64px" inputmode="decimal"></td>
+          <td><input data-i="${i}" data-f="cost" value="${esc(String(l.cost ?? ''))}" style="width:82px" inputmode="decimal"></td>
+          <td><input data-i="${i}" data-f="markup" value="${esc(String(l.markup ?? ''))}" style="width:56px" inputmode="decimal"></td>
+          <td class="ql-sum">${esc(nok(numv(l.qty) * numv(l.cost) * (1 + numv(l.markup) / 100)))}</td>
+          <td><button class="ql-del" data-del="${i}" type="button">✕</button></td>
+        </tr>`).join('') : `<tr><td colspan="7" class="p-muted">${esc(p('noLinesYet'))}</td></tr>`;
+      tb.querySelectorAll('input[data-i]').forEach((inp) => inp.addEventListener('input', (e) => { const el = e.target as HTMLInputElement; state.lines[+el.dataset.i!][el.dataset.f!] = el.value; drawTotals(); const c2 = el.closest('tr')!.querySelector('.ql-sum'); if (c2) { const l = state.lines[+el.dataset.i!]; c2.textContent = nok(numv(l.qty) * numv(l.cost) * (1 + numv(l.markup) / 100)); } }));
+      tb.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', (e) => { state.lines.splice(+(e.target as HTMLElement).dataset.del!, 1); drawLines(); drawTotals(); }));
+    };
+    const drawTotals = () => {
+      const cost = state.lines.reduce((s: number, l: any) => s + numv(l.qty) * numv(l.cost), 0);
+      const sale = state.lines.reduce((s: number, l: any) => s + numv(l.qty) * numv(l.cost) * (1 + numv(l.markup) / 100), 0);
+      document.getElementById('ce-totals')!.innerHTML = `<div>${esc(p('sumCost'))}: kr ${esc(nok(cost))}</div><div>${esc(p('coverage'))}: kr ${esc(nok(sale - cost))}</div><div class="grand">${esc(p('sumSale'))}: kr ${esc(nok(sale))}</div>`;
+    };
+    document.getElementById('ce-back')!.addEventListener('click', renderCalc);
+    (document.getElementById('ce-mat') as HTMLSelectElement).addEventListener('change', (e) => { const id = (e.target as HTMLSelectElement).value; const m = MATERIALS.find((x: any) => x.id === id); if (m) state.lines.push({ type: 'material', material_id: m.id, spec: m.name, unit: m.unit, qty: 1, cost: m.cost_price != null ? m.cost_price : '', markup: 20, supplier: m.supplier, article_no: m.article_no }); (e.target as HTMLSelectElement).value = ''; drawLines(); drawTotals(); });
+    (document.getElementById('ce-work') as HTMLSelectElement).addEventListener('change', (e) => { const slug = (e.target as HTMLSelectElement).value; const el = QUOTE_ELEMENTS.find((x: any) => x.slug === slug); if (el) state.lines.push({ type: 'arbeid', spec: el.spec, unit: el.unit, qty: 1, cost: el.price, markup: 0 }); (e.target as HTMLSelectElement).value = ''; drawLines(); drawTotals(); });
+    document.getElementById('ce-blank')!.addEventListener('click', () => { state.lines.push({ type: 'fri', spec: '', unit: '', qty: '', cost: '', markup: '' }); drawLines(); });
+    const readTop = () => { state.name = (document.getElementById('ce-name') as HTMLInputElement).value.trim(); state.project_id = (document.getElementById('ce-proj') as HTMLSelectElement).value || null; };
+    const doSave = async () => {
+      readTop(); const msg = document.getElementById('ce-msg')!; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      const payload: any = { name: state.name || null, project_id: state.project_id || null, status: state.status, lines: state.lines };
+      let res; if (state.id) res = await supabase.from('calculations').update(payload).eq('id', state.id).select().single();
+      else { payload.created_by = u.user?.id; res = await supabase.from('calculations').insert(payload).select().single(); }
+      if (res.error) { msg.textContent = res.error.message; return null; }
+      state.id = res.data.id; msg.textContent = p('savedShort'); return res.data;
+    };
+    document.getElementById('ce-save')!.addEventListener('click', doSave);
+    const cdel = document.getElementById('ce-del'); if (cdel) cdel.addEventListener('click', async () => { if (!confirm(state.name || '')) return; await supabase.from('calculations').delete().eq('id', state.id); renderCalc(); });
+    document.getElementById('ce-pdf')!.addEventListener('click', async () => { readTop(); const proj = PROJ.find((x: any) => x.id === state.project_id) || {}; await makeCalcPdf({ name: state.name, projectName: proj.name || '', lines: state.lines }); });
+    document.getElementById('ce-order')!.addEventListener('click', async () => { const saved = await doSave(); if (saved) await createOrdersFromCalc(state, PROJ); });
+    document.getElementById('ce-toquote')!.addEventListener('click', async () => {
+      await doSave();
+      const { data: u } = await supabase.auth.getUser();
+      const qlines = state.lines.filter((l: any) => (l.spec || '').trim()).map((l: any) => ({ spec: l.spec, unit: l.unit, qty: numv(l.qty), price: Math.round(numv(l.cost) * (1 + numv(l.markup) / 100)) }));
+      const { error } = await supabase.from('quotes').insert({ title: state.name || null, project_id: state.project_id || null, customer_id: state.customer_id || null, lines: qlines, terms: STD_QUOTE_TERMS.filter((tm: any) => tm.on).map((tm: any) => tm.text.replace('{rate}', nok(QUOTE_LETTER.hourlyDefault || 850))), vat_rate: 25, valid_days: QUOTE_LETTER.validDaysDefault || 30, hourly_rate: QUOTE_LETTER.hourlyDefault || 850, signatory: (QUOTE_LETTER.signatories[0] || {}).name, status: 'draft', created_by: u.user?.id });
+      const msg = document.getElementById('ce-msg')!;
+      if (error) { msg.textContent = error.message; } else { msg.textContent = p('savedShort'); ACTIVE_NAV = 'quotes'; paintShellChrome(); renderQuotes(); }
+    });
+    drawLines(); drawTotals();
+  }
+
+  async function createOrdersFromCalc(state: any, PROJ: any[]) {
+    const mats = state.lines.filter((l: any) => l.type === 'material' && (l.spec || '').trim());
+    if (!mats.length) { const m = document.getElementById('ce-msg'); if (m) m.textContent = p('noMaterials'); return; }
+    const bySupplier: Record<string, any[]> = {};
+    mats.forEach((l: any) => { const s = l.supplier || '—'; (bySupplier[s] = bySupplier[s] || []).push({ name: l.spec, article_no: l.article_no || '', unit: l.unit || '', qty: numv(l.qty) }); });
+    const { data: u } = await supabase.auth.getUser();
+    const year = new Date().getFullYear();
+    for (const sup of Object.keys(bySupplier)) {
+      const { data: mx } = await supabase.from('purchase_orders').select('number').like('number', `B-${year}-%`).order('number', { ascending: false }).limit(1);
+      let seq = 1; if (mx && mx[0] && mx[0].number) { const mm = String(mx[0].number).match(/B-\d+-(\d+)/); if (mm) seq = (+mm[1]) + 1; }
+      const number = `B-${year}-${String(seq).padStart(3, '0')}`;
+      await supabase.from('purchase_orders').insert({ number, supplier: sup, project_id: state.project_id || null, calc_id: state.id || null, items: bySupplier[sup], status: 'draft', created_by: u.user?.id });
+    }
+    CALC_TAB = 'orders'; renderCalc();
+  }
+
+  // ---------- Fane: Materialbibliotek + prisimport ----------
+  let IMPORT_ROWS: string[][] = [];
+  async function renderMaterialsTab() {
+    await seedMaterials();
+    const box = cb(); if (!box) return;
+    box.innerHTML = `
+      <div class="imp-box">
+        <strong>${esc(p('importPrices'))}</strong>
+        <p class="p-muted" style="margin:4px 0 8px;font-size:.86rem">${esc(p('importHelp'))}</p>
+        <textarea id="imp-txt" placeholder="Katepal Litebase;1250;rull;Ventistål AS"></textarea>
+        <input type="file" id="imp-file" accept=".csv,text/csv,text/plain" style="margin:8px 0">
+        <div><button class="btn btn--ghost" id="imp-prev" type="button">${esc(p('importPreview'))}</button></div>
+        <div id="imp-out"></div>
+      </div>
+      <div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="mat-search" type="search" placeholder="${esc(p('searchMaterials'))}" autocomplete="off"></div>
+      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('matName'))}</th><th>${esc(p('matSupplier'))}</th><th>${esc(p('matArtNo'))}</th><th>${esc(p('matUnit'))}</th><th style="text-align:right">${esc(p('matCost'))}</th></tr></thead><tbody id="mat-body"></tbody></table></div>
+      <details class="p-new" style="margin-top:14px"><summary>${esc(p('newMaterial'))}</summary>
+        <div class="p-grid2"><label class="p-field">${esc(p('matName'))}<input id="nm-name"></label><label class="p-field">${esc(p('matSupplier'))}<input id="nm-sup"></label></div>
+        <div class="p-grid2"><label class="p-field">${esc(p('matArtNo'))}<input id="nm-art"></label><label class="p-field">${esc(p('matUnit'))}<input id="nm-unit"></label></div>
+        <div class="p-grid2"><label class="p-field">${esc(p('matCost'))}<input id="nm-cost" inputmode="decimal"></label><label class="p-field">${esc(p('matOrderEmail'))}<input id="nm-oemail" type="email"></label></div>
+        <button class="btn btn--primary" id="nm-save" type="button">${esc(p('save'))}</button>
+      </details>`;
+    const paint = (q = '') => {
+      const ql = q.trim().toLowerCase();
+      const list = MATERIALS.filter((m: any) => !ql || [m.name, m.article_no, m.supplier].some((v: any) => (v || '').toLowerCase().includes(ql)));
+      document.getElementById('mat-body')!.innerHTML = list.length ? list.map((m: any) => `<tr data-m="${esc(m.id)}"><td>${esc(m.name)}</td><td>${esc(m.supplier || '')}</td><td>${esc(m.article_no || '')}</td><td>${esc(m.unit || '')}</td><td style="text-align:right">${m.cost_price != null ? 'kr ' + esc(nok(m.cost_price)) : '—'}</td></tr>`).join('') : `<tr><td colspan="5" class="p-muted">${esc(p('noMaterials'))}</td></tr>`;
+      document.querySelectorAll('#mat-body [data-m]').forEach((tr) => tr.addEventListener('click', () => editMaterial(MATERIALS.find((m: any) => m.id === (tr as HTMLElement).dataset.m))));
+    };
+    document.getElementById('mat-search')!.addEventListener('input', (e) => paint((e.target as HTMLInputElement).value));
+    document.getElementById('nm-save')!.addEventListener('click', async () => {
+      const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim();
+      if (!v('nm-name')) return; const { data: u } = await supabase.auth.getUser();
+      await supabase.from('calc_materials').insert({ name: v('nm-name'), supplier: v('nm-sup') || null, article_no: v('nm-art') || null, unit: v('nm-unit') || null, cost_price: v('nm-cost') ? numv(v('nm-cost')) : null, order_email: v('nm-oemail') || null, slug: 'm-' + Date.now(), created_by: u.user?.id });
+      MATERIALS_SEEDED = true; renderCalc();
+    });
+    const fileEl = document.getElementById('imp-file') as HTMLInputElement;
+    fileEl.addEventListener('change', async () => { const f = fileEl.files && fileEl.files[0]; if (f) (document.getElementById('imp-txt') as HTMLTextAreaElement).value = await f.text(); });
+    document.getElementById('imp-prev')!.addEventListener('click', () => previewImport());
+    paint();
+  }
+
+  function parseTable(txt: string): string[][] {
+    const lines = txt.replace(/\r/g, '').split('\n').filter((l) => l.trim());
+    return lines.map((l) => (l.indexOf('\t') >= 0 ? l.split('\t') : l.indexOf(';') >= 0 ? l.split(';') : l.split(',')).map((c) => c.replace(/^"|"$/g, '').trim()));
+  }
+  function previewImport() {
+    const txt = (document.getElementById('imp-txt') as HTMLTextAreaElement).value;
+    IMPORT_ROWS = parseTable(txt);
+    const out = document.getElementById('imp-out')!;
+    if (!IMPORT_ROWS.length) { out.innerHTML = `<p class="p-muted">—</p>`; return; }
+    const cols = IMPORT_ROWS[0].length;
+    const roleSel = (i: number) => `<select data-role="${i}"><option value="ignore">–</option><option value="name"${i === 0 ? ' selected' : ''}>${esc(p('matName'))}</option><option value="cost"${i === 1 ? ' selected' : ''}>${esc(p('matCost'))}</option><option value="unit"${i === 2 ? ' selected' : ''}>${esc(p('matUnit'))}</option><option value="supplier"${i === 3 ? ' selected' : ''}>${esc(p('matSupplier'))}</option><option value="art">${esc(p('matArtNo'))}</option></select>`;
+    out.innerHTML = `
+      <p class="p-muted" style="margin:8px 0 4px">${IMPORT_ROWS.length} ${esc(p('rowsFound'))}</p>
+      <div class="p-tablewrap"><table class="p-table"><thead><tr>${Array.from({ length: cols }, (_x, i) => `<th>${roleSel(i)}</th>`).join('')}</tr></thead><tbody>
+        ${IMPORT_ROWS.slice(0, 8).map((r) => `<tr>${Array.from({ length: cols }, (_x, i) => `<td>${esc(r[i] || '')}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div>
+      <label class="p-field" style="margin-top:6px"><span style="font-size:.85rem"><input type="checkbox" id="imp-hdr"> Første rad er overskrift</span></label>
+      <button class="btn btn--primary" id="imp-apply" type="button" style="margin-top:6px">${esc(p('importApply'))}</button>
+      <span class="p-muted" id="imp-msg" style="margin-left:8px"></span>`;
+    document.getElementById('imp-apply')!.addEventListener('click', applyImport);
+  }
+  async function applyImport() {
+    const roles: Record<number, string> = {};
+    document.querySelectorAll('#imp-out [data-role]').forEach((s) => { roles[+(s as HTMLElement).dataset.role!] = (s as HTMLSelectElement).value; });
+    const nameCol = Object.keys(roles).find((k) => roles[+k] === 'name'); const costCol = Object.keys(roles).find((k) => roles[+k] === 'cost');
+    const unitCol = Object.keys(roles).find((k) => roles[+k] === 'unit'); const supCol = Object.keys(roles).find((k) => roles[+k] === 'supplier'); const artCol = Object.keys(roles).find((k) => roles[+k] === 'art');
+    const msg = document.getElementById('imp-msg')!;
+    if (nameCol == null || costCol == null) { msg.textContent = p('matName') + ' + ' + p('matCost'); return; }
+    const hdr = (document.getElementById('imp-hdr') as HTMLInputElement)?.checked;
+    const rows = hdr ? IMPORT_ROWS.slice(1) : IMPORT_ROWS;
+    const byArt: Record<string, any> = {}; const byName: Record<string, any> = {};
+    MATERIALS.forEach((m: any) => { if (m.article_no) byArt[String(m.article_no).toLowerCase()] = m; byName[(m.name || '').toLowerCase()] = m; });
+    let upd = 0, ins = 0; const { data: u } = await supabase.auth.getUser();
+    for (const r of rows) {
+      const name = (r[+nameCol] || '').trim(); const cost = numv(r[+costCol]); if (!name || !cost) continue;
+      const art = artCol != null ? (r[+artCol] || '').trim() : ''; const unit = unitCol != null ? (r[+unitCol] || '').trim() : ''; const sup = supCol != null ? (r[+supCol] || '').trim() : '';
+      const match = (art && byArt[art.toLowerCase()]) || byName[name.toLowerCase()];
+      if (match) { const patch: any = { cost_price: cost }; if (unit) patch.unit = unit; if (sup) patch.supplier = sup; if (art) patch.article_no = art; await supabase.from('calc_materials').update(patch).eq('id', match.id); upd++; }
+      else { await supabase.from('calc_materials').insert({ name, cost_price: cost, unit: unit || null, supplier: sup || null, article_no: art || null, slug: 'm-' + Date.now() + '-' + ins, created_by: u.user?.id }); ins++; }
+    }
+    MATERIALS_SEEDED = true; msg.textContent = `${upd} oppdatert, ${ins} ny`; setTimeout(() => renderCalc(), 900);
+  }
+
+  async function editMaterial(m: any) {
+    if (!m) return; redraw = () => editMaterial(m); await ensureShell('calc');
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(m.name)}</h1><div class="p-user"><button class="btn btn--ghost" id="em-back">${esc(p('calc'))}</button></div></div>
+      <div class="p-grid2"><label class="p-field">${esc(p('matName'))}<input id="em-name" value="${esc(m.name || '')}"></label><label class="p-field">${esc(p('matSupplier'))}<input id="em-sup" value="${esc(m.supplier || '')}"></label></div>
+      <div class="p-grid2"><label class="p-field">${esc(p('matArtNo'))}<input id="em-art" value="${esc(m.article_no || '')}"></label><label class="p-field">${esc(p('matUnit'))}<input id="em-unit" value="${esc(m.unit || '')}"></label></div>
+      <div class="p-grid2"><label class="p-field">${esc(p('matCost'))}<input id="em-cost" inputmode="decimal" value="${esc(m.cost_price != null ? String(m.cost_price) : '')}"></label><label class="p-field">${esc(p('matOrderEmail'))}<input id="em-oemail" type="email" value="${esc(m.order_email || '')}"></label></div>
+      <div class="q-actions"><button class="btn btn--primary" id="em-save">${esc(p('save'))}</button><button class="btn btn--ghost" id="em-del">${esc(p('removeLabel') || 'Slett')}</button></div>`;
+    document.getElementById('em-back')!.addEventListener('click', renderCalc);
+    document.getElementById('em-save')!.addEventListener('click', async () => {
+      const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim();
+      await supabase.from('calc_materials').update({ name: v('em-name'), supplier: v('em-sup') || null, article_no: v('em-art') || null, unit: v('em-unit') || null, cost_price: v('em-cost') ? numv(v('em-cost')) : null, order_email: v('em-oemail') || null }).eq('id', m.id);
+      MATERIALS_SEEDED = true; renderCalc();
+    });
+    document.getElementById('em-del')!.addEventListener('click', async () => { if (!confirm(m.name)) return; await supabase.from('calc_materials').delete().eq('id', m.id); MATERIALS_SEEDED = true; renderCalc(); });
+  }
+
+  // ---------- Fane: Bestillingslister ----------
+  async function renderOrdersTab() {
+    const { data } = await supabase.from('purchase_orders').select('*, projects(name)').order('created_at', { ascending: false });
+    const O = data || []; const box = cb(); if (!box) return;
+    box.innerHTML = `
+      <div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('orderNo'))}</th><th>${esc(p('colDate'))}</th><th>${esc(p('matSupplier'))}</th><th>${esc(p('colProject'))}</th><th>${esc(t('status'))}</th></tr></thead><tbody id="o-body">
+        ${O.length ? O.map((o: any) => `<tr data-o="${esc(o.id)}"><td>${esc(o.number || '—')}</td><td>${esc(fmt(o.created_at))}</td><td>${esc(o.supplier || '')}</td><td>${esc(o.projects?.name || '—')}</td><td><span class="q-badge q-${o.status === 'sent' ? 'sent' : 'draft'}">${esc(o.status === 'sent' ? p('qStatusSent') : p('qStatusDraft'))}</span></td></tr>`).join('') : `<tr><td colspan="5" class="p-muted">${esc(p('noOrders'))}</td></tr>`}
+      </tbody></table></div>`;
+    box.querySelectorAll('#o-body [data-o]').forEach((tr) => tr.addEventListener('click', () => renderOrder(O.find((x: any) => x.id === (tr as HTMLElement).dataset.o))));
+  }
+
+  async function renderOrder(o: any) {
+    if (!o) return; redraw = () => renderOrder(o); await ensureShell('calc');
+    await seedMaterials();
+    const supMat = MATERIALS.find((m: any) => (m.supplier || '') === (o.supplier || '') && m.order_email);
+    const state: any = { items: (o.items || []).map((x: any) => ({ ...x })), note: o.note || '', order_email: o.order_email || (supMat ? supMat.order_email : '') };
+    root.innerHTML = `
+      <div class="p-head"><h1>${esc(p('tabOrders'))} · ${esc(o.number || '')}</h1><div class="p-user"><button class="btn btn--ghost" id="o-back">${esc(p('calc'))}</button></div></div>
+      <p><strong>${esc(p('matSupplier'))}:</strong> ${esc(o.supplier || '')}</p>
+      <div class="p-tablewrap"><table class="ql-table"><thead><tr><th class="ql-spec">${esc(p('matName'))}</th><th>${esc(p('matArtNo'))}</th><th>${esc(p('matUnit'))}</th><th>${esc(p('colQty'))}</th><th></th></tr></thead><tbody id="o-items"></tbody></table></div>
+      <div class="p-grid2"><label class="p-field">${esc(p('matOrderEmail'))}<input id="o-email" type="email" value="${esc(state.order_email)}"></label></div>
+      <label class="p-field">${esc(p('orderNote'))}<textarea id="o-note" rows="2">${esc(state.note)}</textarea></label>
+      <div class="q-actions"><button class="btn btn--primary" id="o-save">${esc(p('save'))}</button><button class="btn btn--ghost" id="o-send">${esc(p('sendToSupplier'))}</button><button class="btn btn--ghost" id="o-del">${esc(p('removeLabel') || 'Slett')}</button></div>`;
+    const drawItems = () => {
+      const tb = document.getElementById('o-items')!;
+      tb.innerHTML = state.items.map((it: any, i: number) => `<tr><td class="ql-spec"><input data-i="${i}" data-f="name" value="${esc(it.name || '')}"></td><td><input data-i="${i}" data-f="article_no" value="${esc(it.article_no || '')}" style="width:90px"></td><td><input data-i="${i}" data-f="unit" value="${esc(it.unit || '')}" style="width:52px"></td><td><input data-i="${i}" data-f="qty" value="${esc(String(it.qty ?? ''))}" style="width:64px" inputmode="decimal"></td><td><button class="ql-del" data-del="${i}" type="button">✕</button></td></tr>`).join('') || `<tr><td colspan="5" class="p-muted">—</td></tr>`;
+      tb.querySelectorAll('input[data-i]').forEach((inp) => inp.addEventListener('input', (e) => { const el = e.target as HTMLInputElement; state.items[+el.dataset.i!][el.dataset.f!] = el.value; }));
+      tb.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', (e) => { state.items.splice(+(e.target as HTMLElement).dataset.del!, 1); drawItems(); }));
+    };
+    const collect = () => ({ items: state.items.map((it: any) => ({ name: it.name, article_no: it.article_no, unit: it.unit, qty: numv(it.qty) })), note: (document.getElementById('o-note') as HTMLTextAreaElement).value, order_email: (document.getElementById('o-email') as HTMLInputElement).value.trim() });
+    document.getElementById('o-back')!.addEventListener('click', renderCalc);
+    document.getElementById('o-save')!.addEventListener('click', async () => { await supabase.from('purchase_orders').update(collect()).eq('id', o.id); renderCalc(); });
+    document.getElementById('o-del')!.addEventListener('click', async () => { if (!confirm(o.number || '')) return; await supabase.from('purchase_orders').delete().eq('id', o.id); renderCalc(); });
+    document.getElementById('o-send')!.addEventListener('click', async () => {
+      const c = collect(); await supabase.from('purchase_orders').update({ ...c, status: 'sent', sent_at: new Date().toISOString() }).eq('id', o.id);
+      const doc = await makeOrderPdf({ number: o.number, supplier: o.supplier, items: c.items, note: c.note });
+      await deliverPdf(doc, `Dekmar_Bestilling_${(o.number || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Bestilling ${o.number || ''} – Dekmar AS`, { sendLabel: p('sendToSupplier'), toPreset: c.order_email, messagePreset: 'Hei,\n\nVennligst se vedlagte bestilling fra Dekmar AS. Ta kontakt ved spørsmål om leveringstid.\n\nMed vennlig hilsen\nDekmar AS' });
+    });
+    drawItems();
+  }
+
+  async function makeCalcPdf(d: any) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo();
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text('Kalkyle', margin + 26, y + 8);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104); doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text((d.name || '') + (d.projectName ? '  ·  ' + d.projectName : ''), margin, y); y += 8;
+    const cx = { spec: margin, unit: margin + 96, qty: margin + 112, cost: margin + 132, sale: margin + maxW };
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+    doc.text(p('colSpec'), cx.spec, y); doc.text(p('colUnit'), cx.unit, y); doc.text(p('colQty'), cx.qty, y); doc.text(p('colCost'), cx.cost, y); doc.text(p('colSale'), cx.sale, y, { align: 'right' } as any);
+    y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+    let cost = 0, sale = 0;
+    d.lines.forEach((l: any) => {
+      const s = numv(l.qty) * numv(l.cost) * (1 + numv(l.markup) / 100); cost += numv(l.qty) * numv(l.cost); sale += s;
+      const sl = doc.splitTextToSize(l.spec || '', 92); const rowH = Math.max(sl.length * 4.2, 6);
+      if (y + rowH > 280) { doc.addPage(); y = margin; }
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(9);
+      sl.forEach((x: string, k: number) => doc.text(x, cx.spec, y + k * 4.2));
+      doc.text(String(l.unit || ''), cx.unit, y); doc.text(nok(numv(l.qty)), cx.qty, y); doc.text(nok(numv(l.cost)), cx.cost, y); doc.text(nok(s), cx.sale, y, { align: 'right' } as any);
+      y += rowH + 2;
+    });
+    y += 2; doc.setDrawColor(20, 23, 28); doc.line(margin + 96, y, margin + maxW, y); y += 6;
+    const rt = (l: string, v: string, b = false) => { doc.setFont('DejaVu', b ? 'bold' : 'normal'); doc.setFontSize(b ? 11 : 10); doc.text(l, margin + 98, y); doc.text(v, cx.sale, y, { align: 'right' } as any); y += 6; };
+    rt(p('sumCost'), 'kr ' + nok(cost)); rt(p('coverage'), 'kr ' + nok(sale - cost)); rt(p('sumSale'), 'kr ' + nok(sale), true);
+    await deliverPdf(doc, `Dekmar_Kalkyle_${(d.name || '')}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Kalkyle – ${d.name || ''}`);
+  }
+
+  async function makeOrderPdf(d: any) {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc); const logo = await ensureLogo(); const co = QUOTE_LETTER.company || {};
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    if (logo) { try { doc.addImage(logo, 'PNG', margin, y, 20, 20); } catch (_e) { /* */ } }
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(15); doc.setTextColor(20, 23, 28); doc.text('Bestilling', margin + 26, y + 8);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 96, 104);
+    doc.text('Oslo ' + fmt(new Date().toISOString()), pageW - margin, y + 6, { align: 'right' } as any);
+    if (d.number) doc.text('Bestillingsnr ' + d.number, pageW - margin, y + 11, { align: 'right' } as any);
+    y += 26; doc.setTextColor(20, 23, 28);
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(11); doc.text('Leverandør: ' + (d.supplier || ''), margin, y); y += 8;
+    const cx = { name: margin, art: margin + 104, unit: margin + 140, qty: margin + maxW };
+    doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
+    doc.text(p('matName'), cx.name, y); doc.text(p('matArtNo'), cx.art, y); doc.text(p('matUnit'), cx.unit, y); doc.text(p('colQty'), cx.qty, y, { align: 'right' } as any);
+    y += 2; doc.setDrawColor(210); doc.line(margin, y, margin + maxW, y); y += 4; doc.setTextColor(20, 23, 28);
+    d.items.forEach((it: any) => {
+      const sl = doc.splitTextToSize(it.name || '', 88); const rowH = Math.max(sl.length * 4.2, 6);
+      if (y + rowH > 280) { doc.addPage(); y = margin; }
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(9);
+      sl.forEach((x: string, k: number) => doc.text(x, cx.name, y + k * 4.2));
+      doc.text(String(it.article_no || ''), cx.art, y); doc.text(String(it.unit || ''), cx.unit, y); doc.text(nok(numv(it.qty)), cx.qty, y, { align: 'right' } as any);
+      y += rowH + 2;
+    });
+    if (d.note) { y += 4; doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.text(p('orderNote') + ':', margin, y); y += 5; doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.splitTextToSize(d.note, maxW).forEach((x: string) => { doc.text(x, margin, y); y += 5; }); }
+    y += 6; doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5); doc.text('Leveringsadresse avtales. Bestilt av ' + (co.name || 'Dekmar AS') + ', ' + (co.address || '') + '.', margin, y);
+    return doc;
   }
 
   route();
