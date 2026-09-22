@@ -58,7 +58,7 @@ import { hseFormTypes } from '../../../data/ksForms';
   .pdf-field { display: flex; flex-direction: column; gap: 5px; }
   .pdf-field label { font-family: var(--font-head); font-weight: 600; font-size: .84rem; }
   .pdf-field input, .pdf-field textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font: inherit; box-sizing: border-box; }
-  .pdf-field textarea { min-height: 78px; resize: vertical; }
+  .pdf-field textarea { min-height: 150px; resize: vertical; }
   .pdf-field .hint { font-size: .76rem; color: var(--muted); }
   .pdf-modal-msg { font-size: .86rem; min-height: 1.2em; }
   .pdf-modal-msg.ok { color: #1a7f37; }
@@ -156,6 +156,8 @@ import { hseFormTypes } from '../../../data/ksForms';
   .p-thumbs { display: grid; grid-template-columns: repeat(auto-fill,minmax(84px,1fr)); gap: 8px; margin-top: 10px; }
   .p-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); position: relative; }
   .p-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .p-thumb-del { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border: 0; border-radius: 50%; background: rgba(20,23,28,.75); color: #fff; font-size: .8rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .p-thumb-del:hover { background: var(--brand); }
   .p-section { margin-top: 30px; }
   .p-section > h2 { font-size: 1.25rem; }
   details.p-new { border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
@@ -1061,9 +1063,9 @@ import { hseFormTypes } from '../../../data/ksForms';
             </label>
           </div>
           <label class="p-field">${esc(t('location'))}<input id="d-loc" type="text"></label>
-          <label class="p-field">${esc(t('description'))}<textarea id="d-desc" rows="2"></textarea></label>
-          <label class="p-field">${esc(t('correction'))}<textarea id="d-corr" rows="2"></textarea></label>
-          <label class="p-field">${esc(p('devImprovement'))}<textarea id="d-improve" rows="2"></textarea></label>
+          <label class="p-field">${esc(t('description'))}<textarea id="d-desc" rows="6"></textarea></label>
+          <label class="p-field">${esc(t('correction'))}<textarea id="d-corr" rows="3"></textarea></label>
+          <label class="p-field">${esc(p('devImprovement'))}<textarea id="d-improve" rows="3"></textarea></label>
           <label class="p-field">${esc(t('photos'))}
             <input id="d-photos" type="file" accept="image/*" capture="environment" multiple>
           </label>
@@ -1073,9 +1075,9 @@ import { hseFormTypes } from '../../../data/ksForms';
             <label class="p-field">${esc(t('responsible'))}<input id="d-resp" type="text" list="d-resp-list"><datalist id="d-resp-list">${respOptsDev}</datalist></label>
             <label class="p-field">${esc(p('dueDate'))}<input id="d-due" type="date"></label>
           </div>
-          <label class="p-field">${esc(t('cause'))}<textarea id="d-cause" rows="2"></textarea></label>
-          <label class="p-field">${esc(p('devPreventive'))}<textarea id="d-prevent" rows="2"></textarea></label>
-          <label class="p-field">${esc(t('verification'))}<textarea id="d-verif" rows="2"></textarea></label>
+          <label class="p-field">${esc(t('cause'))}<textarea id="d-cause" rows="3"></textarea></label>
+          <label class="p-field">${esc(p('devPreventive'))}<textarea id="d-prevent" rows="3"></textarea></label>
+          <label class="p-field">${esc(t('verification'))}<textarea id="d-verif" rows="3"></textarea></label>
           <div class="p-grid2">
             <label class="p-field">${esc(t('status'))}
               <select id="d-status"><option value="open">${esc(t('statusOpen'))}</option><option value="in_progress">${esc(p('statusInProgress'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
@@ -1344,12 +1346,86 @@ import { hseFormTypes } from '../../../data/ksForms';
       openProject(projectId);
     });
 
-    // Klikk på et eksisterende avvik → lag PDF
+    // Klikk på et eksisterende avvik → åpne for redigering (inkl. bilder)
     root.querySelectorAll('.p-item[data-dev]').forEach((el) =>
       el.addEventListener('click', () => {
         const d = existing.find((x) => x.id === (el as HTMLElement).dataset.dev);
-        if (d) makeDeviationPdf(d);
+        if (d) openDeviationEditor(d, projectId);
       }));
+  }
+
+  // Rediger et eksisterende avvik – alle felt + bildehåndtering + PDF
+  async function openDeviationEditor(d: any, projectId: string) {
+    redraw = () => openDeviationEditor(d, projectId);
+    await ensureShell('projects');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    await ensureDevConfig();
+    let existingPhotos: any[] = [];
+    const { data: ph } = await supabase.from('photos').select('*').eq('deviation_id', d.id);
+    existingPhotos = ph || [];
+    for (const x of existingPhotos) { const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(x.storage_path, 3600); x.__url = s?.signedUrl || ''; }
+    const pending: { blob: Blob; dataUrl: string }[] = [];
+    const catOpts = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}"${c.name === d.category ? ' selected' : ''}>${esc(devCatLabel(c.name))}</option>`).join('');
+    const respOpts = DEV_RESP.map((r: any) => `<option value="${esc(r.name)}">`).join('');
+    const sevOpt = (v: string, l: string) => `<option value="${v}"${d.severity === v ? ' selected' : ''}>${esc(l)}</option>`;
+    const stOpt = (v: string, l: string) => `<option value="${v}"${(d.status || 'open') === v ? ' selected' : ''}>${esc(l)}</option>`;
+    const ta = (id: string, label: string, val: string, rows = 3) => `<label class="p-field">${esc(label)}<textarea id="${id}" rows="${rows}">${esc(val || '')}</textarea></label>`;
+    const inp = (id: string, label: string, val: string, type = 'text') => `<label class="p-field">${esc(label)}<input id="${id}" type="${type}" value="${esc(val || '')}"></label>`;
+    root.innerHTML = `
+      <button class="btn btn--ghost" id="de-back" style="margin-bottom:16px">${esc(p('back'))}</button>
+      <div class="p-card"><h1 style="margin:0 0 4px">${esc(t('deviation'))} ${esc(d.number || '')}</h1><p class="p-muted">${esc(CURRENT_PROJECT?.name || '')}</p></div>
+      <div class="p-section">
+        <p class="p-subhead" style="margin-top:0">${esc(p('devSecReporter'))}</p>
+        <div class="p-grid2">${inp('de-no', t('devNo'), d.number)}${inp('de-date', t('date'), d.dev_date, 'date')}</div>
+        ${inp('de-reporter', p('devReporter'), d.reporter)}
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('devCategory'))}<select id="de-cat"><option value="">${esc(p('none'))}</option>${catOpts}</select></label>
+          <label class="p-field">${esc(p('severity'))}<select id="de-sev"><option value="">${esc(p('none'))}</option>${sevOpt('lav', p('sevLow'))}${sevOpt('middels', p('sevMed'))}${sevOpt('hoy', p('sevHigh'))}</select></label>
+        </div>
+        ${inp('de-loc', t('location'), d.location)}
+        ${ta('de-desc', t('description'), d.description, 6)}
+        ${ta('de-corr', t('correction'), d.correction)}
+        ${ta('de-improve', p('devImprovement'), d.improvement)}
+        <label class="p-field">${esc(t('photos'))}<input id="de-photos" type="file" accept="image/*" capture="environment" multiple></label>
+        <div class="p-thumbs" id="de-thumbs"></div>
+        <p class="p-subhead">${esc(p('devSecHandler'))}</p>
+        <div class="p-grid2"><label class="p-field">${esc(t('responsible'))}<input id="de-resp" type="text" list="de-resp-list" value="${esc(d.responsible || '')}"><datalist id="de-resp-list">${respOpts}</datalist></label>${inp('de-due', p('dueDate'), d.due_date, 'date')}</div>
+        ${ta('de-cause', t('cause'), d.cause)}
+        ${ta('de-prevent', p('devPreventive'), d.preventive)}
+        ${ta('de-verif', t('verification'), d.verification)}
+        <div class="p-grid2">
+          <label class="p-field">${esc(t('status'))}<select id="de-status">${stOpt('open', t('statusOpen'))}${stOpt('in_progress', p('statusInProgress'))}${stOpt('closed', t('statusClosed'))}</select></label>
+          ${inp('de-informed', p('devReporterInformed'), d.reporter_informed, 'date')}
+        </div>
+        <div class="q-actions">
+          <button class="btn btn--primary" id="de-save" type="button">${esc(p('save'))}</button>
+          <button class="btn btn--ghost" id="de-pdf" type="button">${esc(p('quotePreviewSend'))}</button>
+          <button class="btn btn--ghost" id="de-del" type="button">${esc(p('removeLabel') || 'Slett')}</button>
+          <span class="p-muted" id="de-msg"></span>
+        </div>
+      </div>`;
+    const drawThumbs = () => {
+      document.getElementById('de-thumbs')!.innerHTML = existingPhotos.map((x: any) => `<div class="p-thumb"><img src="${esc(x.__url || '')}"><button class="p-thumb-del" data-pdel="${esc(x.id)}" type="button">✕</button></div>`).join('') + pending.map((x, i) => `<div class="p-thumb"><img src="${x.dataUrl}"><button class="p-thumb-del" data-pend="${i}" type="button">✕</button></div>`).join('');
+      document.querySelectorAll('#de-thumbs [data-pend]').forEach((b) => b.addEventListener('click', (e) => { pending.splice(+(e.target as HTMLElement).dataset.pend!, 1); drawThumbs(); }));
+      document.querySelectorAll('#de-thumbs [data-pdel]').forEach((b) => b.addEventListener('click', async (e) => { const id = (e.target as HTMLElement).dataset.pdel!; const x = existingPhotos.find((z: any) => z.id === id); if (x) { await supabase.storage.from(KS_PHOTO_BUCKET).remove([x.storage_path]); await supabase.from('photos').delete().eq('id', id); existingPhotos = existingPhotos.filter((z: any) => z.id !== id); drawThumbs(); } }));
+    };
+    (document.getElementById('de-photos') as HTMLInputElement).addEventListener('change', async (e) => { const el = e.target as HTMLInputElement; for (const f of Array.from(el.files || [])) { const s = await shrink(f); pending.push(s); } el.value = ''; drawThumbs(); });
+    document.getElementById('de-back')!.addEventListener('click', () => openProject(projectId));
+    const val = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim() || null;
+    const collect = () => { const statusVal = (document.getElementById('de-status') as HTMLSelectElement).value; return { number: val('de-no'), dev_date: val('de-date'), reporter: val('de-reporter'), category: (document.getElementById('de-cat') as HTMLSelectElement).value || null, severity: (document.getElementById('de-sev') as HTMLSelectElement).value || null, location: val('de-loc'), description: val('de-desc'), correction: val('de-corr'), improvement: val('de-improve'), responsible: val('de-resp'), due_date: val('de-due'), cause: val('de-cause'), preventive: val('de-prevent'), verification: val('de-verif'), status: statusVal, reporter_informed: val('de-informed'), closed_at: statusVal === 'closed' ? (d.closed_at || new Date().toISOString()) : null }; };
+    const doSave = async () => {
+      const msg = document.getElementById('de-msg')!; msg.textContent = p('saving');
+      const patch = collect(); Object.assign(d, patch);
+      const { error } = await supabase.from('deviations').update(patch).eq('id', d.id);
+      if (error) { msg.textContent = error.message; return false; }
+      const { data: u } = await supabase.auth.getUser();
+      if (pending.length) { msg.textContent = p('uploading'); for (const phn of pending) { const path = `${projectId}/${d.id}/${crypto.randomUUID()}.jpg`; const up = await supabase.storage.from(KS_PHOTO_BUCKET).upload(path, phn.blob, { contentType: 'image/jpeg' }); if (!up.error) { const ins = await supabase.from('photos').insert({ project_id: projectId, deviation_id: d.id, storage_path: path, created_by: u.user?.id }).select().single(); const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(path, 3600); if (ins.data) existingPhotos.push({ ...ins.data, __url: s?.signedUrl || '' }); } } pending.length = 0; drawThumbs(); }
+      msg.textContent = p('savedShort'); return true;
+    };
+    document.getElementById('de-save')!.addEventListener('click', doSave);
+    document.getElementById('de-pdf')!.addEventListener('click', async () => { await doSave(); await makeDeviationPdf(d); });
+    document.getElementById('de-del')!.addEventListener('click', async () => { if (!confirm((d.number || '') + '')) return; await supabase.from('deviations').delete().eq('id', d.id); openProject(projectId); });
+    drawThumbs();
   }
 
   // Bygg inn en Unicode-font (DejaVu Sans) i PDF-ene så æøå og polske tegn (ł/ś/ż osv.) vises riktig.
