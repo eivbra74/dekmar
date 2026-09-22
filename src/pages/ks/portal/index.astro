@@ -1214,6 +1214,26 @@ import { hseFormTypes } from '../../../data/ksForms';
   }
   const langName = (t: string) => (t === 'PL' ? 'PL' : 'EN');
 
+  // Oversett et opplastet dokument (Word/PDF/txt) via DeepL dokument-API og last ned resultatet.
+  async function translateDoc(r: any, target: string, btn?: HTMLButtonElement) {
+    const orig = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-doc', { body: { path: r.storage_path, bucket: 'ks-docs', filename: r.file_name || 'dokument', target } });
+      let errMsg = error ? (error.message || 'error') : ((data && (data as any).error) || '');
+      if (error && (error as any).context && typeof (error as any).context.json === 'function') { try { const b = await (error as any).context.json(); if (b && b.error) errMsg = b.error; } catch (_e) { /* */ } }
+      if (errMsg) throw new Error(errMsg);
+      const bin = atob((data as any).fileBase64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: (data as any).contentType || 'application/octet-stream' });
+      const dlUrl = URL.createObjectURL(blob);
+      const name = (r.file_name || 'dokument').replace(/(\.[^.]+)$/, '_' + langName(target) + '$1');
+      const a = document.createElement('a'); a.href = dlUrl; a.download = /_(EN|PL)\./.test(name) ? name : name + '_' + langName(target);
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(dlUrl), 5000);
+    } catch (e: any) {
+      alert(p('translateFail') + ' ' + (e.message || ''));
+    } finally { if (btn) { btn.disabled = false; btn.textContent = orig; } }
+  }
+
   // Felles modal: last ned PDF-en ELLER send den paa e-post til HE/prosjekteier.
   // Alle makeXxxPdf-funksjonene ruter sitt sluttresultat gjennom denne.
   function deliverPdf(doc: any, filename: string, subjectPreset: string, opts: any = {}): Promise<void> {
@@ -2606,10 +2626,13 @@ import { hseFormTypes } from '../../../data/ksForms';
         <tr data-doc="${esc(r.id)}">
           <td>${esc(fmt(r.created_at))}</td><td>${esc(r.title)}</td><td>${esc(catLabel(r.category))}</td>
           <td>${esc(r.projects?.name || '—')}</td><td>${esc((window as any).__docNames[r.uploaded_by] || '')}</td>
-          <td><span class="p-muted">${esc(p('download'))} ↓</span></td>
+          <td style="white-space:nowrap"><button class="btn btn--ghost p-sm" data-tren="${esc(r.id)}" title="${esc(p('pdfEn'))}">EN</button> <button class="btn btn--ghost p-sm" data-trpl="${esc(r.id)}" title="${esc(p('pdfPl'))}">PL</button> <span class="p-muted">${esc(p('download'))} ↓</span></td>
         </tr>`).join('') : `<tr><td colspan="6" class="p-muted">${esc(((window as any).__docs as any[]).length ? p('noResults') : p('noDocuments'))}</td></tr>`;
+      const findDoc = (id: string) => ((window as any).__docs as any[]).find((x) => x.id === id);
+      tbody.querySelectorAll('[data-tren]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); translateDoc(findDoc((b as HTMLElement).dataset.tren!), 'EN', b as HTMLButtonElement); }));
+      tbody.querySelectorAll('[data-trpl]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); translateDoc(findDoc((b as HTMLElement).dataset.trpl!), 'PL', b as HTMLButtonElement); }));
       tbody.querySelectorAll('tr[data-doc]').forEach((tr) => tr.addEventListener('click', async () => {
-        const r = ((window as any).__docs as any[]).find((x) => x.id === (tr as HTMLElement).dataset.doc);
+        const r = findDoc((tr as HTMLElement).dataset.doc!);
         if (!r) return;
         const { data: signed } = await supabase.storage.from('ks-docs').createSignedUrl(r.storage_path, 120, { download: r.file_name || true });
         if (signed?.signedUrl) window.open(signed.signedUrl, '_blank');
