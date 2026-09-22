@@ -1,14 +1,14 @@
 ---
-import KsLayout from '../../../layouts/KsLayout.astro';
-import { ksUi, checklist, safetyRound } from '../../../data/ks';
-import { standardTemplates } from '../../../data/ksTemplates';
-import { standardArticles } from '../../../data/ksArticles';
-import { standardFdv } from '../../../data/ksFdv';
-import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../../data/ksSha';
-import { handbooks } from '../../../data/ksHandbooks';
-import { standardQuoteElements, standardTerms, quoteLetter } from '../../../data/ksQuote';
-import { standardMaterials } from '../../../data/ksCalc';
-import { hseFormTypes } from '../../../data/ksForms';
+import KsLayout from '../../layouts/KsLayout.astro';
+import { ksUi, checklist, safetyRound } from '../../data/ks';
+import { standardTemplates } from '../../data/ksTemplates';
+import { standardArticles } from '../../data/ksArticles';
+import { standardFdv } from '../../data/ksFdv';
+import { shaRoles, shaMilestones, shaSpecific, shaPreventive } from '../../data/ksSha';
+import { handbooks } from '../../data/ksHandbooks';
+import { standardQuoteElements, standardTerms, quoteLetter } from '../../data/ksQuote';
+import { standardMaterials } from '../../data/ksCalc';
+import { hseFormTypes } from '../../data/ksForms';
 ---
 
 <KsLayout active="portal" title="Portal">
@@ -243,7 +243,7 @@ import { hseFormTypes } from '../../../data/ksForms';
 </style>
 
 <script>
-  import { supabase, KS_PHOTO_BUCKET } from '../../../lib/ksSupabase';
+  import { supabase, KS_PHOTO_BUCKET } from '../../lib/ksSupabase';
   import { jsPDF } from 'jspdf';
 
   const KSD = JSON.parse(document.getElementById('ks-data')!.textContent || '{}');
@@ -880,7 +880,7 @@ import { hseFormTypes } from '../../../data/ksForms';
       const btn = f.querySelector('button')!; btn.setAttribute('disabled', 'true');
       const { error } = await supabase.auth.updateUser({ password: pass });
       if (error) { err.textContent = error.message; err.hidden = false; btn.removeAttribute('disabled'); return; }
-      history.replaceState(null, '', '/ks/portal/');
+      history.replaceState(null, '', '/portal/');
       renderProjects();
     });
   }
@@ -2485,7 +2485,7 @@ import { hseFormTypes } from '../../../data/ksForms';
         dev.responsible ? `Ansvarlig: ${dev.responsible}` : null,
         dev.due_date ? `Frist: ${dev.due_date}` : null,
       ].filter(Boolean).join('\n');
-      const body = `Det er registrert et nytt avvik i Dekmars HMS- og KS-system.\n\n${meta}\n\nBeskrivelse:\n${dev.description || '—'}\n\nLogg inn i portalen for full rapport: https://dekmar.no/ks/portal/`;
+      const body = `Det er registrert et nytt avvik i Dekmars HMS- og KS-system.\n\n${meta}\n\nBeskrivelse:\n${dev.description || '—'}\n\nLogg inn i portalen for full rapport: https://dekmar.no/portal/`;
       await supabase.functions.invoke('send-report', { body: { to: cfg.emails, subject, message: body } });
     } catch (_e) { /* varsling skal aldri blokkere lagring */ }
   }

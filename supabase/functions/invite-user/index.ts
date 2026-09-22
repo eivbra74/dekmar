@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
   if (!email) return json({ error: 'email required' }, 400);
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: 'https://dekmar.no/ks/portal/?setpw=1',
+    redirectTo: 'https://dekmar.no/portal/?setpw=1',
   });
   if (error) return json({ error: error.message }, 400);
   return json({ ok: true });

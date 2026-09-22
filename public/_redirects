@@ -1,0 +1,4 @@
+# Portalen flyttet fra /ks/portal/ til /portal/ (inneholder mer enn KS).
+# Beholder gamle bokmerker og allerede utsendte invitasjons-/passordlenker.
+/ks/portal/*   /portal/:splat   301
+/ks/portal     /portal/         301
