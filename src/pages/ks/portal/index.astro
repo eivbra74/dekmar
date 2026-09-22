@@ -41,6 +41,7 @@ import { handbooks } from '../../../data/ksHandbooks';
   .app-body { min-width: 0; }
   .app-topbar { display: none; }
   .app-main { min-width: 0; }
+  .p-subhead { font-family: var(--font-head); font-weight: 700; font-size: .9rem; margin: 18px 0 8px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--ink); }
   /* PDF-lever / send-modal */
   .pdf-ov { position: fixed; inset: 0; z-index: 200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
   .pdf-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 520px; max-height: calc(100vh - 40px); overflow: auto; box-shadow: 0 24px 60px rgba(10,12,16,.3); }
@@ -370,6 +371,14 @@ import { handbooks } from '../../../data/ksHandbooks';
     sevHigh: { no: 'Høy', pl: 'Wysoki', en: 'High' },
     dueDate: { no: 'Frist', pl: 'Termin', en: 'Due date' },
     statusInProgress: { no: 'Under arbeid', pl: 'W toku', en: 'In progress' },
+    devSecReporter: { no: 'Melding – fylles ut av avviksmelder', pl: 'Zgłoszenie – wypełnia zgłaszający', en: 'Report – completed by the reporter' },
+    devSecHandler: { no: 'Behandling – fylles ut av avviksansvarlig', pl: 'Obsługa – wypełnia odpowiedzialny', en: 'Handling – completed by the person responsible' },
+    devIntro: { no: 'Avvikshåndtering iht. Internkontrollforskriften § 5. Et HMS-avvik kan være en uønsket hendelse, brudd på en prosedyre, et sikkerhetsproblem, en skade, en ulykke, en nestenulykke eller en miljøforurensning.', pl: 'Obsługa niezgodności zgodnie z § 5 rozporządzenia o kontroli wewnętrznej. Niezgodność BHP może być zdarzeniem niepożądanym, naruszeniem procedury, problemem bezpieczeństwa, szkodą, wypadkiem, zdarzeniem potencjalnie wypadkowym lub zanieczyszczeniem środowiska.', en: 'Deviation handling per the Internal Control Regulation § 5. An HSE deviation can be an unwanted incident, a breach of a procedure, a safety problem, an injury, an accident, a near miss or environmental pollution.' },
+    devReporter: { no: 'Avviksmelder', pl: 'Zgłaszający', en: 'Reported by' },
+    devImprovement: { no: 'Forslag til forbedring', pl: 'Propozycja usprawnienia', en: 'Improvement suggestion' },
+    devPreventive: { no: 'Forebyggende tiltak (hindre gjentakelse)', pl: 'Działania zapobiegawcze (zapobieganie powtórzeniu)', en: 'Preventive measures (prevent recurrence)' },
+    devReporterInformed: { no: 'Avviksmelder informert (dato)', pl: 'Zgłaszający poinformowany (data)', en: 'Reporter informed (date)' },
+    devClosedDate: { no: 'Avviket lukket (dato)', pl: 'Niezgodność zamknięta (data)', en: 'Deviation closed (date)' },
     deviationCenter: { no: 'Avvik', pl: 'Niezgodności', en: 'Deviations' },
     deviationsAll: { no: 'Alle avvik', pl: 'Wszystkie niezgodności', en: 'All deviations' },
     statistics: { no: 'Statistikk', pl: 'Statystyki', en: 'Statistics' },
@@ -850,10 +859,13 @@ import { handbooks } from '../../../data/ksHandbooks';
         ${devRows ? `<ul class="p-list">${devRows}</ul>` : `<p class="p-muted">${esc(p('noDeviations'))}</p>`}
         <details class="p-new" id="nd">
           <summary>${esc(p('newDeviation'))}</summary>
+          <p class="p-muted" style="margin:8px 0 2px;font-size:.82rem">${esc(p('devIntro'))}</p>
+          <p class="p-subhead">${esc(p('devSecReporter'))}</p>
           <div class="p-grid2">
             <label class="p-field">${esc(t('devNo'))}<input id="d-no" type="text"></label>
             <label class="p-field">${esc(t('date'))}<input id="d-date" type="date"></label>
           </div>
+          <label class="p-field">${esc(p('devReporter'))}<input id="d-reporter" type="text"></label>
           <div class="p-grid2">
             <label class="p-field">${esc(p('devCategory'))}
               <select id="d-cat"><option value="">${esc(p('none'))}</option>${catOptsDev}</select>
@@ -864,20 +876,26 @@ import { handbooks } from '../../../data/ksHandbooks';
           </div>
           <label class="p-field">${esc(t('location'))}<input id="d-loc" type="text"></label>
           <label class="p-field">${esc(t('description'))}<textarea id="d-desc" rows="2"></textarea></label>
-          <label class="p-field">${esc(t('cause'))}<textarea id="d-cause" rows="2"></textarea></label>
           <label class="p-field">${esc(t('correction'))}<textarea id="d-corr" rows="2"></textarea></label>
-          <label class="p-field">${esc(t('verification'))}<textarea id="d-verif" rows="2"></textarea></label>
-          <div class="p-grid2">
-            <label class="p-field">${esc(t('responsible'))}<input id="d-resp" type="text" list="d-resp-list"><datalist id="d-resp-list">${respOptsDev}</datalist></label>
-            <label class="p-field">${esc(p('dueDate'))}<input id="d-due" type="date"></label>
-          </div>
-          <label class="p-field">${esc(t('status'))}
-            <select id="d-status"><option value="open">${esc(t('statusOpen'))}</option><option value="in_progress">${esc(p('statusInProgress'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
-          </label>
+          <label class="p-field">${esc(p('devImprovement'))}<textarea id="d-improve" rows="2"></textarea></label>
           <label class="p-field">${esc(t('photos'))}
             <input id="d-photos" type="file" accept="image/*" capture="environment" multiple>
           </label>
           <div class="p-thumbs" id="d-thumbs"></div>
+          <p class="p-subhead">${esc(p('devSecHandler'))}</p>
+          <div class="p-grid2">
+            <label class="p-field">${esc(t('responsible'))}<input id="d-resp" type="text" list="d-resp-list"><datalist id="d-resp-list">${respOptsDev}</datalist></label>
+            <label class="p-field">${esc(p('dueDate'))}<input id="d-due" type="date"></label>
+          </div>
+          <label class="p-field">${esc(t('cause'))}<textarea id="d-cause" rows="2"></textarea></label>
+          <label class="p-field">${esc(p('devPreventive'))}<textarea id="d-prevent" rows="2"></textarea></label>
+          <label class="p-field">${esc(t('verification'))}<textarea id="d-verif" rows="2"></textarea></label>
+          <div class="p-grid2">
+            <label class="p-field">${esc(t('status'))}
+              <select id="d-status"><option value="open">${esc(t('statusOpen'))}</option><option value="in_progress">${esc(p('statusInProgress'))}</option><option value="closed">${esc(t('statusClosed'))}</option></select>
+            </label>
+            <label class="p-field">${esc(p('devReporterInformed'))}<input id="d-informed" type="date"></label>
+          </div>
           <button class="btn btn--primary" id="d-save" type="button">${esc(p('save'))}</button>
           <span class="p-muted" id="d-status-msg" style="margin-left:10px"></span>
         </details>
@@ -1093,6 +1111,9 @@ import { handbooks } from '../../../data/ksHandbooks';
     const thumbs = document.getElementById('d-thumbs')!;
     const input = document.getElementById('d-photos') as HTMLInputElement;
     const msg = document.getElementById('d-status-msg')!;
+    // forhåndsfyll avviksmelder med innlogget bruker
+    const repEl = document.getElementById('d-reporter') as HTMLInputElement | null;
+    if (repEl && !repEl.value) currentEmailSafe().then((e) => { if (e && !repEl.value) repEl.value = e; });
     input?.addEventListener('change', async () => {
       for (const f of Array.from(input.files || [])) { const s = await shrink(f); pending.push(s); }
       input.value = '';
@@ -1108,6 +1129,8 @@ import { handbooks } from '../../../data/ksHandbooks';
         project_id: projectId, number: val('d-no'), dev_date: val('d-date'),
         location: val('d-loc'), description: val('d-desc'), cause: val('d-cause'),
         correction: val('d-corr'), verification: val('d-verif'), responsible: val('d-resp'),
+        reporter: val('d-reporter'), improvement: val('d-improve'), preventive: val('d-prevent'),
+        reporter_informed: val('d-informed'),
         category: (document.getElementById('d-cat') as HTMLSelectElement).value || null,
         severity: (document.getElementById('d-sev') as HTMLSelectElement).value || null,
         due_date: val('d-due'), status: statusVal,
@@ -1191,8 +1214,16 @@ import { handbooks } from '../../../data/ksHandbooks';
     doc.text(`${t('devNo')}: ${d.number || '—'}    ${t('date')}: ${d.dev_date || '—'}    ${t('status')}: ${stTxt}`, margin, y); y += 6;
     const meta2 = [d.category ? `${p('devCategory')}: ${devCatLabel(d.category)}` : '', d.severity ? `${p('severity')}: ${devSeverityLabel(d.severity)}` : '', d.due_date ? `${p('dueDate')}: ${d.due_date}` : ''].filter(Boolean).join('    ');
     if (meta2) { doc.setFont('DejaVu', 'normal'); doc.setFontSize(10); doc.text(meta2, margin, y); y += 6; }
-    block(t('location'), d.location); block(t('description'), d.description); block(t('cause'), d.cause);
-    block(t('correction'), d.correction); block(t('verification'), d.verification); block(t('responsible'), d.responsible);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5); doc.setTextColor(120); doc.text('Iht. Internkontrollforskriften § 5', margin, y); y += 6; doc.setTextColor(20, 23, 28);
+    const sec = (title: string) => { if (y > 270) { doc.addPage(); y = margin; } y += 1; doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.4); doc.line(margin, y, margin + maxW, y); y += 5; doc.setFont('DejaVu', 'bold'); doc.setFontSize(10.5); doc.setTextColor(204, 31, 42); doc.text(title, margin, y); y += 6; doc.setTextColor(20, 23, 28); };
+    sec(p('devSecReporter'));
+    block(p('devReporter'), d.reporter); block(t('location'), d.location); block(t('description'), d.description);
+    block(t('correction'), d.correction); block(p('devImprovement'), d.improvement);
+    sec(p('devSecHandler'));
+    block(t('responsible'), d.responsible); block(t('cause'), d.cause);
+    block(p('devPreventive'), d.preventive); block(t('verification'), d.verification);
+    if (d.reporter_informed) block(p('devReporterInformed'), d.reporter_informed);
+    if (d.closed_at) block(p('devClosedDate'), fmt(d.closed_at));
     if (imgs.length) {
       if (y > 250) { doc.addPage(); y = margin; }
       doc.setFont('DejaVu', 'bold'); doc.setFontSize(9.5); doc.setTextColor(120); doc.text(t('photos').toUpperCase(), margin, y); y += 5; doc.setTextColor(20, 23, 28);
