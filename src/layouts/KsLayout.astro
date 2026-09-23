@@ -40,9 +40,9 @@ const tri = (k: string) => ksUi[k];
         </nav>
 
         <div class="ks-lang" role="group" aria-label="Språk / Language">
-          <button type="button" data-ks-set="no" class="active">NO</button>
-          <button type="button" data-ks-set="pl">PL</button>
-          <button type="button" data-ks-set="en">EN</button>
+          <button type="button" data-ks-set="no" class="active"><svg class="ks-flag" viewBox="0 0 22 16" aria-hidden="true"><rect width="22" height="16" fill="#ba0c2f"/><rect x="6" width="4" height="16" fill="#fff"/><rect y="6" width="22" height="4" fill="#fff"/><rect x="7" width="2" height="16" fill="#00205b"/><rect y="7" width="22" height="2" fill="#00205b"/></svg>NO</button>
+          <button type="button" data-ks-set="pl"><svg class="ks-flag" viewBox="0 0 22 16" aria-hidden="true"><rect width="22" height="8" fill="#fff"/><rect y="8" width="22" height="8" fill="#dc143c"/></svg>PL</button>
+          <button type="button" data-ks-set="en"><svg class="ks-flag" viewBox="0 0 60 40" aria-hidden="true"><clipPath id="ujflag"><rect width="60" height="40" rx="0"/></clipPath><g clip-path="url(#ujflag)"><rect width="60" height="40" fill="#012169"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#c8102e" stroke-width="4"/><rect x="25" width="10" height="40" fill="#fff"/><rect y="15" width="60" height="10" fill="#fff"/><rect x="27" width="6" height="40" fill="#c8102e"/><rect y="17" width="60" height="6" fill="#c8102e"/></g></svg>EN</button>
         </div>
       </div>
     </header>
@@ -117,6 +117,9 @@ const tri = (k: string) => ksUi[k];
         overflow: hidden;
       }
       .ks-lang button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background: transparent;
         color: #cdd2da;
         border: 0;
@@ -127,6 +130,7 @@ const tri = (k: string) => ksUi[k];
         cursor: pointer;
       }
       .ks-lang button.active { background: var(--brand); color: #fff; }
+      .ks-flag { width: 20px; height: 14px; border-radius: 2px; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(255,255,255,0.25); display: block; }
       .ks-main { padding-block: clamp(24px, 4vw, 44px); min-height: 60vh; }
       .ks-footer {
         border-top: 1px solid var(--line);
