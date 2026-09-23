@@ -67,7 +67,11 @@ Deno.serve(async (req) => {
       return json({ ok: true, expires: sessData?.value?.expirationDate || null });
     }
     if (action === 'projects') {
-      const values = await get('/project?count=1000&fields=id,name,number,displayName,isClosed,customer(name),deliveryAddress(displayName)');
+      const values = await get('/project?count=1000&fields=id,name,number,displayName,isClosed,customer(id,name),deliveryAddress(displayName)');
+      return json({ ok: true, values });
+    }
+    if (action === 'customers') {
+      const values = await get('/customer?count=2000&fields=id,name,organizationNumber,email,phoneNumber,phoneNumberMobile,isInactive,physicalAddress(addressLine1,postalCode,city)');
       return json({ ok: true, values });
     }
     if (action === 'products') {

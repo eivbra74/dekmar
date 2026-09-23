@@ -154,6 +154,14 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   .p-article li { margin-bottom: 5px; }
   .p-muted { color: var(--muted); font-size: 0.92rem; }
   .p-err { color: var(--brand-dark); font-size: 0.9rem; margin: 8px 0 0; }
+  /* Lenke som ser ut som en lenke, men er en knapp — den navigerer i
+     appen og har ingen URL aa peke paa. */
+  .p-linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--brand); cursor: pointer; text-decoration: underline; }
+  .p-linkbtn:hover { color: var(--brand-dark); }
+  /* Sorteringsrad over listene. */
+  .p-sortbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
+  .p-sortbar select { padding: 7px 10px; border: 1px solid var(--line, #d8d8d8); border-radius: 8px; background: #fff; font: inherit; }
+  .p-sortbar-label { font-size: 0.85rem; color: #6b6b6b; }
   .p-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
   .p-thumbs { display: grid; grid-template-columns: repeat(auto-fill,minmax(84px,1fr)); gap: 8px; margin-top: 10px; }
   .p-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); position: relative; }
@@ -783,6 +791,33 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     colMilestone: { no: 'Milepæl', pl: 'Kamień milowy', en: 'Milestone' },
     addRow: { no: '+ Legg til rad', pl: '+ Dodaj wiersz', en: '+ Add row' },
     exportSha: { no: 'Last ned SHA-plan (PDF)', pl: 'Pobierz plan SHA (PDF)', en: 'Download SHA plan (PDF)' },
+    // Roller og aktivitet
+    roleAdmin: { no: 'Administrator', pl: 'Administrator', en: 'Administrator' },
+    roleLeder: { no: 'Leder', pl: 'Kierownik', en: 'Manager' },
+    roleAnsatt: { no: 'Ansatt', pl: 'Pracownik', en: 'Employee' },
+    roleLabel: { no: 'Rolle', pl: 'Rola', en: 'Role' },
+    lastSignIn: { no: 'Siste innlogging', pl: 'Ostatnie logowanie', en: 'Last sign-in' },
+    lastSeen: { no: 'Sist aktiv', pl: 'Ostatnia aktywność', en: 'Last active' },
+    neverSignedIn: { no: 'Aldri logget inn', pl: 'Nigdy nie zalogowany', en: 'Never signed in' },
+    roleSaved: { no: 'Rolle lagret', pl: 'Rola zapisana', en: 'Role saved' },
+    roleHelp: { no: 'Ansatt ser drift. Leder ser i tillegg tilbud, kalkyle, kunder og kontrakter. Administrator ser alt.', pl: 'Pracownik widzi operacje. Kierownik dodatkowo oferty, kalkulacje, klientów i umowy. Administrator widzi wszystko.', en: 'Employee sees operations. Manager also sees quotes, calculations, customers and contracts. Administrator sees everything.' },
+    youLabel: { no: 'deg', pl: 'ty', en: 'you' },
+    // Glemt passord
+    forgotPw: { no: 'Glemt passord?', pl: 'Nie pamiętasz hasła?', en: 'Forgot your password?' },
+    forgotTitle: { no: 'Tilbakestill passord', pl: 'Zresetuj hasło', en: 'Reset password' },
+    forgotIntro: { no: 'Skriv e-postadressen din, så sender vi en lenke for å velge nytt passord.', pl: 'Podaj swój adres e-mail, a wyślemy link do ustawienia nowego hasła.', en: 'Enter your email address and we will send a link to choose a new password.' },
+    forgotSend: { no: 'Send lenke', pl: 'Wyślij link', en: 'Send link' },
+    forgotSent: { no: 'Hvis adressen finnes hos oss, er en lenke sendt. Sjekk innboksen.', pl: 'Jeśli adres istnieje, link został wysłany. Sprawdź skrzynkę.', en: 'If that address exists, a link has been sent. Check your inbox.' },
+    backToLogin: { no: 'Tilbake til innlogging', pl: 'Powrót do logowania', en: 'Back to sign in' },
+    // Sortering
+    sortName: { no: 'Navn', pl: 'Nazwa', en: 'Name' },
+    sortNumber: { no: 'Prosjektnummer', pl: 'Numer projektu', en: 'Project number' },
+    sortNewest: { no: 'Nyeste først', pl: 'Najnowsze', en: 'Newest first' },
+    sortOldest: { no: 'Eldste først', pl: 'Najstarsze', en: 'Oldest first' },
+    sortCustomer: { no: 'Oppdragsgiver', pl: 'Zleceniodawca', en: 'Client' },
+    // Tripletex-kunder
+    ttImportCustomers: { no: 'Importer fra Tripletex', pl: 'Importuj z Tripletex', en: 'Import from Tripletex' },
+    ttCustomersDone: { no: 'kunder importert', pl: 'klientów zaimportowano', en: 'customers imported' },
     members: { no: 'Registrerte brukere', pl: 'Zarejestrowani użytkownicy', en: 'Registered users' },
     setPwTitle: { no: 'Velg ditt passord', pl: 'Ustaw swoje hasło', en: 'Set your password' },
     setPwIntro: { no: 'Velkommen til Dekmar KS. Velg et passord for å fullføre kontoen din.', pl: 'Witamy w Dekmar KS. Ustaw hasło, aby dokończyć konfigurację konta.', en: 'Welcome to Dekmar QA. Choose a password to finish setting up your account.' },
@@ -857,12 +892,138 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     { id: 'team', icon: 'team', label: () => p('team'), run: () => renderTeam() },
   ];
 
+  // ---------- Sortering ----------
+  /**
+   * Felles sorteringsrad for listene.
+   *
+   * Prosjektnummeret har ingen egen kolonne — Tripletex-importen legger
+   * `displayName` i `name`, og den ser ut som «10364 Borgenveien 40». Nummeret
+   * hentes derfor ut av navnet. Sorteres det som tekst, kommer 10364 før 9812;
+   * derfor tall, ikke streng.
+   */
+  const projNo = (v: any): number => {
+    const m = String(v?.name || '').match(/^\s*(\d{3,})/);
+    return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER;
+  };
+
+  const byText = (a: any, b: any) =>
+    String(a || '').localeCompare(String(b || ''), 'nb', { sensitivity: 'base', numeric: true });
+
+  type SortDef = { v: string; label: () => string; cmp: (a: any, b: any) => number };
+
+  function sortBar(id: string, defs: SortDef[], current: string): string {
+    const opts = defs.map((d) => `<option value="${esc(d.v)}"${d.v === current ? ' selected' : ''}>${esc(d.label())}</option>`).join('');
+    return `<div class="p-sortbar">
+      <span class="p-sortbar-label">${esc(p('sortBy'))}</span>
+      <select id="${esc(id)}">${opts}</select>
+    </div>`;
+  }
+
+  /** Sorterer en kopi. Å sortere lista på plass ville endret rekkefølgen for
+      alle andre visninger som holder samme array. */
+  function applySort(rows: any[], defs: SortDef[], v: string): any[] {
+    const d = defs.find((x) => x.v === v) || defs[0];
+    return [...rows].sort(d.cmp);
+  }
+
+  const SORTS_PROJECTS: SortDef[] = [
+    { v: 'num',   label: () => p('sortNumber'),  cmp: (a, b) => projNo(a) - projNo(b) },
+    { v: 'name',  label: () => p('sortName'),    cmp: (a, b) => byText(a.name, b.name) },
+    { v: 'new',   label: () => p('sortNewest'),  cmp: (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) },
+    { v: 'old',   label: () => p('sortOldest'),  cmp: (a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')) },
+    { v: 'client', label: () => p('sortCustomer'), cmp: (a, b) => byText(a.client, b.client) },
+  ];
+
+  const SORTS_CUSTOMERS: SortDef[] = [
+    { v: 'name', label: () => p('sortName'),   cmp: (a, b) => byText(a.name, b.name) },
+    { v: 'new',  label: () => p('sortNewest'), cmp: (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) },
+    { v: 'old',  label: () => p('sortOldest'), cmp: (a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')) },
+  ];
+
+  /** Valget overlever navigasjon og språkbytte, men ikke en ny fane. */
+  const SORT_STATE: Record<string, string> = { projects: 'num', customers: 'name' };
+
+  // ---------- Roller ----------
+  // Hvem som ser hva. Nøkkelen er nav-id, verdien er rollene som slipper inn.
+  //
+  // MERK: dette filtrerer MENYEN. Selve låsen ligger i RLS (migrasjon 018) —
+  // uten den kunne en ansatt lest hele kunderegisteret og alle marginer fra
+  // nettleserkonsollen uansett hva menyen viser. Endrer du denne listen, endre
+  // policyene i samme slengen.
+  const ROLE_ACCESS: Record<string, string[]> = {
+    dashboard:   ['admin', 'leder', 'ansatt'],
+    projects:    ['admin', 'leder', 'ansatt'],
+    inspections: ['admin', 'leder', 'ansatt'],
+    resource:    ['admin', 'leder', 'ansatt'],
+    sick:        ['admin', 'leder', 'ansatt'],
+    deviations:  ['admin', 'leder', 'ansatt'],
+    articles:    ['admin', 'leder', 'ansatt'],
+    documents:   ['admin', 'leder', 'ansatt'],
+    fdv:         ['admin', 'leder', 'ansatt'],
+    archive:     ['admin', 'leder', 'ansatt'],
+    // Pris, margin, kunderegister, avtaler.
+    quotes:      ['admin', 'leder'],
+    calc:        ['admin', 'leder'],
+    customers:   ['admin', 'leder'],
+    contracts:   ['admin', 'leder'],
+    // Styrer systemet selv.
+    templates:   ['admin'],
+    team:        ['admin'],
+  };
+
+  let ME: { id: string; email: string; role: string } = { id: '', email: '', role: 'ansatt' };
+
+  /**
+   * Henter innlogget bruker og rolle, og stempler «sist sett».
+   *
+   * Faller tilbake til 'ansatt' hvis noe feiler. Det er med vilje: en
+   * nettverksfeil skal gi for LITE tilgang, ikke for mye.
+   */
+  async function loadMe() {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      ME.id = u.user.id;
+      ME.email = u.user.email || '';
+      const { data: pr, error } = await supabase.from('profiles').select('role').eq('id', u.user.id).maybeSingle();
+      if (error) {
+        // Skjemaet er ikke migrert ennaa (kolonnen finnes ikke). Da er RLS
+        // heller ikke strammet inn, saa aa skjule menypunkter ville ikke
+        // beskyttet noe — det ville bare laast eieren ute av sitt eget
+        // system. Behold dagens oppfoersel til migrasjon 018 er kjoert.
+        console.warn('[roller] fant ikke role-kolonnen; viser alt inntil migrasjon 018 er kjoert', error.message);
+        ME.role = 'admin';
+        return;
+      }
+      // Rad finnes, men uten rolle: da ER hun ansatt.
+      ME.role = (pr as any)?.role || 'ansatt';
+      // Sesjoner varer i uker, så «sist innlogget» alene ville vist en gammel
+      // dato for en som bruker portalen daglig. Dette er det andre tallet.
+      void supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', u.user.id);
+    } catch {
+      // Nettverksfeil e.l.: ME.id forblir tom, saa ensureShell proever igjen
+      // ved neste navigasjon. Menyen viser i mellomtiden minst mulig.
+    }
+  }
+
+  const canSee = (navId: string) => (ROLE_ACCESS[navId] || ['admin']).includes(ME.role);
+
+  /** Sender en bruker uten tilgang til oversikten i stedet for en tom side. */
+  function guard(navId: string): boolean {
+    if (canSee(navId)) return true;
+    renderDashboard();
+    return false;
+  }
+
   // Gjeldende visning tegnes på nytt når språket byttes (KsLayout sender 'kslangchange')
   let redraw: () => void = () => route();
   document.addEventListener('kslangchange', () => { if (SHELL_BUILT) paintShellChrome(); redraw(); });
 
   // ---------- App-skall (sidemeny + hovedområde) ----------
   async function currentEmailSafe() { try { const { data } = await supabase.auth.getUser(); return data.user?.email || ''; } catch { return ''; } }
+  // Admin-modus: kun disse brukerne ser import-knappene (Tripletex-sync). Rediger listen ved behov.
+  const ADMIN_EMAILS = ['eivind@dekmar.no', 'post@dekmar.no', 'pawel@dekmar.no'];
+  async function isAdmin() { return ADMIN_EMAILS.includes((await currentEmailSafe()).toLowerCase()); }
   function buildShell() {
     PORTAL.innerHTML = `
       <div class="app" data-drawer="closed">
@@ -897,12 +1058,15 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   function paintShellChrome() {
     if (!SHELL_BUILT) return;
     const nav = document.getElementById('app-nav'); if (!nav) return;
-    nav.innerHTML = NAV.map((n) => `<button class="app-nav-item${n.id === ACTIVE_NAV ? ' is-active' : ''}" data-nav="${n.id}"><span class="app-nav-ic">${ICONS[n.icon]}</span><span class="app-nav-label">${esc(n.label())}</span></button>`).join('');
+    nav.innerHTML = NAV.filter((n) => canSee(n.id)).map((n) => `<button class="app-nav-item${n.id === ACTIVE_NAV ? ' is-active' : ''}" data-nav="${n.id}"><span class="app-nav-ic">${ICONS[n.icon]}</span><span class="app-nav-label">${esc(n.label())}</span></button>`).join('');
     nav.querySelectorAll<HTMLElement>('[data-nav]').forEach((b) => b.addEventListener('click', () => { const n = NAV.find((x) => x.id === b.dataset.nav); if (n) { ACTIVE_NAV = n.id; paintShellChrome(); n.run(); } }));
     const logoutLabel = document.querySelector('#app-logout span:last-child'); if (logoutLabel) logoutLabel.textContent = p('signOut');
     const title = document.getElementById('app-topbar-title'); if (title) { const n = NAV.find((x) => x.id === ACTIVE_NAV); title.textContent = n ? n.label() : ''; }
   }
   async function ensureShell(navId?: string) {
+    // Rollen foerst. Tegnes menyen foer den er kjent, vises den som 'ansatt'
+    // og hopper naar svaret kommer — og verre: guard() ville avvist en leder.
+    if (!ME.id) await loadMe();
     if (!SHELL_BUILT) buildShell();
     if (navId) ACTIVE_NAV = navId;
     paintShellChrome();
@@ -1015,7 +1179,8 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
 
   // ---------- Auth routing ----------
   async function route() {
-    if (new URLSearchParams(location.search).get('setpw') === '1') { renderSetPassword(); return; }
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+    if (new URLSearchParams(location.search).get('setpw') === '1' || hash.get('type') === 'recovery') { renderSetPassword(); return; }
     const { data } = await supabase.auth.getSession();
     if (data.session) { if (ACTIVE_NAV === 'dashboard') renderDashboard(); else { const n = NAV.find((x) => x.id === ACTIVE_NAV); (n ? n.run : renderDashboard)(); } }
     else renderLogin();
@@ -1050,6 +1215,51 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     });
   }
 
+  // ---------- Glemt passord ----------
+  /**
+   * Sender lenke for nytt passord.
+   *
+   * Svarer ALLTID det samme, uansett om adressen finnes. Et skjema som sier
+   * «denne e-posten er ikke registrert» forteller hvem som helst hvem som
+   * jobber her — og for en portal med en håndfull ansatte er det en kort liste
+   * å gjette seg fram til.
+   *
+   * Lenken peker tilbake med ?setpw=1, som er samme landingssted inviterte
+   * ansatte bruker. Én skjerm for «velg et passord», ikke to som kan komme i
+   * utakt.
+   */
+  function renderForgot() {
+    redraw = renderForgot;
+    teardownShell();
+    root.innerHTML = `
+      <div class="p-card p-login">
+        <h1>${esc(p('forgotTitle'))}</h1>
+        <p class="p-muted">${esc(p('forgotIntro'))}</p>
+        <form id="fgf" style="margin-top:16px">
+          <label class="p-field">${esc(p('email'))}<input id="fgf-email" type="email" autocomplete="email" required></label>
+          <button class="btn btn--primary" type="submit">${esc(p('forgotSend'))}</button>
+          <p class="p-muted" id="fgf-msg" hidden style="margin-top:12px"></p>
+        </form>
+        <p style="margin-top:14px"><button type="button" class="p-linkbtn" id="fgf-back">${esc(p('backToLogin'))}</button></p>
+      </div>`;
+    document.getElementById('fgf-back')!.addEventListener('click', renderLogin);
+    const f = document.getElementById('fgf') as HTMLFormElement;
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('fgf-email') as HTMLInputElement).value.trim();
+      const msg = document.getElementById('fgf-msg')!;
+      const btn = f.querySelector('button')!;
+      btn.setAttribute('disabled', 'true');
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: location.origin + '/portal/?setpw=1',
+      });
+      // Feilen fra Supabase brukes bevisst ikke: samme svar uansett.
+      btn.removeAttribute('disabled');
+      msg.textContent = p('forgotSent');
+      msg.hidden = false;
+    });
+  }
+
   // ---------- Login ----------
   function renderLogin() {
     redraw = renderLogin;
@@ -1064,7 +1274,9 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           <button class="btn btn--primary" type="submit">${esc(p('signIn'))}</button>
           <p class="p-err" id="lf-err" hidden></p>
         </form>
+        <p style="margin-top:14px"><button type="button" class="p-linkbtn" id="lf-forgot">${esc(p('forgotPw'))}</button></p>
       </div>`;
+    document.getElementById('lf-forgot')!.addEventListener('click', renderForgot);
     const f = document.getElementById('lf') as HTMLFormElement;
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1096,7 +1308,9 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     ]);
     const nProj = projC.count ?? 0, nDev = devC.count ?? 0, nDoc = docC.count ?? 0;
     const email = await currentEmailSafe();
-    const card = (nav: string, icon: string, title: string, desc: string, badge?: string) => `
+    // Filtreringen ligger i card() og ikke ved hvert av de fjorten kallene:
+    // et nytt kort arver regelen i stedet for aa mangle den.
+    const card = (nav: string, icon: string, title: string, desc: string, badge?: string) => !canSee(nav) ? '' : `
       <button class="dash-card" data-go="${nav}">
         <span class="dash-card-ic">${ICONS[icon]}</span>
         <span class="dash-card-body"><span class="dash-card-title">${esc(title)}${badge ? ` <span class="dash-card-badge">${esc(badge)}</span>` : ''}</span><span class="dash-card-desc">${esc(desc)}</span></span>
@@ -1140,6 +1354,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     root.innerHTML = `<p class="portal-loading">${esc(t('generating') || '…')}</p>`;
     const { data: projects, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
     const all = projects || [];
+    const admin = await isAdmin();
     const activeAll = all.filter((pr: any) => pr.status !== 'delivered');
     const archivedAll = all.filter((pr: any) => pr.status === 'delivered');
     const rowHtml = (pr: any) => `
@@ -1148,9 +1363,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         <span class="p-go">${ICONS.chevron}</span>
       </li>`;
     root.innerHTML = `
-      <div class="p-head"><h1>${esc(p('projects'))}</h1><div class="p-user"><button class="btn btn--ghost" id="pl-tt">${esc(p('ttImport'))}</button></div></div>
+      <div class="p-head"><h1>${esc(p('projects'))}</h1>${admin ? `<div class="p-user"><button class="btn btn--ghost" id="pl-tt">${esc(p('ttImport'))}</button></div>` : ''}</div>
       ${error ? `<p class="p-err">${esc(error.message)}</p>` : ''}
       ${all.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="pl-search" type="search" placeholder="${esc(p('searchProjects'))}" autocomplete="off"></div>` : ''}
+      ${all.length ? sortBar('pl-sort', SORTS_PROJECTS, SORT_STATE.projects) : ''}
       <ul class="p-list" id="pl-list">${activeAll.map(rowHtml).join('') || `<p class="p-muted">${esc(p('noProjects'))}</p>`}</ul>
       ${archivedAll.length ? `<details class="p-new" id="pl-archwrap"><summary>${esc(p('archivedProjects'))} (${archivedAll.length})</summary><ul class="p-list" id="pl-arch">${archivedAll.map(rowHtml).join('')}</ul></details>` : ''}
       <details class="p-new">
@@ -1165,20 +1381,25 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         </form>
       </details>`;
     const listEl = document.getElementById('pl-list')!;
+    const sortEl = document.getElementById('pl-sort') as HTMLSelectElement | null;
     const archEl = document.getElementById('pl-arch');
     const bind = (el: Element) => el.querySelectorAll('.p-item').forEach((li) => li.addEventListener('click', () => openProject((li as HTMLElement).dataset.id!)));
     const paintList = (q: string) => {
       const term = q.trim().toLowerCase();
       const flt = (arr: any[]) => term ? arr.filter((pr: any) => [pr.name, pr.address, pr.client].filter(Boolean).join(' ').toLowerCase().includes(term)) : arr;
-      const shownA = flt(activeAll);
+      // Sorter foerst, filtrer etterpaa: motsatt rekkefoelge gir samme svar
+      // her, men bryter i det en sortering trenger hele settet for aa vaere
+      // meningsfull (rangering, loepenummer).
+      const shownA = flt(applySort(activeAll, SORTS_PROJECTS, SORT_STATE.projects));
       listEl.innerHTML = shownA.length ? shownA.map(rowHtml).join('') : `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noResults'))}</li>`;
       bind(listEl);
-      if (archEl) { const shownB = flt(archivedAll); archEl.innerHTML = shownB.map(rowHtml).join('') || `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noArchived'))}</li>`; bind(archEl); }
+      if (archEl) { const shownB = flt(applySort(archivedAll, SORTS_PROJECTS, SORT_STATE.projects)); archEl.innerHTML = shownB.map(rowHtml).join('') || `<li class="p-muted" style="list-style:none;padding:8px 2px">${esc(p('noArchived'))}</li>`; bind(archEl); }
     };
     paintList('');
     const searchEl = document.getElementById('pl-search') as HTMLInputElement | null;
     if (searchEl) searchEl.addEventListener('input', () => paintList(searchEl.value));
-    document.getElementById('pl-tt')!.addEventListener('click', (e) => importTripletexProjects(e.currentTarget as HTMLButtonElement));
+    if (sortEl) sortEl.addEventListener('change', () => { SORT_STATE.projects = sortEl.value; paintList(searchEl ? searchEl.value : ''); });
+    { const plt = document.getElementById('pl-tt'); if (plt) plt.addEventListener('click', (e) => importTripletexProjects(e.currentTarget as HTMLButtonElement)); }
     (document.getElementById('np') as HTMLFormElement).addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = (document.getElementById('np-name') as HTMLInputElement).value.trim();
@@ -1955,6 +2176,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   // ---------- Maladministrasjon (maler) ----------
   const kindLabel = (k: string) => (k === 'verneround' ? p('kindVerneround') : p('kindChecklist'));
   async function renderTemplates() {
+    if (!guard('templates')) return;
     redraw = renderTemplates;
     await ensureShell('templates');
     root.innerHTML = `<p class="portal-loading">…</p>`;
@@ -2801,14 +3023,60 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     draw();
   }
 
-  // ---------- Ansatte / invitasjon ----------
+  // ---------- Ansatte / invitasjon / roller ----------
+  const ROLE_KEYS: Record<string, string> = { admin: 'roleAdmin', leder: 'roleLeder', ansatt: 'roleAnsatt' };
+  const roleName = (r: string) => p(ROLE_KEYS[r] || 'roleAnsatt');
+
+  /**
+   * «for 3 timer siden» er lettere å lese enn et tidspunkt når spørsmålet er
+   * «brukes dette i det hele tatt». Faller tilbake til dato når det er lenge
+   * siden, fordi «for 94 dager siden» ikke er informasjon.
+   */
+  function since(iso: string | null): string {
+    if (!iso) return p('neverSignedIn');
+    const ms = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(ms / 60000);
+    if (min < 2) return { no: 'nå nettopp', pl: 'przed chwilą', en: 'just now' }[lang()] || 'now';
+    if (min < 60) return `${min} min`;
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24) return `${hrs} t`;
+    const days = Math.floor(hrs / 24);
+    if (days <= 30) return `${days} d`;
+    return fmt(iso);
+  }
+
   async function renderTeam() {
+    if (!guard('team')) return;
     redraw = renderTeam;
     await ensureShell('team');
     root.innerHTML = `<p class="portal-loading">…</p>`;
-    const { data: profs } = await supabase.from('profiles').select('id, full_name, created_at').order('created_at');
-    const rows = (profs || []).map((pr: any) => `
-      <li class="p-item" style="cursor:default"><div><h3>${esc(pr.full_name || '—')}</h3><p>${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}</p></div></li>`).join('');
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role, created_at, last_sign_in_at, last_seen_at')
+      .order('created_at');
+
+    const rows = (profs || []).map((pr: any) => {
+      const isMe = pr.id === ME.id;
+      const opts = ['admin', 'leder', 'ansatt']
+        .map((r) => `<option value="${esc(r)}"${r === pr.role ? ' selected' : ''}>${esc(roleName(r))}</option>`)
+        .join('');
+      return `
+      <li class="p-item" style="cursor:default;align-items:flex-start">
+        <div style="flex:1">
+          <h3>${esc(pr.email || pr.full_name || '—')}${isMe ? ` <span class="p-muted" style="font-weight:400">(${esc(p('youLabel'))})</span>` : ''}</h3>
+          <p>
+            ${esc(p('lastSignIn'))}: ${esc(since(pr.last_sign_in_at))}
+            &nbsp;·&nbsp; ${esc(p('lastSeen'))}: ${esc(since(pr.last_seen_at))}
+            &nbsp;·&nbsp; ${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}
+          </p>
+        </div>
+        <label class="p-field" style="margin:0;min-width:160px">
+          <span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span>
+          <select data-role-for="${esc(pr.id)}">${opts}</select>
+        </label>
+      </li>`;
+    }).join('');
+
     root.innerHTML = `
       <div class="p-head"><h1>${esc(p('team'))}</h1>
         <div class="p-user"><button class="btn btn--ghost" id="t-back">${esc(p('back'))}</button></div></div>
@@ -2820,8 +3088,38 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           <span class="p-muted" id="inv-msg" style="margin-left:10px"></span>
         </form>
       </div>
-      <div class="p-section"><h2>${esc(p('members'))}</h2>${rows ? `<ul class="p-list">${rows}</ul>` : ''}</div>`;
+      <div class="p-section">
+        <h2>${esc(p('members'))}</h2>
+        <p class="p-muted" style="margin-top:-4px">${esc(p('roleHelp'))}</p>
+        <span class="p-muted" id="role-msg"></span>
+        ${rows ? `<ul class="p-list">${rows}</ul>` : ''}
+      </div>`;
+
     document.getElementById('t-back')!.addEventListener('click', renderProjects);
+
+    document.querySelectorAll<HTMLSelectElement>('[data-role-for]').forEach((sel) => {
+      sel.addEventListener('change', async () => {
+        const id = sel.dataset.roleFor!;
+        const msg = document.getElementById('role-msg')!;
+        const prev = Array.from(sel.options).find((o) => o.defaultSelected)?.value || 'ansatt';
+        sel.disabled = true;
+        const { error } = await supabase.from('profiles').update({ role: sel.value }).eq('id', id);
+        sel.disabled = false;
+        if (error) {
+          // Triggeren protect_profile_role() avviser alle andre enn admin, så
+          // dette er også det som fanger opp en bruker som mistet rollen sin
+          // mens siden sto åpen.
+          msg.textContent = error.message;
+          sel.value = prev;
+          return;
+        }
+        msg.textContent = p('roleSaved');
+        // Endrer du din egen rolle, må menyen tegnes på nytt — ellers står du
+        // igjen med punkter du ikke lenger har tilgang til.
+        if (id === ME.id) { await loadMe(); paintShellChrome(); }
+      });
+    });
+
     (document.getElementById('inv') as HTMLFormElement).addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = (document.getElementById('inv-email') as HTMLInputElement).value.trim();
@@ -2836,7 +3134,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         if (/already.*registered/i.test(detail)) detail = p('alreadyMember');
         msg.textContent = detail;
       }
-      else { msg.textContent = p('inviteSent') + ' ' + email; (document.getElementById('inv-email') as HTMLInputElement).value = ''; }
+      else { msg.textContent = p('inviteSent') + ' ' + email; (document.getElementById('inv-email') as HTMLInputElement).value = ''; renderTeam(); }
     });
   }
 
@@ -2962,16 +3260,63 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     return LOGO_CACHE;
   }
 
+  /**
+   * Henter kunderegisteret fra Tripletex.
+   *
+   * Upsert på `tripletex_id`, som prosjekt- og produktimporten: kjøres den
+   * igjen, oppdateres de samme radene i stedet for at registeret dobles.
+   *
+   * Inaktive kunder i Tripletex hoppes over. De er som regel avsluttede
+   * kundeforhold, og å dra dem inn ville gjort søkefeltet ubrukelig.
+   *
+   * Felter som ikke finnes i Tripletex (kontaktperson, notater) rører vi ikke
+   * — derfor listes kolonnene eksplisitt i stedet for å sende hele objektet.
+   * En import skal ikke slette det noen har skrevet inn for hånd.
+   */
+  async function importTripletexCustomers(btn: HTMLButtonElement) {
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = p('ttImporting');
+    try {
+      const vals = (await tripletexFetch('customers')).filter((v: any) => !v.isInactive);
+      const { data: u } = await supabase.auth.getUser();
+      const rows = vals.map((v: any) => {
+        const a = v.physicalAddress || {};
+        const addr = [a.addressLine1, [a.postalCode, a.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+        return {
+          tripletex_id: v.id,
+          name: v.name || ('Kunde ' + v.id),
+          org_no: v.organizationNumber || null,
+          email: v.email || null,
+          phone: v.phoneNumberMobile || v.phoneNumber || null,
+          address: addr || null,
+          created_by: u.user?.id,
+        };
+      });
+      for (let i = 0; i < rows.length; i += 200) {
+        const chunk = rows.slice(i, i + 200);
+        const { error } = await supabase.from('customers').upsert(chunk, { onConflict: 'tripletex_id' });
+        if (error) throw new Error(error.message);
+      }
+      btn.textContent = rows.length + ' ' + p('ttCustomersDone');
+      setTimeout(renderCustomers, 900);
+    } catch (e) {
+      alert(p('ttFail') + ' ' + (e as Error).message);
+      btn.disabled = false; btn.textContent = old;
+    }
+  }
+
   // ---------- Kunderegister ----------
   async function renderCustomers() {
+    if (!guard('customers')) return;
     redraw = renderCustomers;
     await ensureShell('customers');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: rows } = await supabase.from('customers').select('*').order('name');
     const CUST = rows || [];
     root.innerHTML = `
-      <div class="p-head"><h1>${esc(p('customers'))}</h1></div>
+      <div class="p-head"><h1>${esc(p('customers'))}</h1><div class="p-user"><button class="btn btn--ghost" id="cu-tt">${esc(p('ttImportCustomers'))}</button></div></div>
       ${CUST.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="c-search" type="search" placeholder="${esc(p('searchCustomers'))}" autocomplete="off"></div>` : ''}
+      ${CUST.length ? sortBar('c-sort', SORTS_CUSTOMERS, SORT_STATE.customers) : ''}
       <ul class="p-list" id="c-list"></ul>
       <details class="p-new"><summary>${esc(p('newCustomer'))}</summary>
         <div class="p-grid2">
@@ -2991,12 +3336,15 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       </details>`;
     const paint = (q = '') => {
       const ql = q.trim().toLowerCase();
-      const list = CUST.filter((c: any) => !ql || [c.name, c.contact, c.email, c.org_no].some((v: any) => (v || '').toLowerCase().includes(ql)));
+      const list = applySort(CUST, SORTS_CUSTOMERS, SORT_STATE.customers).filter((c: any) => !ql || [c.name, c.contact, c.email, c.org_no].some((v: any) => (v || '').toLowerCase().includes(ql)));
       document.getElementById('c-list')!.innerHTML = list.length ? list.map((c: any) => `
         <li class="p-item" data-cust="${esc(c.id)}"><div><h3>${esc(c.name)}</h3><p>${esc([c.contact, c.email, c.phone].filter(Boolean).join(' · '))}</p></div><span class="p-go">${ICONS.chevron}</span></li>`).join('') : `<li class="p-muted">${esc(p('noCustomers'))}</li>`;
       document.querySelectorAll('#c-list [data-cust]').forEach((el) => el.addEventListener('click', () => editCustomer(CUST.find((c: any) => c.id === (el as HTMLElement).dataset.cust))));
     };
     const s = document.getElementById('c-search'); if (s) s.addEventListener('input', (e) => paint((e.target as HTMLInputElement).value));
+    const cSort = document.getElementById('c-sort') as HTMLSelectElement | null;
+    if (cSort) cSort.addEventListener('change', () => { SORT_STATE.customers = cSort.value; paint((document.getElementById('c-search') as HTMLInputElement)?.value || ''); });
+    document.getElementById('cu-tt')!.addEventListener('click', (e) => importTripletexCustomers(e.currentTarget as HTMLButtonElement));
     document.getElementById('c-save')!.addEventListener('click', async () => {
       const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim() || null;
       if (!v('c-name')) { alert(p('custName')); return; }
@@ -3043,6 +3391,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
 
   // ---------- Tilbud (arkiv) ----------
   async function renderQuotes() {
+    if (!guard('quotes')) return;
     redraw = renderQuotes;
     await ensureShell('quotes');
     root.innerHTML = `<p class="portal-loading">…</p>`;
@@ -3968,6 +4317,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
 
   // ================= NS-kontrakter (avtaledokument) =================
   async function renderContracts() {
+    if (!guard('contracts')) return;
     redraw = renderContracts; await ensureShell('contracts');
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const [cRes, projRes, custRes] = await Promise.all([
@@ -4278,6 +4628,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   const cb = () => document.getElementById('calc-body');
 
   async function renderCalc() {
+    if (!guard('calc')) return;
     redraw = renderCalc; await ensureShell('calc');
     root.innerHTML = `
       <div class="p-head"><h1>${esc(p('calc'))}</h1></div>
