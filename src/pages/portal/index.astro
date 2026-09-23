@@ -568,6 +568,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     ttImporting: { no: 'Henter fra Tripletex …', pl: 'Pobieranie z Tripletex …', en: 'Fetching from Tripletex …' },
     ttFail: { no: 'Tripletex-import feilet:', pl: 'Import z Tripletex nie powiódł się:', en: 'Tripletex import failed:' },
     ttDoneProjects: { no: 'prosjekter importert/oppdatert', pl: 'projektów zaimportowano', en: 'projects imported/updated' },
+    ttNewImported: { no: 'nye importert', pl: 'nowych zaimportowano', en: 'new imported' },
     ttDoneProducts: { no: 'produkter importert/oppdatert', pl: 'produktów zaimportowano', en: 'products imported/updated' },
     fdvNeeds: { no: 'Trenger FDV-dokumentasjon', pl: 'Wymaga dokumentacji FDV', en: 'Needs FDV documentation' },
     fdvOnly: { no: 'Vis kun FDV-produkter', pl: 'Pokaż tylko produkty FDV', en: 'Show only FDV products' },
@@ -1682,9 +1683,15 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     try {
       const vals = await tripletexFetch('projects');
       const { data: u } = await supabase.auth.getUser();
-      const rows = vals.map((v: any) => ({ tripletex_id: v.id, name: v.displayName || v.name || ('Prosjekt ' + v.id), client: v.customer?.name || null, address: v.deliveryAddress?.displayName || null, created_by: u.user?.id }));
-      for (let i = 0; i < rows.length; i += 200) { const chunk = rows.slice(i, i + 200); const { error } = await supabase.from('projects').upsert(chunk, { onConflict: 'tripletex_id' }); if (error) throw new Error(error.message); }
-      btn.textContent = rows.length + ' ' + p('ttDoneProjects'); setTimeout(() => renderProjects(), 1200);
+      // Inkrementelt: kun NYE prosjekter (endrer ikke eksisterende – bevarer status «levert», flyttet data osv.).
+      const { data: existing } = await supabase.from('projects').select('tripletex_id').not('tripletex_id', 'is', null);
+      const have = new Set((existing || []).map((r: any) => String(r.tripletex_id)));
+      // koble til lokalt kunderegister via Tripletex kunde-id (hvis kunder er importert)
+      const { data: cust } = await supabase.from('customers').select('id, tripletex_id').not('tripletex_id', 'is', null);
+      const custMap: Record<string, string> = {}; (cust || []).forEach((c: any) => { custMap[c.tripletex_id] = c.id; });
+      const rows = vals.filter((v: any) => !have.has(String(v.id))).map((v: any) => ({ tripletex_id: v.id, name: v.displayName || v.name || ('Prosjekt ' + v.id), client: v.customer?.name || null, customer_id: (v.customer?.id != null ? custMap[v.customer.id] : undefined) || null, address: v.deliveryAddress?.displayName || null, created_by: u.user?.id }));
+      for (let i = 0; i < rows.length; i += 200) { const chunk = rows.slice(i, i + 200); if (!chunk.length) break; const { error } = await supabase.from('projects').insert(chunk); if (error) throw new Error(error.message); }
+      btn.textContent = rows.length + ' ' + p('ttNewImported'); setTimeout(() => renderProjects(), 1400);
     } catch (e: any) { alert(p('ttFail') + ' ' + (e.message || '')); btn.disabled = false; btn.textContent = orig; }
   }
   // Gjett om et Tripletex-produkt trenger FDV: fysiske varer ja, arbeid/tjenester nei.
@@ -3279,7 +3286,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     try {
       const vals = (await tripletexFetch('customers')).filter((v: any) => !v.isInactive);
       const { data: u } = await supabase.auth.getUser();
-      const rows = vals.map((v: any) => {
+      // Inkrementelt: kun kunder som ikke allerede finnes (endrer ikke eksisterende).
+      const { data: existing } = await supabase.from('customers').select('tripletex_id').not('tripletex_id', 'is', null);
+      const have = new Set((existing || []).map((r: any) => String(r.tripletex_id)));
+      const rows = vals.filter((v: any) => !have.has(String(v.id))).map((v: any) => {
         const a = v.physicalAddress || {};
         const addr = [a.addressLine1, [a.postalCode, a.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
         return {
@@ -3293,12 +3303,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         };
       });
       for (let i = 0; i < rows.length; i += 200) {
-        const chunk = rows.slice(i, i + 200);
-        const { error } = await supabase.from('customers').upsert(chunk, { onConflict: 'tripletex_id' });
+        const chunk = rows.slice(i, i + 200); if (!chunk.length) break;
+        const { error } = await supabase.from('customers').insert(chunk);
         if (error) throw new Error(error.message);
       }
-      btn.textContent = rows.length + ' ' + p('ttCustomersDone');
-      setTimeout(renderCustomers, 900);
+      btn.textContent = rows.length + ' ' + p('ttNewImported');
+      setTimeout(renderCustomers, 1200);
     } catch (e) {
       alert(p('ttFail') + ' ' + (e as Error).message);
       btn.disabled = false; btn.textContent = old;
@@ -3313,8 +3323,9 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     root.innerHTML = `<p class="portal-loading">…</p>`;
     const { data: rows } = await supabase.from('customers').select('*').order('name');
     const CUST = rows || [];
+    const admin = await isAdmin();
     root.innerHTML = `
-      <div class="p-head"><h1>${esc(p('customers'))}</h1><div class="p-user"><button class="btn btn--ghost" id="cu-tt">${esc(p('ttImportCustomers'))}</button></div></div>
+      <div class="p-head"><h1>${esc(p('customers'))}</h1>${admin ? `<div class="p-user"><button class="btn btn--ghost" id="cu-tt">${esc(p('ttImportCustomers'))}</button></div>` : ''}</div>
       ${CUST.length ? `<div class="p-searchbar"><span class="p-searchbar-ic">${ICONS.search}</span><input id="c-search" type="search" placeholder="${esc(p('searchCustomers'))}" autocomplete="off"></div>` : ''}
       ${CUST.length ? sortBar('c-sort', SORTS_CUSTOMERS, SORT_STATE.customers) : ''}
       <ul class="p-list" id="c-list"></ul>
@@ -3344,7 +3355,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const s = document.getElementById('c-search'); if (s) s.addEventListener('input', (e) => paint((e.target as HTMLInputElement).value));
     const cSort = document.getElementById('c-sort') as HTMLSelectElement | null;
     if (cSort) cSort.addEventListener('change', () => { SORT_STATE.customers = cSort.value; paint((document.getElementById('c-search') as HTMLInputElement)?.value || ''); });
-    document.getElementById('cu-tt')!.addEventListener('click', (e) => importTripletexCustomers(e.currentTarget as HTMLButtonElement));
+    { const cut = document.getElementById('cu-tt'); if (cut) cut.addEventListener('click', (e) => importTripletexCustomers(e.currentTarget as HTMLButtonElement)); }
     document.getElementById('c-save')!.addEventListener('click', async () => {
       const v = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim() || null;
       if (!v('c-name')) { alert(p('custName')); return; }
