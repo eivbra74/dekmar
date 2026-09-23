@@ -742,6 +742,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     cardTemplatesDesc: { no: 'Standardmaler og egne maler for vernerunder og sjekklister.', pl: 'Szablony standardowe i własne.', en: 'Standard and custom templates for safety rounds and checklists.' },
     cardArchiveDesc: { no: 'Alle lagrede sjekklister og vernerunder, søkbart.', pl: 'Wszystkie zapisane listy i obchody, z wyszukiwaniem.', en: 'All saved checklists and safety rounds, searchable.' },
     cardTeamDesc: { no: 'Inviter ansatte og se registrerte brukere.', pl: 'Zapraszaj pracowników i zarządzaj użytkownikami.', en: 'Invite staff and manage registered users.' },
+    ksToolsTitle: { no: 'KS-verktøy (rask feltbruk)', pl: 'Narzędzia KS (szybkie w terenie)', en: 'QA tools (quick field use)' },
+    toolChecklistDesc: { no: 'Rask sjekkliste – fyll ut på mobil, last ned PDF.', pl: 'Szybka lista kontrolna – wypełnij na telefonie, pobierz PDF.', en: 'Quick checklist – fill in on mobile, download PDF.' },
+    toolDeviationDesc: { no: 'Rask avviksrapport med bilder → PDF.', pl: 'Szybki raport niezgodności ze zdjęciami → PDF.', en: 'Quick deviation report with photos → PDF.' },
+    toolGuideDesc: { no: 'Slik bruker du KS-verktøyet – steg for steg.', pl: 'Jak korzystać z narzędzia KS – krok po kroku.', en: 'How to use the QA tool – step by step.' },
     hmsHandbook: { no: 'HMS-håndbok', pl: 'Podręcznik BHP', en: 'HSE handbook' },
     articlesIntro: { no: 'Rutiner og veiledninger for helse, miljø og sikkerhet i Dekmar.', pl: 'Procedury i wytyczne BHP w Dekmar.', en: 'Routines and guidance for health, safety and environment at Dekmar.' },
     newArticle: { no: '+ Ny artikkel', pl: '+ Nowy artykuł', en: '+ New article' },
@@ -1343,6 +1347,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         ${card('templates', 'templates', p('manageTemplates'), p('cardTemplatesDesc'))}
         ${card('archive', 'archive', p('archive'), p('cardArchiveDesc'))}
         ${card('team', 'team', p('team'), p('cardTeamDesc'))}
+      </div>
+      <h2 style="margin:28px 0 12px;font-size:1.05rem">${esc(p('ksToolsTitle'))}</h2>
+      <div class="dash-grid">
+        <a class="dash-card" href="/ks/sjekkliste/" style="text-decoration:none"><span class="dash-card-ic">${ICONS.templates}</span><span class="dash-card-body"><span class="dash-card-title">${esc(t('checklist'))}</span><span class="dash-card-desc">${esc(p('toolChecklistDesc'))}</span></span><span class="dash-card-go">${ICONS.chevron}</span></a>
+        <a class="dash-card" href="/ks/avvik/" style="text-decoration:none"><span class="dash-card-ic">${ICONS.deviation}</span><span class="dash-card-body"><span class="dash-card-title">${esc(t('deviation'))}</span><span class="dash-card-desc">${esc(p('toolDeviationDesc'))}</span></span><span class="dash-card-go">${ICONS.chevron}</span></a>
+        <a class="dash-card" href="/ks/hjelp/" style="text-decoration:none"><span class="dash-card-ic">${ICONS.handbook}</span><span class="dash-card-body"><span class="dash-card-title">${esc(t('help'))}</span><span class="dash-card-desc">${esc(p('toolGuideDesc'))}</span></span><span class="dash-card-go">${ICONS.chevron}</span></a>
       </div>`;
     root.querySelectorAll<HTMLElement>('[data-go]').forEach((el) => el.addEventListener('click', () => {
       const n = NAV.find((x) => x.id === el.dataset.go); if (n) { ACTIVE_NAV = n.id; paintShellChrome(); n.run(); }
