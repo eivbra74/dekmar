@@ -801,6 +801,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     lastSeen: { no: 'Sist aktiv', pl: 'Ostatnia aktywność', en: 'Last active' },
     neverSignedIn: { no: 'Aldri logget inn', pl: 'Nigdy nie zalogowany', en: 'Never signed in' },
     roleSaved: { no: 'Rolle lagret', pl: 'Rola zapisana', en: 'Role saved' },
+    lastAdminBlock: { no: 'Det må alltid være minst én administrator. Gjør en annen bruker til administrator før du endrer denne rollen.', pl: 'Zawsze musi być co najmniej jeden administrator. Najpierw nadaj innej osobie rolę administratora.', en: 'There must always be at least one administrator. Make another user an administrator before changing this role.' },
     roleHelp: { no: 'Ansatt ser drift. Leder ser i tillegg tilbud, kalkyle, kunder og kontrakter. Administrator ser alt.', pl: 'Pracownik widzi operacje. Kierownik dodatkowo oferty, kalkulacje, klientów i umowy. Administrator widzi wszystko.', en: 'Employee sees operations. Manager also sees quotes, calculations, customers and contracts. Administrator sees everything.' },
     youLabel: { no: 'deg', pl: 'ty', en: 'you' },
     // Glemt passord
@@ -3109,6 +3110,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         const id = sel.dataset.roleFor!;
         const msg = document.getElementById('role-msg')!;
         const prev = Array.from(sel.options).find((o) => o.defaultSelected)?.value || 'ansatt';
+        // Det maa alltid vaere minst én administrator: blokker degradering av siste admin.
+        if (prev === 'admin' && sel.value !== 'admin') {
+          const otherAdmins = (profs || []).filter((x: any) => x.role === 'admin' && x.id !== id).length;
+          if (otherAdmins === 0) { msg.textContent = p('lastAdminBlock'); msg.style.color = '#cc1f2a'; sel.value = prev; return; }
+        }
+        msg.style.color = '';
         sel.disabled = true;
         const { error } = await supabase.from('profiles').update({ role: sel.value }).eq('id', id);
         sel.disabled = false;
