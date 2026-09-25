@@ -105,10 +105,19 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
   const status = document.getElementById('av-status')!;
   const thumbs = document.getElementById('a_thumbs')!;
   const STORE = 'ks-avvik-v1';
-  // Automatisk avviksnummer: løpeteller på denne enheten (ingen DB på denne siden).
+  // Automatisk avviksnummer: årsbasert løpeteller på denne enheten (ÅÅÅÅ-NNN, nullstilles per år).
   const CTR = 'ks-avvik-counter';
-  const getCtr = () => { try { return parseInt(localStorage.getItem(CTR) || '0', 10) || 0; } catch (e) { return 0; } };
-  const nextNo = () => String(getCtr() + 1).padStart(2, '0');
+  const YKEY = 'ks-avvik-year';
+  const curYear = () => new Date().getFullYear();
+  const getCtr = () => {
+    try {
+      const y = parseInt(localStorage.getItem(YKEY) || '0', 10);
+      if (y !== curYear()) return 0; // nytt år -> start på 001
+      return parseInt(localStorage.getItem(CTR) || '0', 10) || 0;
+    } catch (e) { return 0; }
+  };
+  const setCtr = (n: number) => { try { localStorage.setItem(CTR, String(n)); localStorage.setItem(YKEY, String(curYear())); } catch (e) {} };
+  const nextNo = () => `${curYear()}-${String(getCtr() + 1).padStart(3, '0')}`;
   const noEl = () => document.getElementById('a_no') as HTMLInputElement;
   let photos: string[] = [];
 
@@ -230,8 +239,9 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
     const fn = `Dekmar_Avvik_${v('a_no') || 'nr'}_${v('a_project') || ''}`.replace(/[^a-z0-9]+/gi, '_');
     doc.save(fn + '.pdf');
     // Marker nummeret som brukt, slik at neste avvik får neste løpenummer.
-    const used = parseInt((v('a_no').match(/(\d+)\s*$/) || [])[1] || '0', 10);
-    if (used) { try { localStorage.setItem(CTR, String(Math.max(getCtr(), used))); } catch (e) {} }
+    const m = v('a_no').match(/^(\d{4})-(\d+)$/);
+    const used = m && +m[1] === curYear() ? parseInt(m[2], 10) : 0;
+    if (used) setCtr(Math.max(getCtr(), used));
   });
 
   load();

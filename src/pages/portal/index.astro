@@ -1446,11 +1446,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       </li>`).join('');
     const catOptsDev = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(devCatLabel(c.name))}</option>`).join('');
     const respOptsDev = DEV_RESP.map((r: any) => `<option value="${esc(r.name)}">`).join('');
-    // Automatisk avviksnummer: neste løpenummer per prosjekt (høyeste eksisterende + 1, 2-sifret).
+    // Automatisk avviksnummer: årsbasert løpenummer per prosjekt (ÅÅÅÅ-NNN, nullstilles per år).
     const nextDevNo = (() => {
+      const yr = new Date().getFullYear();
       let mx = 0;
-      (devs || []).forEach((d: any) => { const m = String(d.number || '').match(/(\d+)\s*$/); if (m) mx = Math.max(mx, parseInt(m[1], 10)); });
-      return String(mx + 1).padStart(2, '0');
+      (devs || []).forEach((d: any) => { const m = String(d.number || '').match(/^(\d{4})-(\d+)$/); if (m && +m[1] === yr) mx = Math.max(mx, parseInt(m[2], 10)); });
+      return `${yr}-${String(mx + 1).padStart(3, '0')}`;
     })();
     root.innerHTML = `
       <button class="btn btn--ghost" id="back" style="margin-bottom:16px">${esc(p('back'))}</button>
