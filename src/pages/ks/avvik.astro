@@ -105,6 +105,11 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
   const status = document.getElementById('av-status')!;
   const thumbs = document.getElementById('a_thumbs')!;
   const STORE = 'ks-avvik-v1';
+  // Automatisk avviksnummer: løpeteller på denne enheten (ingen DB på denne siden).
+  const CTR = 'ks-avvik-counter';
+  const getCtr = () => { try { return parseInt(localStorage.getItem(CTR) || '0', 10) || 0; } catch (e) { return 0; } };
+  const nextNo = () => String(getCtr() + 1).padStart(2, '0');
+  const noEl = () => document.getElementById('a_no') as HTMLInputElement;
   let photos: string[] = [];
 
   // downscale to dataURL
@@ -156,12 +161,14 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
     fields.forEach((id) => { if (data[id] != null) (document.getElementById(id) as HTMLInputElement).value = data[id]; });
     if (data.status) { const r = form.querySelector<HTMLInputElement>(`input[name="a_status"][value="${data.status}"]`); if (r) r.checked = true; }
     if (Array.isArray(data.photos)) { photos = data.photos; renderThumbs(); }
+    if (!noEl().value) noEl().value = nextNo();
   };
   form.addEventListener('input', save);
   document.getElementById('av-reset')!.addEventListener('click', () => {
     if (!confirm(lang() === 'pl' ? 'Wyczyścić formularz?' : lang() === 'en' ? 'Clear the form?' : 'Nullstille skjemaet?')) return;
     form.reset(); photos = []; renderThumbs();
     try { localStorage.removeItem(STORE); } catch (e) {}
+    noEl().value = nextNo();
   });
 
   document.getElementById('av-pdf')!.addEventListener('click', () => {
@@ -222,6 +229,9 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
 
     const fn = `Dekmar_Avvik_${v('a_no') || 'nr'}_${v('a_project') || ''}`.replace(/[^a-z0-9]+/gi, '_');
     doc.save(fn + '.pdf');
+    // Marker nummeret som brukt, slik at neste avvik får neste løpenummer.
+    const used = parseInt((v('a_no').match(/(\d+)\s*$/) || [])[1] || '0', 10);
+    if (used) { try { localStorage.setItem(CTR, String(Math.max(getCtr(), used))); } catch (e) {} }
   });
 
   load();

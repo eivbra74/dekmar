@@ -1446,6 +1446,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       </li>`).join('');
     const catOptsDev = DEV_CATS.map((c: any) => `<option value="${esc(c.name)}">${esc(devCatLabel(c.name))}</option>`).join('');
     const respOptsDev = DEV_RESP.map((r: any) => `<option value="${esc(r.name)}">`).join('');
+    // Automatisk avviksnummer: neste løpenummer per prosjekt (høyeste eksisterende + 1, 2-sifret).
+    const nextDevNo = (() => {
+      let mx = 0;
+      (devs || []).forEach((d: any) => { const m = String(d.number || '').match(/(\d+)\s*$/); if (m) mx = Math.max(mx, parseInt(m[1], 10)); });
+      return String(mx + 1).padStart(2, '0');
+    })();
     root.innerHTML = `
       <button class="btn btn--ghost" id="back" style="margin-bottom:16px">${esc(p('back'))}</button>
       <div class="p-card">
@@ -1461,7 +1467,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           <p class="p-muted" style="margin:8px 0 2px;font-size:.82rem">${esc(p('devIntro'))}</p>
           <p class="p-subhead">${esc(p('devSecReporter'))}</p>
           <div class="p-grid2">
-            <label class="p-field">${esc(t('devNo'))}<input id="d-no" type="text"></label>
+            <label class="p-field">${esc(t('devNo'))}<input id="d-no" type="text" value="${esc(nextDevNo)}"></label>
             <label class="p-field">${esc(t('date'))}<input id="d-date" type="date"></label>
           </div>
           <label class="p-field">${esc(p('devReporter'))}<input id="d-reporter" type="text"></label>
