@@ -578,7 +578,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     fdvDelivery: { no: 'FDV-leveranse', pl: 'Dostawa FDV', en: 'FDV package' },
     fdvDeliveryPdf: { no: 'FDV-dokumentasjon (PDF)', pl: 'Dokumentacja FDV (PDF)', en: 'FDV documentation (PDF)' },
     fdvNoneInProject: { no: 'Ingen FDV-produkter i prosjektets kalkyler ennå. Merk produkter som «Trenger FDV» i materialbiblioteket, og bruk dem i en kalkyle for prosjektet.', pl: 'Brak produktów FDV w kalkulacjach projektu. Oznacz produkty jako „Wymaga FDV” i użyj ich w kalkulacji.', en: 'No FDV products in this project\'s costings yet. Flag products as “Needs FDV” and use them in a costing for the project.' },
-    fdvIntro: { no: 'Følgende produkter er levert i prosjektet og krever forvaltnings-, drifts- og vedlikeholdsdokumentasjon (FDV):', pl: 'Poniższe produkty dostarczone w projekcie wymagają dokumentacji FDV:', en: 'The following products delivered in this project require FDV (management, operation and maintenance) documentation:' },
+    fdvDeliveryIntro: { no: 'Følgende produkter er levert i prosjektet og krever forvaltnings-, drifts- og vedlikeholdsdokumentasjon (FDV):', pl: 'Poniższe produkty dostarczone w projekcie wymagają dokumentacji FDV:', en: 'The following products delivered in this project require FDV (management, operation and maintenance) documentation:' },
     // HMS-skjemaer (SJA/risiko/stillas)
     hseFormsTitle: { no: 'HMS-skjemaer (SJA, risiko, stillas)', pl: 'Formularze BHP (SJA, ryzyko, rusztowanie)', en: 'HSE forms (JSA, risk, scaffold)' },
     newForm: { no: 'Nytt skjema', pl: 'Nowy formularz', en: 'New form' },
@@ -1544,7 +1544,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const items = Object.keys(agg).map((k) => agg[k]).sort((a, b) => (a.supplier || '').localeCompare(b.supplier || '') || (a.name || '').localeCompare(b.name || ''));
     secEl.innerHTML = `
       <h2>${esc(p('fdvDelivery'))}</h2>
-      <p class="p-muted">${esc(p('fdvIntro'))}</p>
+      <p class="p-muted">${esc(p('fdvDeliveryIntro'))}</p>
       ${items.length ? `<div class="p-tablewrap"><table class="p-table"><thead><tr><th>${esc(p('matName'))}</th><th>${esc(p('matSupplier'))}</th><th>${esc(p('matArtNo'))}</th><th>${esc(p('matUnit'))}</th><th style="text-align:right">${esc(p('colQty'))}</th></tr></thead><tbody>
         ${items.map((it: any) => `<tr><td>${esc(it.name)}</td><td>${esc(it.supplier)}</td><td>${esc(it.article_no)}</td><td>${esc(it.unit)}</td><td style="text-align:right">${esc(it.qty ? nok(it.qty) : '')}</td></tr>`).join('')}
       </tbody></table></div>
@@ -1563,7 +1563,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     y += 26; doc.setTextColor(20, 23, 28);
     doc.setFont('DejaVu', 'bold'); doc.setFontSize(12); doc.text([pr.name, pr.address].filter(Boolean).join('  ·  '), margin, y); y += 8;
     doc.setFont('DejaVu', 'normal'); doc.setFontSize(9.5); doc.setTextColor(60, 66, 74);
-    doc.splitTextToSize(p('fdvIntro'), maxW).forEach((x: string) => { doc.text(x, margin, y); y += 5; }); y += 3; doc.setTextColor(20, 23, 28);
+    doc.splitTextToSize(p('fdvDeliveryIntro'), maxW).forEach((x: string) => { doc.text(x, margin, y); y += 5; }); y += 3; doc.setTextColor(20, 23, 28);
     const cx = { name: margin, sup: margin + 78, art: margin + 128, unit: margin + 158, qty: margin + maxW };
     doc.setFont('DejaVu', 'bold'); doc.setFontSize(8.5); doc.setTextColor(90, 96, 104);
     doc.text(p('matName'), cx.name, y); doc.text(p('matSupplier'), cx.sup, y); doc.text(p('matArtNo'), cx.art, y); doc.text(p('matUnit'), cx.unit, y); doc.text(p('colQty'), cx.qty, y, { align: 'right' } as any);
