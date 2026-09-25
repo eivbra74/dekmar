@@ -2629,7 +2629,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const book = getHandbooks().find((b: any) => b.key === key);
     if (!book) { renderArticles(); return; }
     const L = lang();
-    const chTitle = (c: any) => (L === 'en' ? (c.title_en || c.title) : c.title);
+    const chTitle = (c: any) => (L === 'pl' ? (c.title_pl || c.title) : L === 'en' ? (c.title_en || c.title) : c.title);
     const chBody = (c: any) => (L === 'pl' ? (c.pl || c.no) : L === 'en' ? (c.en || c.no) : c.no);
     const chapHtml = (chapters: any[]) => chapters.map((c: any, i: number) => `
       <details class="hb-chap" data-ci="${i}"><summary>${esc(chTitle(c))}</summary><div class="p-article">${chBody(c)}</div></details>`).join('');
