@@ -2579,7 +2579,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           ${hb.map((d: any) => `
             <button class="hb-card" data-hb="${esc(d.storage_path)}">
               <span class="hb-ic">${ICONS.handbook}</span>
-              <span class="hb-body"><span class="hb-title">${esc(d.title)}</span>${d.file_name ? `<span class="hb-meta">${esc(d.file_name)}</span>` : ''}</span>
+              <span class="hb-body"><span class="hb-title">${esc(locDocText(d.title))}</span>${d.file_name ? `<span class="hb-meta">${esc(d.file_name)}</span>` : ''}</span>
               <span class="hb-go">${esc(p('openDoc'))} ↓</span>
             </button>`).join('')}
         </div>` : ''}
@@ -2618,6 +2618,23 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     ks: { no: 'KS-håndbok', pl: 'Podręcznik KS', en: 'QA handbook' },
   };
   const bookTitle = (b: any) => (BOOK_TITLE[b.key] ? (BOOK_TITLE[b.key][lang()] || BOOK_TITLE[b.key].no) : b.title);
+  // Lokaliserer de faste tokenene i revisjons-/dokumenttitler (data er norsk).
+  // Filnavn (d.file_name) er den faktiske .docx-en og oversettes ikke.
+  const DOC_I18N: Record<string, { pl: string; en: string }> = {
+    'HMS-håndbok': { pl: 'Podręcznik BHP', en: 'HSE handbook' },
+    'KS-håndbok': { pl: 'Podręcznik KS', en: 'QA handbook' },
+    'Risikovurdering': { pl: 'Ocena ryzyka', en: 'Risk assessment' },
+    'taktekking': { pl: 'prace dekarskie', en: 'roofing' },
+    'Versjon': { pl: 'Wersja', en: 'Version' },
+    'godkjent': { pl: 'zatwierdzono', en: 'approved' },
+    'revidert': { pl: 'zmieniono', en: 'revised' },
+  };
+  const locDocText = (s: string) => {
+    const L = lang(); if (L === 'no' || !s) return s;
+    let out = s;
+    for (const k of Object.keys(DOC_I18N)) out = out.split(k).join((DOC_I18N as any)[k][L] || k);
+    return out;
+  };
   function reviewInfo(reviewDate: string) {
     const base = new Date(reviewDate); if (isNaN(+base)) return null;
     const due = new Date(base); due.setMonth(due.getMonth() + 6);
@@ -2635,11 +2652,11 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       <details class="hb-chap" data-ci="${i}"><summary>${esc(chTitle(c))}</summary><div class="p-article">${chBody(c)}</div></details>`).join('');
     const ri = reviewInfo(book.reviewDate);
     const reviewBanner = ri ? (ri.overdue
-      ? `<div class="hb-review overdue">${esc(p('reviewOverdue'))} (${esc(book.revision)})</div>`
+      ? `<div class="hb-review overdue">${esc(p('reviewOverdue'))} (${esc(locDocText(book.revision))})</div>`
       : `<div class="hb-review">${esc(p('nextReview'))}: ${esc(ri.due)}</div>`) : '';
     root.innerHTML = `
       <div class="p-head">
-        <div><h1>${esc(bookTitle(book))}</h1><p class="p-muted">${esc(book.revision)}</p></div>
+        <div><h1>${esc(bookTitle(book))}</h1><p class="p-muted">${esc(locDocText(book.revision))}</p></div>
         <div class="p-user"><button class="btn btn--ghost" id="hbr-back">${esc(p('back'))}</button></div>
       </div>
       ${reviewBanner}
