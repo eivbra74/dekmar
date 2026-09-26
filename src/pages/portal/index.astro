@@ -2710,7 +2710,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           <label class="p-field">${esc(t('performedBy'))}<input id="wd-by" type="text" value="${esc(doc?.performed_by || '')}"></label>
           <div class="p-grid2">
             <label class="p-field">${esc(p('wdPeriodFrom'))}<input id="wd-from" type="date" value="${esc(doc?.period_from || (doc ? '' : todayISO))}"></label>
-            <label class="p-field">${esc(p('wdPeriodTo'))}<input id="wd-to" type="date" value="${esc(doc?.period_to || '')}"></label>
+            <label class="p-field">${esc(p('wdPeriodTo'))}<input id="wd-to" type="date" value="${esc(doc?.period_to || (doc ? '' : todayISO))}"></label>
           </div>
         </div>
         <label class="p-field">${esc(p('wdSummary'))}<textarea id="wd-summary" rows="3">${esc(doc?.summary || '')}</textarea></label>
