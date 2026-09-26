@@ -2648,7 +2648,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const projOpts = projs.map((pr: any) => `<option value="${esc(pr.id)}">${esc(pr.name)}</option>`).join('');
     const list = docs.map((d: any) => `
       <li class="p-item" data-wd="${esc(d.id)}">
-        <div><h3>${esc(d.title || p('workdocNav'))}</h3><p>${esc([d.projects?.name, d.performed_by, fmt(d.created_at)].filter(Boolean).join(' · '))}</p></div>
+        <div><h3>${esc(wdI18nVal(d, 'title') || p('workdocNav'))}</h3><p>${esc([d.projects?.name, d.performed_by, fmt(d.created_at)].filter(Boolean).join(' · '))}</p></div>
         <span class="p-muted">${esc(p('edit'))} ›</span>
       </li>`).join('');
     root.innerHTML = `
@@ -2673,14 +2673,29 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     }));
   }
 
+  // Verdi paa innlogget spraak fra i18n, med fallback til grunnfeltet.
+  const wdI18nVal = (obj: any, field: string) => (obj && obj.i18n && obj.i18n[lang()] && obj.i18n[lang()][field]) || (obj && obj[field]) || '';
+  // Oversetter en bunt tekstfelt til no/pl/en (kilde = gjeldende spraak).
+  async function wdTranslateBundle(items: { ref: string; text: string }[]) {
+    const src = lang();
+    const res: any = { no: {}, pl: {}, en: {} };
+    items.forEach((it) => { res[src][it.ref] = it.text; });
+    const tmap: any = { no: 'NB', pl: 'PL', en: 'EN' };
+    for (const tl of (['no', 'pl', 'en'] as string[]).filter((l) => l !== src)) {
+      let m = new Map<string, string>();
+      try { m = await translateMap(items.map((it) => it.text), tmap[tl]); } catch (_e) { /* behold kilde ved feil */ }
+      items.forEach((it) => { res[tl][it.ref] = m.get(it.text) || it.text; });
+    }
+    return res;
+  }
   function wdEntryRow(e: any) {
     return `<div class="p-card wd-entry" data-eid="${esc(e.id)}" style="margin-bottom:10px">
       <div class="p-grid2">
-        <label class="p-field">${esc(p('wdLocation'))}<input class="wd-loc" type="text" value="${esc(e.location || '')}"></label>
-        <label class="p-field">${esc(p('wdMaterials'))}<input class="wd-mat" type="text" value="${esc(e.materials || '')}"></label>
+        <label class="p-field">${esc(p('wdLocation'))}<input class="wd-loc" type="text" value="${esc(wdI18nVal(e, 'location'))}"></label>
+        <label class="p-field">${esc(p('wdMaterials'))}<input class="wd-mat" type="text" value="${esc(wdI18nVal(e, 'materials'))}"></label>
       </div>
-      <label class="p-field">${esc(p('wdWork'))}<textarea class="wd-work" rows="2">${esc(e.work || '')}</textarea></label>
-      <label class="p-field">${esc(p('wdMethod'))}<textarea class="wd-method" rows="2">${esc(e.method || '')}</textarea></label>
+      <label class="p-field">${esc(p('wdWork'))}<textarea class="wd-work" rows="2">${esc(wdI18nVal(e, 'work'))}</textarea></label>
+      <label class="p-field">${esc(p('wdMethod'))}<textarea class="wd-method" rows="2">${esc(wdI18nVal(e, 'method'))}</textarea></label>
       <div class="wd-entry-photos" data-eid="${esc(e.id)}" style="margin:8px 0 4px"></div>
       <button class="btn btn--ghost p-sm wd-del-entry" type="button">${esc(p('wdRemove'))}</button>
     </div>`;
@@ -2703,7 +2718,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         <div class="p-user"><button class="btn btn--ghost" id="wd-back">${esc(p('back'))}</button></div></div>
       <div class="p-card">
         <div class="p-grid2">
-          <label class="p-field">${esc(p('wdTitle'))}<input id="wd-title" type="text" value="${esc(doc?.title || '')}"></label>
+          <label class="p-field">${esc(p('wdTitle'))}<input id="wd-title" type="text" value="${esc(wdI18nVal(doc, 'title'))}"></label>
           <label class="p-field">${esc(p('wdClient'))}<input id="wd-client" type="text" value="${esc(doc?.client || '')}"></label>
         </div>
         <div class="p-grid2">
@@ -2713,7 +2728,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
             <label class="p-field">${esc(p('wdPeriodTo'))}<input id="wd-to" type="date" value="${esc(doc?.period_to || (doc ? '' : todayISO))}"></label>
           </div>
         </div>
-        <label class="p-field">${esc(p('wdSummary'))}<textarea id="wd-summary" rows="3">${esc(doc?.summary || '')}</textarea></label>
+        <label class="p-field">${esc(p('wdSummary'))}<textarea id="wd-summary" rows="3">${esc(wdI18nVal(doc, 'summary'))}</textarea></label>
       </div>
       <div class="p-section">
         <h2>${esc(p('wdEntries'))}</h2>
@@ -2721,8 +2736,8 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         <button class="btn btn--ghost" id="wd-add-entry" type="button">${esc(p('wdAddEntry'))}</button>
       </div>
       <div class="p-card">
-        <label class="p-field">${esc(p('wdControl'))}<textarea id="wd-control" rows="2">${esc(doc?.control || '')}</textarea></label>
-        <label class="p-field">${esc(p('wdConclusion'))}<textarea id="wd-conclusion" rows="2">${esc(doc?.conclusion || '')}</textarea></label>
+        <label class="p-field">${esc(p('wdControl'))}<textarea id="wd-control" rows="2">${esc(wdI18nVal(doc, 'control'))}</textarea></label>
+        <label class="p-field">${esc(p('wdConclusion'))}<textarea id="wd-conclusion" rows="2">${esc(wdI18nVal(doc, 'conclusion'))}</textarea></label>
       </div>
       <div class="p-actions">
         <button class="btn btn--primary" id="wd-save" type="button">${esc(p('save'))}</button>
@@ -2792,20 +2807,40 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       const msg = document.getElementById('wd-msg')!;
       const btn = document.getElementById('wd-save') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('saving');
       const { data: u } = await supabase.auth.getUser();
+      const title = (document.getElementById('wd-title') as HTMLInputElement).value.trim();
+      const summary = (document.getElementById('wd-summary') as HTMLTextAreaElement).value.trim();
+      const control = (document.getElementById('wd-control') as HTMLTextAreaElement).value.trim();
+      const conclusion = (document.getElementById('wd-conclusion') as HTMLTextAreaElement).value.trim();
+      const collected = collectEntries();
+      // Oversett alt tekstinnhold til no/pl/en i én bunt (kilde = gjeldende spraak).
+      const items: { ref: string; text: string }[] = [
+        { ref: 'd.title', text: title }, { ref: 'd.summary', text: summary },
+        { ref: 'd.control', text: control }, { ref: 'd.conclusion', text: conclusion },
+      ];
+      collected.forEach((e: any, i: number) => { (['location', 'work', 'materials', 'method'] as string[]).forEach((k) => items.push({ ref: 'e' + i + '.' + k, text: e[k] || '' })); });
+      const bundle = await wdTranslateBundle(items);
+      const docI18n: any = {};
+      (['no', 'pl', 'en'] as string[]).forEach((l) => { docI18n[l] = { title: bundle[l]['d.title'], summary: bundle[l]['d.summary'], control: bundle[l]['d.control'], conclusion: bundle[l]['d.conclusion'] }; });
+      const entries = collected.map((e: any, i: number) => ({ ...e, i18n: {
+        no: { location: bundle.no['e' + i + '.location'], work: bundle.no['e' + i + '.work'], materials: bundle.no['e' + i + '.materials'], method: bundle.no['e' + i + '.method'] },
+        pl: { location: bundle.pl['e' + i + '.location'], work: bundle.pl['e' + i + '.work'], materials: bundle.pl['e' + i + '.materials'], method: bundle.pl['e' + i + '.method'] },
+        en: { location: bundle.en['e' + i + '.location'], work: bundle.en['e' + i + '.work'], materials: bundle.en['e' + i + '.materials'], method: bundle.en['e' + i + '.method'] },
+      } }));
       const payload: any = {
         project_id: projectId,
-        title: (document.getElementById('wd-title') as HTMLInputElement).value.trim() || null,
+        title: title || null,
         client: (document.getElementById('wd-client') as HTMLInputElement).value.trim() || null,
         performed_by: (document.getElementById('wd-by') as HTMLInputElement).value.trim() || null,
         period_from: (document.getElementById('wd-from') as HTMLInputElement).value || null,
         period_to: (document.getElementById('wd-to') as HTMLInputElement).value || null,
-        summary: (document.getElementById('wd-summary') as HTMLTextAreaElement).value.trim() || null,
-        entries: collectEntries(),
-        control: (document.getElementById('wd-control') as HTMLTextAreaElement).value.trim() || null,
-        conclusion: (document.getElementById('wd-conclusion') as HTMLTextAreaElement).value.trim() || null,
+        summary: summary || null,
+        entries,
+        control: control || null,
+        conclusion: conclusion || null,
+        i18n: docI18n,
       };
       let err: any;
-      if (currentId) { const r = await supabase.from('work_docs').update(payload).eq('id', currentId); err = r.error; }
+      if (currentId) { const r = await supabase.from('work_docs').update(payload).eq('id', currentId); err = r.error; if (!err) doc = { ...(doc || {}), ...payload, id: currentId }; }
       else { payload.created_by = u.user?.id; const r = await supabase.from('work_docs').insert(payload).select().single(); err = r.error; if (!err) { currentId = r.data.id; doc = r.data; } }
       btn.disabled = false;
       if (err) { msg.textContent = err.message; msg.style.color = '#cc1f2a'; return; }
@@ -2831,20 +2866,21 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
     doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(`${p('workdocNav')} – ${projName || ''}`, margin, 18);
     doc.setTextColor(20, 23, 28); y = 32;
-    if (d.title) line(d.title, 13, 'bold', 7);
+    const dTitle = wdI18nVal(d, 'title'); if (dTitle) line(dTitle, 13, 'bold', 7);
     const meta = [d.client ? `${p('wdClient')}: ${d.client}` : '', d.performed_by ? `${t('performedBy')}: ${d.performed_by}` : '', (d.period_from || d.period_to) ? `${p('wdPeriodFrom')} ${d.period_from || ''} – ${d.period_to || ''}` : ''].filter(Boolean).join('   ·   ');
     if (meta) line(meta, 9.5, 'normal', 6, [90, 96, 104]);
-    if (d.summary) { line(p('wdSummary'), 11, 'bold', 5.5); line(d.summary, 10, 'normal', 5.5); y += 1; }
+    const dSummary = wdI18nVal(d, 'summary'); if (dSummary) { line(p('wdSummary'), 11, 'bold', 5.5); line(dSummary, 10, 'normal', 5.5); y += 1; }
     (d.entries || []).forEach((e: any, i: number) => {
       if (y > 268) { doc.addPage(); y = margin; }
       y += 2; doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.5); doc.line(margin, y, margin + maxW, y); y += 5;
-      line(`${i + 1}. ${e.location || ''}`, 12, 'bold', 6);
-      if (e.work) { line(`${p('wdWork')}:`, 9, 'bold', 4.5, [90, 96, 104]); line(e.work, 10, 'normal', 5); }
-      if (e.materials) line(`${p('wdMaterials')}: ${e.materials}`, 10, 'normal', 5);
-      if (e.method) { line(`${p('wdMethod')}:`, 9, 'bold', 4.5, [90, 96, 104]); line(e.method, 10, 'normal', 5); }
+      const eLoc = wdI18nVal(e, 'location'), eWork = wdI18nVal(e, 'work'), eMat = wdI18nVal(e, 'materials'), eMet = wdI18nVal(e, 'method');
+      line(`${i + 1}. ${eLoc}`, 12, 'bold', 6);
+      if (eWork) { line(`${p('wdWork')}:`, 9, 'bold', 4.5, [90, 96, 104]); line(eWork, 10, 'normal', 5); }
+      if (eMat) line(`${p('wdMaterials')}: ${eMat}`, 10, 'normal', 5);
+      if (eMet) { line(`${p('wdMethod')}:`, 9, 'bold', 4.5, [90, 96, 104]); line(eMet, 10, 'normal', 5); }
     });
-    if (d.control) { y += 2; line(p('wdControl'), 11, 'bold', 5.5); line(d.control, 10, 'normal', 5.5); }
-    if (d.conclusion) { y += 2; line(p('wdConclusion'), 11, 'bold', 5.5); line(d.conclusion, 10, 'normal', 5.5); }
+    const dControl = wdI18nVal(d, 'control'); if (dControl) { y += 2; line(p('wdControl'), 11, 'bold', 5.5); line(dControl, 10, 'normal', 5.5); }
+    const dConcl = wdI18nVal(d, 'conclusion'); if (dConcl) { y += 2; line(p('wdConclusion'), 11, 'bold', 5.5); line(dConcl, 10, 'normal', 5.5); }
     if (rows && rows.length) {
       const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
       if (y > 250) { doc.addPage(); y = margin; }
