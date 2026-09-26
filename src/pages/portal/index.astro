@@ -1696,6 +1696,24 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   }
   const langName = (t: string) => (t === 'PL' ? 'PL' : (t === 'NB' || t === 'NO') ? 'NO' : 'EN');
 
+  // Bygger flerspraaklig tittel {no,pl,en} fra en tittel skrevet paa gjeldende
+  // spraak. Oversetter til de to andre spraakene via translate-funksjonen slik
+  // at listenavnet vises paa innlogget spraak (ogsaa brukertillegg som «uke 39»).
+  async function formTitleI18n(title: string): Promise<Record<string, string>> {
+    const src = lang();
+    const out: Record<string, string> = { no: title, pl: title, en: title };
+    if (!title || !title.trim()) return out;
+    const targets: [string, string][] = [['NB', 'no'], ['PL', 'pl'], ['EN', 'en']];
+    for (const [tgt, k] of targets) {
+      if (k === src) continue;
+      try { const m = await translateMap([title], tgt); out[k] = m.get(title) || title; } catch (_e) { out[k] = title; }
+    }
+    out[src] = title;
+    return out;
+  }
+  // Viser listenavn paa innlogget spraak, med fallback til lagret tittel.
+  const formTitle = (c: any, fallback = '') => (c && c.title_i18n && c.title_i18n[lang()]) || (c && c.title) || fallback;
+
   // Kall Tripletex-funksjonen og hent verdier for en gitt action.
   async function tripletexFetch(action: string): Promise<any[]> {
     const { data, error } = await supabase.functions.invoke('tripletex', { body: { action } });
@@ -2120,7 +2138,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const { data: rows } = await supabase.from('checklists').select('*').eq('project_id', projectId).eq('type', kind).order('created_at', { ascending: false });
     const list = (rows || []).map((c: any) => `
       <li class="p-item" data-form="${esc(c.id)}">
-        <div><h3>${esc(c.title || heading)}</h3><p>${esc([c.performed_by, c.performed_date].filter(Boolean).join(' · '))}${c.performed_by || c.performed_date ? ' · ' : ''}${esc(p('createdAt'))} ${esc(fmt(c.created_at))}</p></div>
+        <div><h3>${esc(formTitle(c, heading))}</h3><p>${esc([c.performed_by, c.performed_date].filter(Boolean).join(' · '))}${c.performed_by || c.performed_date ? ' · ' : ''}${esc(p('createdAt'))} ${esc(fmt(c.created_at))}</p></div>
         <span class="p-muted">PDF ›</span>
       </li>`).join('');
     const tplOpts = tpls.map((tp: any) => `<option value="${esc(tp.id)}">${esc(tp.name)}${tp.is_standard ? '' : ' *'}</option>`).join('');
@@ -2165,10 +2183,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       secEl.querySelectorAll<HTMLInputElement>('input[type=radio]:checked').forEach((r) => { answers[r.name] = r.value; });
       secEl.querySelectorAll<HTMLInputElement>('input[data-note]').forEach((n) => { if (n.value.trim()) answers[n.dataset.note!] = n.value.trim(); });
       const { data: u } = await supabase.auth.getUser();
+      const finalTitle = titleInp.value.trim() || chosen.name;
       saveBtn.disabled = true; (secEl.querySelector('.f-msg') as HTMLElement).textContent = p('saving');
+      const title_i18n = await formTitleI18n(finalTitle);
       const { error } = await supabase.from('checklists').insert({
         project_id: projectId, type: kind, template_id: chosen.id, sections: chosen.sections,
-        title: titleInp.value.trim() || chosen.name,
+        title: finalTitle, title_i18n,
         performed_by: (secEl.querySelector('.f-by') as HTMLInputElement).value.trim() || null,
         performed_date: (secEl.querySelector('.f-date') as HTMLInputElement).value || null,
         lang: lang(), answers, created_by: u.user?.id,
