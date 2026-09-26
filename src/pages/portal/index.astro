@@ -2694,6 +2694,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const projs = await wdActiveProjects();
     const projName = (projs.find((x: any) => x.id === projectId) || {}).name || doc?.projects?.name || '';
     const genEid = () => 'e' + Math.random().toString(36).slice(2, 9);
+    const todayISO = new Date().toISOString().slice(0, 10);
     let entries: any[] = (doc && Array.isArray(doc.entries)) ? JSON.parse(JSON.stringify(doc.entries)) : [];
     if (!entries.length) entries = [{ location: '', work: '', materials: '', method: '' }];
     entries.forEach((e) => { if (!e.id) e.id = genEid(); });
@@ -2708,7 +2709,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         <div class="p-grid2">
           <label class="p-field">${esc(t('performedBy'))}<input id="wd-by" type="text" value="${esc(doc?.performed_by || '')}"></label>
           <div class="p-grid2">
-            <label class="p-field">${esc(p('wdPeriodFrom'))}<input id="wd-from" type="date" value="${esc(doc?.period_from || '')}"></label>
+            <label class="p-field">${esc(p('wdPeriodFrom'))}<input id="wd-from" type="date" value="${esc(doc?.period_from || (doc ? '' : todayISO))}"></label>
             <label class="p-field">${esc(p('wdPeriodTo'))}<input id="wd-to" type="date" value="${esc(doc?.period_to || '')}"></label>
           </div>
         </div>
