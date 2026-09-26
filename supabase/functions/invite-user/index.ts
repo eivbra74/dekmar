@@ -1,6 +1,7 @@
-// Supabase Edge Function: invite-user (deployet via dashboard-editor)
-// Sender e-postinvitasjon til en ny ansatt. Kun innloggede brukere kan kalle den.
-// Service-nøkkelen brukes kun her på serveren (aldri i frontend).
+// Supabase Edge Function: invite-user
+// Sends an email invitation to a new employee. Only admin or leder may call it
+// (role is read on the server). The service key is used only here on the server,
+// never in the frontend.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const cors = {
@@ -19,10 +20,14 @@ Deno.serve(async (req) => {
   const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(url, service, { auth: { persistSession: false } });
 
-  // Bekreft at kalleren er en innlogget bruker (JWT i Authorization)
+  // Caller must be logged in.
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   const { data: { user } } = await admin.auth.getUser(token);
   if (!user) return json({ error: 'unauthorized' }, 401);
+
+  // Only admin or leder may invite (role read on the server, cannot be faked).
+  const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).single();
+  if (!me || (me.role !== 'admin' && me.role !== 'leder')) return json({ error: 'forbidden' }, 403);
 
   let email = '';
   try { email = ((await req.json()).email || '').trim(); } catch (_e) { /* ignore */ }

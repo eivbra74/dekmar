@@ -979,7 +979,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     contracts:   ['admin', 'leder'],
     // Styrer systemet selv.
     templates:   ['admin'],
-    team:        ['admin'],
+    // Ansatte-mappen er synlig for alle, men innholdet er rollestyrt: ansatt ser
+    // bare seg selv, leder kan invitere og ser ikke-admins, admin ser/endrer alt.
+    // Selve haandhevingen ligger i RLS paa profiles + admin-sjekk i edge-funksjoner.
+    team:        ['admin', 'leder', 'ansatt'],
   };
 
   let ME: { id: string; email: string; role: string } = { id: '', email: '', role: 'ansatt' };
@@ -998,12 +1001,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       ME.email = u.user.email || '';
       const { data: pr, error } = await supabase.from('profiles').select('role').eq('id', u.user.id).maybeSingle();
       if (error) {
-        // Skjemaet er ikke migrert ennaa (kolonnen finnes ikke). Da er RLS
-        // heller ikke strammet inn, saa aa skjule menypunkter ville ikke
-        // beskyttet noe — det ville bare laast eieren ute av sitt eget
-        // system. Behold dagens oppfoersel til migrasjon 018 er kjoert.
-        console.warn('[roller] fant ikke role-kolonnen; viser alt inntil migrasjon 018 er kjoert', error.message);
-        ME.role = 'admin';
+        // Migrasjon 018 er kjoert i prod, saa role-kolonnen finnes. En feil her
+        // (RLS, nettverk) skal gi MINST privilegium, ikke mest: en ansatt skal
+        // aldri faa admin-menyen fordi et kall glapp. Fail-closed til 'ansatt';
+        // ved genuin feil laster brukeren siden paa nytt.
+        console.warn('[roller] kunne ikke lese rolle; faller til ansatt', error.message);
+        ME.role = 'ansatt';
         return;
       }
       // Rad finnes, men uten rolle: da ER hun ansatt.
@@ -3102,11 +3105,27 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       .select('id, full_name, email, role, created_at, last_sign_in_at, last_seen_at')
       .order('created_at');
 
+    // Rollestyrt: kun admin ser rollemeny og passordfelt. Leder/ansatt ser rolle
+    // som ren tekst og ingen passordfunksjon. (RLS avgjor hvilke RADER som kommer.)
+    const admin = ME.role === 'admin';
+    const canInvite = ME.role === 'admin' || ME.role === 'leder';
     const rows = (profs || []).map((pr: any) => {
       const isMe = pr.id === ME.id;
       const opts = ['admin', 'leder', 'ansatt']
         .map((r) => `<option value="${esc(r)}"${r === pr.role ? ' selected' : ''}>${esc(roleName(r))}</option>`)
         .join('');
+      const roleCtrl = admin
+        ? `<label class="p-field" style="margin:0;min-width:160px"><span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span><select data-role-for="${esc(pr.id)}">${opts}</select></label>`
+        : `<div class="p-field" style="margin:0;min-width:120px"><span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span><span style="font-weight:600">${esc(roleName(pr.role))}</span></div>`;
+      const pwBlock = admin ? `
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <label class="p-field" style="margin:0;flex:1;min-width:200px">
+            <span class="p-muted" style="font-size:12px">${esc(p('setUserPw'))}</span>
+            <input type="password" data-pw-for="${esc(pr.id)}" autocomplete="new-password" placeholder="${esc(p('pwPlaceholder'))}">
+          </label>
+          <button class="btn btn--ghost" type="button" data-pw-set="${esc(pr.id)}" data-pw-email="${esc(pr.email || '')}">${esc(p('pwSetBtn'))}</button>
+          <span class="p-muted" data-pw-msg="${esc(pr.id)}" style="font-size:12px"></span>
+        </div>` : '';
       return `
       <li class="p-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:12px">
         <div style="display:flex;gap:12px;align-items:flex-start">
@@ -3118,33 +3137,23 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
               &nbsp;·&nbsp; ${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}
             </p>
           </div>
-          <label class="p-field" style="margin:0;min-width:160px">
-            <span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span>
-            <select data-role-for="${esc(pr.id)}">${opts}</select>
-          </label>
+          ${roleCtrl}
         </div>
-        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-          <label class="p-field" style="margin:0;flex:1;min-width:200px">
-            <span class="p-muted" style="font-size:12px">${esc(p('setUserPw'))}</span>
-            <input type="password" data-pw-for="${esc(pr.id)}" autocomplete="new-password" placeholder="${esc(p('pwPlaceholder'))}">
-          </label>
-          <button class="btn btn--ghost" type="button" data-pw-set="${esc(pr.id)}" data-pw-email="${esc(pr.email || '')}">${esc(p('pwSetBtn'))}</button>
-          <span class="p-muted" data-pw-msg="${esc(pr.id)}" style="font-size:12px"></span>
-        </div>
+        ${pwBlock}
       </li>`;
     }).join('');
 
     root.innerHTML = `
       <div class="p-head"><h1>${esc(p('team'))}</h1>
         <div class="p-user"><button class="btn btn--ghost" id="t-back">${esc(p('back'))}</button></div></div>
-      <div class="p-card">
+      ${canInvite ? `<div class="p-card">
         <h2 style="margin-top:0">${esc(p('invite'))}</h2>
         <form id="inv">
           <label class="p-field">${esc(p('inviteEmail'))}<input id="inv-email" type="email" required></label>
           <button class="btn btn--primary" type="submit">${esc(p('sendInvite'))}</button>
           <span class="p-muted" id="inv-msg" style="margin-left:10px"></span>
         </form>
-      </div>
+      </div>` : ''}
       <div class="p-section">
         <h2>${esc(p('members'))}</h2>
         <p class="p-muted" style="margin-top:-4px">${esc(p('roleHelp'))}</p>
@@ -3206,7 +3215,8 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       });
     });
 
-    (document.getElementById('inv') as HTMLFormElement).addEventListener('submit', async (e) => {
+    const invForm = document.getElementById('inv') as HTMLFormElement | null;
+    if (invForm) invForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = (document.getElementById('inv-email') as HTMLInputElement).value.trim();
       const msg = document.getElementById('inv-msg')!;
@@ -3232,7 +3242,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const [docsRes, projRes, profRes] = await Promise.all([
       supabase.from('documents').select('*, projects(name)').order('created_at', { ascending: false }),
       supabase.from('projects').select('id,name').order('name'),
-      supabase.from('profiles').select('id,full_name'),
+      supabase.from('staff_names').select('id,full_name'),
     ]);
     const docs = docsRes.data || [];
     (window as any).__docs = docs;
@@ -4228,7 +4238,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       supabase.from('resource_assignments').select('*').gte('work_date', startS).lte('work_date', endS),
       supabase.from('projects').select('id,name,status').order('name'),
       supabase.from('time_entries').select('employee').limit(2000),
-      supabase.from('profiles').select('full_name'),
+      supabase.from('staff_names').select('full_name'),
     ]);
     const A = assignRes.data || []; const PROJ = projRes.data || [];
     const projName = (id: string) => (PROJ.find((x: any) => x.id === id) || {}).name || '—';
@@ -4323,7 +4333,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const [slRes, teRes, profRes] = await Promise.all([
       supabase.from('sick_leaves').select('*').order('from_date', { ascending: false }),
       supabase.from('time_entries').select('employee').limit(2000),
-      supabase.from('profiles').select('full_name'),
+      supabase.from('staff_names').select('full_name'),
     ]);
     const SL = slRes.data || [];
     const rosterSet = new Set<string>();
