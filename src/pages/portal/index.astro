@@ -398,6 +398,11 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     sendInvite: { no: 'Send invitasjon', pl: 'Wyślij zaproszenie', en: 'Send invitation' },
     inviteSent: { no: 'Invitasjon sendt til', pl: 'Zaproszenie wysłane do', en: 'Invitation sent to' },
     alreadyMember: { no: 'Denne e-posten er allerede registrert.', pl: 'Ten adres e-mail jest już zarejestrowany.', en: 'This email is already registered.' },
+    setUserPw: { no: 'Sett/endre passord', pl: 'Ustaw/zmień hasło', en: 'Set / change password' },
+    pwPlaceholder: { no: 'Nytt passord (min. 8 tegn)', pl: 'Nowe hasło (min. 8 znaków)', en: 'New password (min. 8 chars)' },
+    pwSetBtn: { no: 'Sett passord', pl: 'Ustaw hasło', en: 'Set password' },
+    pwSetOk: { no: 'Passord oppdatert', pl: 'Hasło zaktualizowane', en: 'Password updated' },
+    pwTooShort: { no: 'Minst 8 tegn', pl: 'Minimum 8 znaków', en: 'At least 8 characters' },
     manageTemplates: { no: 'Maler', pl: 'Szablony', en: 'Templates' },
     templatesTitle: { no: 'Maladministrasjon', pl: 'Zarządzanie szablonami', en: 'Template administration' },
     standardTemplatesLabel: { no: 'Standardmaler', pl: 'Szablony standardowe', en: 'Standard templates' },
@@ -3103,19 +3108,29 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         .map((r) => `<option value="${esc(r)}"${r === pr.role ? ' selected' : ''}>${esc(roleName(r))}</option>`)
         .join('');
       return `
-      <li class="p-item" style="cursor:default;align-items:flex-start">
-        <div style="flex:1">
-          <h3>${esc(pr.email || pr.full_name || '—')}${isMe ? ` <span class="p-muted" style="font-weight:400">(${esc(p('youLabel'))})</span>` : ''}</h3>
-          <p>
-            ${esc(p('lastSignIn'))}: ${esc(since(pr.last_sign_in_at))}
-            &nbsp;·&nbsp; ${esc(p('lastSeen'))}: ${esc(since(pr.last_seen_at))}
-            &nbsp;·&nbsp; ${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}
-          </p>
+      <li class="p-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:12px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1">
+            <h3>${esc(pr.email || pr.full_name || '—')}${isMe ? ` <span class="p-muted" style="font-weight:400">(${esc(p('youLabel'))})</span>` : ''}</h3>
+            <p>
+              ${esc(p('lastSignIn'))}: ${esc(since(pr.last_sign_in_at))}
+              &nbsp;·&nbsp; ${esc(p('lastSeen'))}: ${esc(since(pr.last_seen_at))}
+              &nbsp;·&nbsp; ${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}
+            </p>
+          </div>
+          <label class="p-field" style="margin:0;min-width:160px">
+            <span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span>
+            <select data-role-for="${esc(pr.id)}">${opts}</select>
+          </label>
         </div>
-        <label class="p-field" style="margin:0;min-width:160px">
-          <span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span>
-          <select data-role-for="${esc(pr.id)}">${opts}</select>
-        </label>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <label class="p-field" style="margin:0;flex:1;min-width:200px">
+            <span class="p-muted" style="font-size:12px">${esc(p('setUserPw'))}</span>
+            <input type="password" data-pw-for="${esc(pr.id)}" autocomplete="new-password" placeholder="${esc(p('pwPlaceholder'))}">
+          </label>
+          <button class="btn btn--ghost" type="button" data-pw-set="${esc(pr.id)}" data-pw-email="${esc(pr.email || '')}">${esc(p('pwSetBtn'))}</button>
+          <span class="p-muted" data-pw-msg="${esc(pr.id)}" style="font-size:12px"></span>
+        </div>
       </li>`;
     }).join('');
 
@@ -3165,6 +3180,29 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         // Endrer du din egen rolle, må menyen tegnes på nytt — ellers står du
         // igjen med punkter du ikke lenger har tilgang til.
         if (id === ME.id) { await loadMe(); paintShellChrome(); }
+      });
+    });
+
+    // Admin setter/endrer passord for en bruker (edge-funksjon med service-role, admin-sjekk på server).
+    document.querySelectorAll<HTMLButtonElement>('[data-pw-set]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.pwSet!;
+        const email = btn.dataset.pwEmail || '';
+        const inp = document.querySelector<HTMLInputElement>(`[data-pw-for="${id}"]`)!;
+        const m = document.querySelector<HTMLElement>(`[data-pw-msg="${id}"]`)!;
+        const pw = inp.value;
+        if (!email) { m.textContent = '—'; m.style.color = '#cc1f2a'; return; }
+        if (!pw || pw.length < 8) { m.textContent = p('pwTooShort'); m.style.color = '#cc1f2a'; return; }
+        btn.disabled = true; m.style.color = ''; m.textContent = p('saving');
+        const { data, error } = await supabase.functions.invoke('set-user-password', { body: { email, password: pw } });
+        btn.disabled = false;
+        if (error || (data && data.error)) {
+          let detail = data?.error || error?.message || 'Feil';
+          try { const body = await (error as any)?.context?.json?.(); if (body?.error) detail = body.error; } catch (_e) { /* ignore */ }
+          m.textContent = detail; m.style.color = '#cc1f2a';
+        } else {
+          m.textContent = p('pwSetOk'); m.style.color = ''; inp.value = '';
+        }
       });
     });
 
