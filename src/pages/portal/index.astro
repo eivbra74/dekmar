@@ -2674,13 +2674,14 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   }
 
   function wdEntryRow(e: any) {
-    return `<div class="p-card wd-entry" style="margin-bottom:10px">
+    return `<div class="p-card wd-entry" data-eid="${esc(e.id)}" style="margin-bottom:10px">
       <div class="p-grid2">
         <label class="p-field">${esc(p('wdLocation'))}<input class="wd-loc" type="text" value="${esc(e.location || '')}"></label>
         <label class="p-field">${esc(p('wdMaterials'))}<input class="wd-mat" type="text" value="${esc(e.materials || '')}"></label>
       </div>
       <label class="p-field">${esc(p('wdWork'))}<textarea class="wd-work" rows="2">${esc(e.work || '')}</textarea></label>
       <label class="p-field">${esc(p('wdMethod'))}<textarea class="wd-method" rows="2">${esc(e.method || '')}</textarea></label>
+      <div class="wd-entry-photos" data-eid="${esc(e.id)}" style="margin:8px 0 4px"></div>
       <button class="btn btn--ghost p-sm wd-del-entry" type="button">${esc(p('wdRemove'))}</button>
     </div>`;
   }
@@ -2692,8 +2693,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     await ensureShell('workdoc');
     const projs = await wdActiveProjects();
     const projName = (projs.find((x: any) => x.id === projectId) || {}).name || doc?.projects?.name || '';
+    const genEid = () => 'e' + Math.random().toString(36).slice(2, 9);
     let entries: any[] = (doc && Array.isArray(doc.entries)) ? JSON.parse(JSON.stringify(doc.entries)) : [];
     if (!entries.length) entries = [{ location: '', work: '', materials: '', method: '' }];
+    entries.forEach((e) => { if (!e.id) e.id = genEid(); });
     root.innerHTML = `
       <div class="p-head"><div><h1>${esc(p('workdocNav'))}</h1><p class="p-muted">${esc(projName)}</p></div>
         <div class="p-user"><button class="btn btn--ghost" id="wd-back">${esc(p('back'))}</button></div></div>
@@ -2722,9 +2725,9 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       </div>
       <div class="p-actions">
         <button class="btn btn--primary" id="wd-save" type="button">${esc(p('save'))}</button>
+        <button class="btn btn--ghost" id="wd-export" type="button"${currentId ? '' : ' disabled'}>${esc(p('exportJobdoc'))}</button>
         <span class="p-muted" id="wd-msg" style="margin-left:10px"></span>
-      </div>
-      <div class="p-section" id="wd-photos"></div>`;
+      </div>`;
     document.getElementById('wd-back')!.addEventListener('click', renderWorkDocs);
     const entriesEl = document.getElementById('wd-entries')!;
     const bindEntryDel = () => entriesEl.querySelectorAll<HTMLElement>('.wd-del-entry').forEach((b) => b.onclick = () => {
@@ -2732,63 +2735,57 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     });
     bindEntryDel();
     document.getElementById('wd-add-entry')!.addEventListener('click', () => {
-      entriesEl.insertAdjacentHTML('beforeend', wdEntryRow({ location: '', work: '', materials: '', method: '' }));
+      entriesEl.insertAdjacentHTML('beforeend', wdEntryRow({ id: genEid(), location: '', work: '', materials: '', method: '' }));
       bindEntryDel();
+      renderAllEntryPhotos();
     });
     const collectEntries = () => Array.from(entriesEl.querySelectorAll('.wd-entry')).map((c: any) => ({
+      id: (c as HTMLElement).dataset.eid,
       location: (c.querySelector('.wd-loc') as HTMLInputElement).value.trim(),
       work: (c.querySelector('.wd-work') as HTMLTextAreaElement).value.trim(),
       materials: (c.querySelector('.wd-mat') as HTMLInputElement).value.trim(),
       method: (c.querySelector('.wd-method') as HTMLTextAreaElement).value.trim(),
     })).filter((e: any) => e.location || e.work || e.materials || e.method);
 
-    const renderWdPhotos = async () => {
-      const el = document.getElementById('wd-photos')!;
-      if (!currentId) { el.innerHTML = `<p class="p-muted">${esc(p('wdSaveFirst'))}</p>`; return; }
-      const { data: rows } = await supabase.from('photos').select('*').eq('work_doc_id', currentId).order('created_at');
-      const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
-      const entryOpts = collectEntries().map((e: any, i: number) => { const v = e.location || ('#' + (i + 1)); return `<option value="${esc(v)}">${esc(v)}</option>`; }).join('');
-      const grid = await Promise.all((rows || []).map(async (ph: any) => {
+    // Bilder per arbeidspunkt: egne opplastere (Før/Under/Etter) i hvert punkt.
+    const phaseNm = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
+    async function renderEntryPhotos(container: HTMLElement, eid: string) {
+      if (!currentId) { container.innerHTML = `<p class="p-muted" style="font-size:.85rem">${esc(p('wdSaveFirst'))}</p>`; return; }
+      const { data: rows } = await supabase.from('photos').select('*').eq('work_doc_id', currentId).eq('entry_ref', eid).order('created_at');
+      const thumbs = await Promise.all((rows || []).map(async (ph: any) => {
         const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
-        return `<div class="p-jd-photo"><img src="${s?.signedUrl || ''}" loading="lazy"><div class="p-jd-cap">${ph.entry_ref ? `<span class="p-chip">${esc(ph.entry_ref)}</span> ` : ''}${ph.phase ? `<span class="p-chip">${esc(phaseName(ph.phase))}</span> ` : ''}${esc(ph.caption || '')}</div><button class="btn btn--ghost p-sm" data-wpdel="${esc(ph.id)}" data-path="${esc(ph.storage_path)}">${esc(p('deletePhoto'))}</button></div>`;
+        return `<div style="position:relative;width:92px"><img src="${s?.signedUrl || ''}" loading="lazy" style="width:92px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"><span class="p-chip" style="position:absolute;left:3px;top:3px;font-size:10px">${esc(phaseNm(ph.phase))}</span><button data-wpdel="${esc(ph.id)}" data-path="${esc(ph.storage_path)}" title="${esc(p('deletePhoto'))}" style="position:absolute;right:2px;top:2px;width:20px;height:20px;border:0;border-radius:50%;background:rgba(20,23,28,.8);color:#fff;cursor:pointer;line-height:1">×</button></div>`;
       }));
-      el.innerHTML = `<h2>${esc(p('addPhotos'))}</h2>
-        ${grid.length ? `<div class="p-jd-grid">${grid.join('')}</div>` : `<p class="p-muted">${esc(p('noJobPhotos'))}</p>`}
-        <details class="p-new"><summary>${esc(p('addPhotos'))}</summary>
-          <div class="p-grid2">
-            <label class="p-field">${esc(p('phaseLabel'))}<select id="wd-phase"><option value="before">${esc(p('phaseBefore'))}</option><option value="during">${esc(p('phaseDuring'))}</option><option value="after">${esc(p('phaseAfter'))}</option></select></label>
-            <label class="p-field">${esc(p('wdEntryLabel'))}<select id="wd-entry-ref"><option value="">${esc(p('wdGeneral'))}</option>${entryOpts}</select></label>
-          </div>
-          <label class="p-field">${esc(p('captionLabel'))}<input id="wd-cap" type="text"></label>
-          <label class="p-field"><input id="wd-files" type="file" accept="image/*" capture="environment" multiple></label>
-          <button class="btn btn--primary" id="wd-upload" type="button">${esc(p('save'))}</button>
-          <span class="p-muted" id="wd-up-msg" style="margin-left:10px"></span>
-        </details>
-        <div class="p-actions" style="margin-top:10px"><button class="btn btn--ghost" id="wd-export">${esc(p('exportJobdoc'))}</button></div>`;
-      el.querySelectorAll<HTMLElement>('[data-wpdel]').forEach((b) => b.addEventListener('click', async () => {
+      container.innerHTML = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">${thumbs.join('') || `<span class="p-muted" style="font-size:.85rem">${esc(p('noJobPhotos'))}</span>`}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <label class="btn btn--ghost p-sm">${esc(p('phaseBefore'))}<input type="file" data-phase="before" accept="image/*" capture="environment" multiple hidden></label>
+          <label class="btn btn--ghost p-sm">${esc(p('phaseDuring'))}<input type="file" data-phase="during" accept="image/*" capture="environment" multiple hidden></label>
+          <label class="btn btn--ghost p-sm">${esc(p('phaseAfter'))}<input type="file" data-phase="after" accept="image/*" capture="environment" multiple hidden></label>
+          <span class="p-muted wd-ep-msg" style="font-size:.8rem"></span>
+        </div>`;
+      container.querySelectorAll<HTMLElement>('[data-wpdel]').forEach((b) => b.addEventListener('click', async () => {
         if (!confirm(p('confirmDelete'))) return;
         await supabase.storage.from(KS_PHOTO_BUCKET).remove([b.dataset.path!]);
-        await supabase.from('photos').delete().eq('id', b.dataset.wpdel); renderWdPhotos();
+        await supabase.from('photos').delete().eq('id', b.dataset.wpdel); renderEntryPhotos(container, eid);
       }));
-      document.getElementById('wd-export')!.addEventListener('click', () => makeWorkDocPdf(currentId!, projName));
-      document.getElementById('wd-upload')!.addEventListener('click', async () => {
-        const input = document.getElementById('wd-files') as HTMLInputElement; const files = Array.from(input.files || []);
-        const msg = document.getElementById('wd-up-msg')!;
-        if (!files.length) { msg.textContent = '—'; return; }
-        const btn = document.getElementById('wd-upload') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('uploading');
+      container.querySelectorAll<HTMLInputElement>('input[type=file]').forEach((inp) => inp.addEventListener('change', async () => {
+        const files = Array.from(inp.files || []); if (!files.length) return;
+        const msgEl = container.querySelector('.wd-ep-msg') as HTMLElement | null; if (msgEl) msgEl.textContent = p('uploading');
+        const phase = inp.dataset.phase!;
         const { data: u } = await supabase.auth.getUser();
-        const phase = (document.getElementById('wd-phase') as HTMLSelectElement).value;
-        const entryRef = (document.getElementById('wd-entry-ref') as HTMLSelectElement).value || null;
-        const caption = (document.getElementById('wd-cap') as HTMLInputElement).value.trim() || null;
         for (const f of files) {
           const s = await shrink(f);
           const path = `${projectId}/workdoc/${currentId}/${crypto.randomUUID()}.jpg`;
           const up = await supabase.storage.from(KS_PHOTO_BUCKET).upload(path, s.blob, { contentType: 'image/jpeg' });
-          if (!up.error) await supabase.from('photos').insert({ project_id: projectId, work_doc_id: currentId, storage_path: path, phase, entry_ref: entryRef, caption, created_by: u.user?.id });
+          if (!up.error) await supabase.from('photos').insert({ project_id: projectId, work_doc_id: currentId, storage_path: path, phase, entry_ref: eid, created_by: u.user?.id });
         }
-        renderWdPhotos();
-      });
-    };
+        inp.value = ''; renderEntryPhotos(container, eid);
+      }));
+    }
+    const renderAllEntryPhotos = () => document.querySelectorAll<HTMLElement>('.wd-entry-photos').forEach((c) => renderEntryPhotos(c, c.dataset.eid!));
+    const wdExportBtn = document.getElementById('wd-export') as HTMLButtonElement;
+    wdExportBtn.addEventListener('click', () => { if (currentId) makeWorkDocPdf(currentId, projName); });
 
     document.getElementById('wd-save')!.addEventListener('click', async () => {
       const msg = document.getElementById('wd-msg')!;
@@ -2812,9 +2809,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       btn.disabled = false;
       if (err) { msg.textContent = err.message; msg.style.color = '#cc1f2a'; return; }
       msg.style.color = ''; msg.textContent = p('wdSaved');
-      renderWdPhotos();
+      wdExportBtn.disabled = false;
+      renderAllEntryPhotos();
     });
-    renderWdPhotos();
+    renderAllEntryPhotos();
   }
 
   async function makeWorkDocPdf(docId: string, projName: string) {
