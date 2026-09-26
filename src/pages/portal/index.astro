@@ -459,6 +459,29 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     exportJobdoc: { no: 'Last ned sluttdokumentasjon (PDF)', pl: 'Pobierz dokumentację (PDF)', en: 'Download documentation (PDF)' },
     noJobPhotos: { no: 'Ingen bilder lagt til ennå.', pl: 'Nie dodano jeszcze zdjęć.', en: 'No photos added yet.' },
     deletePhoto: { no: 'Slett bilde', pl: 'Usuń zdjęcie', en: 'Delete photo' },
+    workdocNav: { no: 'Dokumentasjon på utført arbeid', pl: 'Dokumentacja wykonanych prac', en: 'Work documentation' },
+    workdocIntro: { no: 'Strukturert sluttdokumentasjon: hva som er utført hvor, med bilder gjennom hele prosessen.', pl: 'Ustrukturyzowana dokumentacja: co i gdzie wykonano, ze zdjęciami przez cały proces.', en: 'Structured as-built documentation: what was done where, with photos throughout the process.' },
+    newWorkdoc: { no: '+ Ny dokumentasjon', pl: '+ Nowa dokumentacja', en: '+ New documentation' },
+    noWorkdocs: { no: 'Ingen dokumentasjon lagret ennå.', pl: 'Brak zapisanej dokumentacji.', en: 'No documentation saved yet.' },
+    wdTitle: { no: 'Tittel', pl: 'Tytuł', en: 'Title' },
+    wdClient: { no: 'Oppdragsgiver / byggherre', pl: 'Zleceniodawca / inwestor', en: 'Client / building owner' },
+    wdPeriodFrom: { no: 'Periode fra', pl: 'Okres od', en: 'Period from' },
+    wdPeriodTo: { no: 'Periode til', pl: 'Okres do', en: 'Period to' },
+    wdSummary: { no: 'Sammendrag av arbeidet', pl: 'Podsumowanie prac', en: 'Summary of the work' },
+    wdEntries: { no: 'Arbeidspunkter', pl: 'Punkty prac', en: 'Work items' },
+    wdAddEntry: { no: '+ Legg til arbeid', pl: '+ Dodaj pracę', en: '+ Add work item' },
+    wdLocation: { no: 'Sted / bygningsdel', pl: 'Miejsce / element budynku', en: 'Location / building part' },
+    wdWork: { no: 'Utført arbeid', pl: 'Wykonana praca', en: 'Work performed' },
+    wdMaterials: { no: 'Materialer / produkter', pl: 'Materiały / produkty', en: 'Materials / products' },
+    wdMethod: { no: 'Utførelse / metode', pl: 'Wykonanie / metoda', en: 'Execution / method' },
+    wdControl: { no: 'Egenkontroll / kvalitetssikring', pl: 'Kontrola własna / zapewnienie jakości', en: 'Self-check / quality assurance' },
+    wdConclusion: { no: 'Konklusjon / overlevering', pl: 'Wnioski / przekazanie', en: 'Conclusion / handover' },
+    wdEntryLabel: { no: 'Arbeidspunkt', pl: 'Punkt pracy', en: 'Work item' },
+    wdRemove: { no: 'Fjern', pl: 'Usuń', en: 'Remove' },
+    wdSaveFirst: { no: 'Lagre dokumentet først, så kan du laste opp bilder.', pl: 'Najpierw zapisz dokument, potem dodaj zdjęcia.', en: 'Save the document first, then you can upload photos.' },
+    wdChooseProject: { no: 'Velg prosjekt', pl: 'Wybierz projekt', en: 'Choose project' },
+    wdGeneral: { no: 'Generelt', pl: 'Ogólne', en: 'General' },
+    wdSaved: { no: 'Lagret', pl: 'Zapisano', en: 'Saved' },
     devCategory: { no: 'Kategori', pl: 'Kategoria', en: 'Category' },
     severity: { no: 'Alvorlighetsgrad', pl: 'Stopień ważności', en: 'Severity' },
     sevLow: { no: 'Lav', pl: 'Niski', en: 'Low' },
@@ -897,6 +920,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     { id: 'deviations', icon: 'deviation', label: () => p('deviationCenter'), run: () => renderDeviationCenter() },
     { id: 'articles', icon: 'handbook', label: () => p('hmsHandbook'), run: () => renderArticles() },
     { id: 'documents', icon: 'documents', label: () => p('documents'), run: () => renderDocuments() },
+    { id: 'workdoc', icon: 'documents', label: () => p('workdocNav'), run: () => renderWorkDocs() },
     { id: 'fdv', icon: 'fdv', label: () => p('fdvArchive'), run: () => renderFdv() },
     { id: 'templates', icon: 'templates', label: () => p('manageTemplates'), run: () => renderTemplates() },
     { id: 'archive', icon: 'archive', label: () => p('archive'), run: () => renderArchive() },
@@ -970,6 +994,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     deviations:  ['admin', 'leder', 'ansatt'],
     articles:    ['admin', 'leder', 'ansatt'],
     documents:   ['admin', 'leder', 'ansatt'],
+    workdoc:     ['admin', 'leder', 'ansatt'],
     fdv:         ['admin', 'leder', 'ansatt'],
     archive:     ['admin', 'leder', 'ansatt'],
     // Pris, margin, kunderegister, avtaler.
@@ -1196,7 +1221,11 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
     if (new URLSearchParams(location.search).get('setpw') === '1' || hash.get('type') === 'recovery') { renderSetPassword(); return; }
     const { data } = await supabase.auth.getSession();
-    if (data.session) { if (ACTIVE_NAV === 'dashboard') renderDashboard(); else { const n = NAV.find((x) => x.id === ACTIVE_NAV); (n ? n.run : renderDashboard)(); } }
+    if (data.session) {
+      const view = new URLSearchParams(location.search).get('view');
+      if (view && NAV.some((x) => x.id === view)) { ACTIVE_NAV = view; try { history.replaceState(null, '', location.pathname); } catch (_e) { /* */ } }
+      if (ACTIVE_NAV === 'dashboard') renderDashboard(); else { const n = NAV.find((x) => x.id === ACTIVE_NAV); (n ? n.run : renderDashboard)(); }
+    }
     else renderLogin();
   }
   supabase.auth.onAuthStateChange(() => route());
@@ -1352,6 +1381,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         ${card('deviations', 'deviation', p('deviationCenter'), p('cardDeviationsDesc'), nDev ? String(nDev) : '')}
         ${card('articles', 'handbook', p('hmsHandbook'), p('cardHandbookDesc'))}
         ${card('documents', 'documents', p('documents'), p('cardDocumentsDesc'))}
+        ${card('workdoc', 'documents', p('workdocNav'), p('workdocIntro'))}
         ${card('templates', 'templates', p('manageTemplates'), p('cardTemplatesDesc'))}
         ${card('archive', 'archive', p('archive'), p('cardArchiveDesc'))}
         ${card('team', 'team', p('team'), p('cardTeamDesc'))}
@@ -2595,6 +2625,248 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
     }
     await deliverPdf(doc, `Dekmar_Sluttdokumentasjon_${CURRENT_PROJECT?.name || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `Sluttdokumentasjon – ${CURRENT_PROJECT?.name || ''}`);
+  }
+
+  // ========== Dokumentasjon paa utfoert arbeid (strukturert, lagret pr. prosjekt) ==========
+  let WD_PROJECTS: any[] = [];
+  async function wdActiveProjects() {
+    if (WD_PROJECTS.length) return WD_PROJECTS;
+    const { data } = await supabase.from('projects').select('id,name,status').or('status.is.null,status.neq.delivered').order('name');
+    WD_PROJECTS = data || [];
+    return WD_PROJECTS;
+  }
+  async function renderWorkDocs() {
+    if (!guard('workdoc')) return;
+    redraw = renderWorkDocs;
+    await ensureShell('workdoc');
+    root.innerHTML = `<p class="portal-loading">…</p>`;
+    const [docsRes, projs] = await Promise.all([
+      supabase.from('work_docs').select('*, projects(name)').order('created_at', { ascending: false }),
+      wdActiveProjects(),
+    ]);
+    const docs = docsRes.data || [];
+    const projOpts = projs.map((pr: any) => `<option value="${esc(pr.id)}">${esc(pr.name)}</option>`).join('');
+    const list = docs.map((d: any) => `
+      <li class="p-item" data-wd="${esc(d.id)}">
+        <div><h3>${esc(d.title || p('workdocNav'))}</h3><p>${esc([d.projects?.name, d.performed_by, fmt(d.created_at)].filter(Boolean).join(' · '))}</p></div>
+        <span class="p-muted">${esc(p('edit'))} ›</span>
+      </li>`).join('');
+    root.innerHTML = `
+      <div class="p-head"><div><h1>${esc(p('workdocNav'))}</h1><p class="p-muted">${esc(p('workdocIntro'))}</p></div>
+        <div class="p-user"><button class="btn btn--ghost" id="wd-back">${esc(p('back'))}</button></div></div>
+      <div class="p-card">
+        <label class="p-field">${esc(p('wdChooseProject'))}
+          <select id="wd-new-proj"><option value="">${esc(p('wdChooseProject'))}…</option>${projOpts}</select>
+        </label>
+        <button class="btn btn--primary" id="wd-new" type="button" disabled>${esc(p('newWorkdoc'))}</button>
+      </div>
+      <div class="p-section"><h2>${esc(p('archive'))}</h2>
+        ${list ? `<ul class="p-list">${list}</ul>` : `<p class="p-muted">${esc(p('noWorkdocs'))}</p>`}
+      </div>`;
+    document.getElementById('wd-back')!.addEventListener('click', renderDashboard);
+    const np = document.getElementById('wd-new-proj') as HTMLSelectElement;
+    const nb = document.getElementById('wd-new') as HTMLButtonElement;
+    np.addEventListener('change', () => { nb.disabled = !np.value; });
+    nb.addEventListener('click', () => { if (np.value) renderWorkDocEditor(null, np.value); });
+    root.querySelectorAll<HTMLElement>('[data-wd]').forEach((el) => el.addEventListener('click', () => {
+      const d = docs.find((x: any) => x.id === el.dataset.wd); if (d) renderWorkDocEditor(d, d.project_id);
+    }));
+  }
+
+  function wdEntryRow(e: any) {
+    return `<div class="p-card wd-entry" style="margin-bottom:10px">
+      <div class="p-grid2">
+        <label class="p-field">${esc(p('wdLocation'))}<input class="wd-loc" type="text" value="${esc(e.location || '')}"></label>
+        <label class="p-field">${esc(p('wdMaterials'))}<input class="wd-mat" type="text" value="${esc(e.materials || '')}"></label>
+      </div>
+      <label class="p-field">${esc(p('wdWork'))}<textarea class="wd-work" rows="2">${esc(e.work || '')}</textarea></label>
+      <label class="p-field">${esc(p('wdMethod'))}<textarea class="wd-method" rows="2">${esc(e.method || '')}</textarea></label>
+      <button class="btn btn--ghost p-sm wd-del-entry" type="button">${esc(p('wdRemove'))}</button>
+    </div>`;
+  }
+
+  async function renderWorkDocEditor(docIn: any, projectId: string) {
+    let doc: any = docIn;
+    let currentId: string | null = doc?.id || null;
+    redraw = () => renderWorkDocEditor(doc, projectId);
+    await ensureShell('workdoc');
+    const projs = await wdActiveProjects();
+    const projName = (projs.find((x: any) => x.id === projectId) || {}).name || doc?.projects?.name || '';
+    let entries: any[] = (doc && Array.isArray(doc.entries)) ? JSON.parse(JSON.stringify(doc.entries)) : [];
+    if (!entries.length) entries = [{ location: '', work: '', materials: '', method: '' }];
+    root.innerHTML = `
+      <div class="p-head"><div><h1>${esc(p('workdocNav'))}</h1><p class="p-muted">${esc(projName)}</p></div>
+        <div class="p-user"><button class="btn btn--ghost" id="wd-back">${esc(p('back'))}</button></div></div>
+      <div class="p-card">
+        <div class="p-grid2">
+          <label class="p-field">${esc(p('wdTitle'))}<input id="wd-title" type="text" value="${esc(doc?.title || '')}"></label>
+          <label class="p-field">${esc(p('wdClient'))}<input id="wd-client" type="text" value="${esc(doc?.client || '')}"></label>
+        </div>
+        <div class="p-grid2">
+          <label class="p-field">${esc(t('performedBy'))}<input id="wd-by" type="text" value="${esc(doc?.performed_by || '')}"></label>
+          <div class="p-grid2">
+            <label class="p-field">${esc(p('wdPeriodFrom'))}<input id="wd-from" type="date" value="${esc(doc?.period_from || '')}"></label>
+            <label class="p-field">${esc(p('wdPeriodTo'))}<input id="wd-to" type="date" value="${esc(doc?.period_to || '')}"></label>
+          </div>
+        </div>
+        <label class="p-field">${esc(p('wdSummary'))}<textarea id="wd-summary" rows="3">${esc(doc?.summary || '')}</textarea></label>
+      </div>
+      <div class="p-section">
+        <h2>${esc(p('wdEntries'))}</h2>
+        <div id="wd-entries">${entries.map((e) => wdEntryRow(e)).join('')}</div>
+        <button class="btn btn--ghost" id="wd-add-entry" type="button">${esc(p('wdAddEntry'))}</button>
+      </div>
+      <div class="p-card">
+        <label class="p-field">${esc(p('wdControl'))}<textarea id="wd-control" rows="2">${esc(doc?.control || '')}</textarea></label>
+        <label class="p-field">${esc(p('wdConclusion'))}<textarea id="wd-conclusion" rows="2">${esc(doc?.conclusion || '')}</textarea></label>
+      </div>
+      <div class="p-actions">
+        <button class="btn btn--primary" id="wd-save" type="button">${esc(p('save'))}</button>
+        <span class="p-muted" id="wd-msg" style="margin-left:10px"></span>
+      </div>
+      <div class="p-section" id="wd-photos"></div>`;
+    document.getElementById('wd-back')!.addEventListener('click', renderWorkDocs);
+    const entriesEl = document.getElementById('wd-entries')!;
+    const bindEntryDel = () => entriesEl.querySelectorAll<HTMLElement>('.wd-del-entry').forEach((b) => b.onclick = () => {
+      if (entriesEl.querySelectorAll('.wd-entry').length > 1) b.closest('.wd-entry')!.remove();
+    });
+    bindEntryDel();
+    document.getElementById('wd-add-entry')!.addEventListener('click', () => {
+      entriesEl.insertAdjacentHTML('beforeend', wdEntryRow({ location: '', work: '', materials: '', method: '' }));
+      bindEntryDel();
+    });
+    const collectEntries = () => Array.from(entriesEl.querySelectorAll('.wd-entry')).map((c: any) => ({
+      location: (c.querySelector('.wd-loc') as HTMLInputElement).value.trim(),
+      work: (c.querySelector('.wd-work') as HTMLTextAreaElement).value.trim(),
+      materials: (c.querySelector('.wd-mat') as HTMLInputElement).value.trim(),
+      method: (c.querySelector('.wd-method') as HTMLTextAreaElement).value.trim(),
+    })).filter((e: any) => e.location || e.work || e.materials || e.method);
+
+    const renderWdPhotos = async () => {
+      const el = document.getElementById('wd-photos')!;
+      if (!currentId) { el.innerHTML = `<p class="p-muted">${esc(p('wdSaveFirst'))}</p>`; return; }
+      const { data: rows } = await supabase.from('photos').select('*').eq('work_doc_id', currentId).order('created_at');
+      const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
+      const entryOpts = collectEntries().map((e: any, i: number) => { const v = e.location || ('#' + (i + 1)); return `<option value="${esc(v)}">${esc(v)}</option>`; }).join('');
+      const grid = await Promise.all((rows || []).map(async (ph: any) => {
+        const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
+        return `<div class="p-jd-photo"><img src="${s?.signedUrl || ''}" loading="lazy"><div class="p-jd-cap">${ph.entry_ref ? `<span class="p-chip">${esc(ph.entry_ref)}</span> ` : ''}${ph.phase ? `<span class="p-chip">${esc(phaseName(ph.phase))}</span> ` : ''}${esc(ph.caption || '')}</div><button class="btn btn--ghost p-sm" data-wpdel="${esc(ph.id)}" data-path="${esc(ph.storage_path)}">${esc(p('deletePhoto'))}</button></div>`;
+      }));
+      el.innerHTML = `<h2>${esc(p('addPhotos'))}</h2>
+        ${grid.length ? `<div class="p-jd-grid">${grid.join('')}</div>` : `<p class="p-muted">${esc(p('noJobPhotos'))}</p>`}
+        <details class="p-new"><summary>${esc(p('addPhotos'))}</summary>
+          <div class="p-grid2">
+            <label class="p-field">${esc(p('phaseLabel'))}<select id="wd-phase"><option value="before">${esc(p('phaseBefore'))}</option><option value="during">${esc(p('phaseDuring'))}</option><option value="after">${esc(p('phaseAfter'))}</option></select></label>
+            <label class="p-field">${esc(p('wdEntryLabel'))}<select id="wd-entry-ref"><option value="">${esc(p('wdGeneral'))}</option>${entryOpts}</select></label>
+          </div>
+          <label class="p-field">${esc(p('captionLabel'))}<input id="wd-cap" type="text"></label>
+          <label class="p-field"><input id="wd-files" type="file" accept="image/*" capture="environment" multiple></label>
+          <button class="btn btn--primary" id="wd-upload" type="button">${esc(p('save'))}</button>
+          <span class="p-muted" id="wd-up-msg" style="margin-left:10px"></span>
+        </details>
+        <div class="p-actions" style="margin-top:10px"><button class="btn btn--ghost" id="wd-export">${esc(p('exportJobdoc'))}</button></div>`;
+      el.querySelectorAll<HTMLElement>('[data-wpdel]').forEach((b) => b.addEventListener('click', async () => {
+        if (!confirm(p('confirmDelete'))) return;
+        await supabase.storage.from(KS_PHOTO_BUCKET).remove([b.dataset.path!]);
+        await supabase.from('photos').delete().eq('id', b.dataset.wpdel); renderWdPhotos();
+      }));
+      document.getElementById('wd-export')!.addEventListener('click', () => makeWorkDocPdf(currentId!, projName));
+      document.getElementById('wd-upload')!.addEventListener('click', async () => {
+        const input = document.getElementById('wd-files') as HTMLInputElement; const files = Array.from(input.files || []);
+        const msg = document.getElementById('wd-up-msg')!;
+        if (!files.length) { msg.textContent = '—'; return; }
+        const btn = document.getElementById('wd-upload') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('uploading');
+        const { data: u } = await supabase.auth.getUser();
+        const phase = (document.getElementById('wd-phase') as HTMLSelectElement).value;
+        const entryRef = (document.getElementById('wd-entry-ref') as HTMLSelectElement).value || null;
+        const caption = (document.getElementById('wd-cap') as HTMLInputElement).value.trim() || null;
+        for (const f of files) {
+          const s = await shrink(f);
+          const path = `${projectId}/workdoc/${currentId}/${crypto.randomUUID()}.jpg`;
+          const up = await supabase.storage.from(KS_PHOTO_BUCKET).upload(path, s.blob, { contentType: 'image/jpeg' });
+          if (!up.error) await supabase.from('photos').insert({ project_id: projectId, work_doc_id: currentId, storage_path: path, phase, entry_ref: entryRef, caption, created_by: u.user?.id });
+        }
+        renderWdPhotos();
+      });
+    };
+
+    document.getElementById('wd-save')!.addEventListener('click', async () => {
+      const msg = document.getElementById('wd-msg')!;
+      const btn = document.getElementById('wd-save') as HTMLButtonElement; btn.disabled = true; msg.textContent = p('saving');
+      const { data: u } = await supabase.auth.getUser();
+      const payload: any = {
+        project_id: projectId,
+        title: (document.getElementById('wd-title') as HTMLInputElement).value.trim() || null,
+        client: (document.getElementById('wd-client') as HTMLInputElement).value.trim() || null,
+        performed_by: (document.getElementById('wd-by') as HTMLInputElement).value.trim() || null,
+        period_from: (document.getElementById('wd-from') as HTMLInputElement).value || null,
+        period_to: (document.getElementById('wd-to') as HTMLInputElement).value || null,
+        summary: (document.getElementById('wd-summary') as HTMLTextAreaElement).value.trim() || null,
+        entries: collectEntries(),
+        control: (document.getElementById('wd-control') as HTMLTextAreaElement).value.trim() || null,
+        conclusion: (document.getElementById('wd-conclusion') as HTMLTextAreaElement).value.trim() || null,
+      };
+      let err: any;
+      if (currentId) { const r = await supabase.from('work_docs').update(payload).eq('id', currentId); err = r.error; }
+      else { payload.created_by = u.user?.id; const r = await supabase.from('work_docs').insert(payload).select().single(); err = r.error; if (!err) { currentId = r.data.id; doc = r.data; } }
+      btn.disabled = false;
+      if (err) { msg.textContent = err.message; msg.style.color = '#cc1f2a'; return; }
+      msg.style.color = ''; msg.textContent = p('wdSaved');
+      renderWdPhotos();
+    });
+    renderWdPhotos();
+  }
+
+  async function makeWorkDocPdf(docId: string, projName: string) {
+    const { data: d } = await supabase.from('work_docs').select('*').eq('id', docId).single();
+    if (!d) return;
+    const { data: rows } = await supabase.from('photos').select('*').eq('work_doc_id', docId).order('created_at');
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' }); await ensurePdfFont(doc);
+    const pageW = 210, margin = 15, maxW = pageW - margin * 2; let y = margin;
+    const line = (txt: string, size = 10, style = 'normal', gap = 5, color = [20, 23, 28]) => {
+      doc.setFont('DejaVu', style as any); doc.setFontSize(size); doc.setTextColor(color[0], color[1], color[2]);
+      doc.splitTextToSize(txt || '', maxW).forEach((ln: string) => { if (y > 282) { doc.addPage(); y = margin; } doc.text(ln, margin, y); y += gap; });
+      doc.setTextColor(20, 23, 28);
+    };
+    doc.setFillColor(20, 23, 28); doc.rect(0, 0, pageW, 24, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('DejaVu', 'bold'); doc.setFontSize(16); doc.text('Dekmar AS', margin, 11);
+    doc.setFont('DejaVu', 'normal'); doc.setFontSize(11); doc.text(`${p('workdocNav')} – ${projName || ''}`, margin, 18);
+    doc.setTextColor(20, 23, 28); y = 32;
+    if (d.title) line(d.title, 13, 'bold', 7);
+    const meta = [d.client ? `${p('wdClient')}: ${d.client}` : '', d.performed_by ? `${t('performedBy')}: ${d.performed_by}` : '', (d.period_from || d.period_to) ? `${p('wdPeriodFrom')} ${d.period_from || ''} – ${d.period_to || ''}` : ''].filter(Boolean).join('   ·   ');
+    if (meta) line(meta, 9.5, 'normal', 6, [90, 96, 104]);
+    if (d.summary) { line(p('wdSummary'), 11, 'bold', 5.5); line(d.summary, 10, 'normal', 5.5); y += 1; }
+    (d.entries || []).forEach((e: any, i: number) => {
+      if (y > 268) { doc.addPage(); y = margin; }
+      y += 2; doc.setDrawColor(204, 31, 42); doc.setLineWidth(0.5); doc.line(margin, y, margin + maxW, y); y += 5;
+      line(`${i + 1}. ${e.location || ''}`, 12, 'bold', 6);
+      if (e.work) { line(`${p('wdWork')}:`, 9, 'bold', 4.5, [90, 96, 104]); line(e.work, 10, 'normal', 5); }
+      if (e.materials) line(`${p('wdMaterials')}: ${e.materials}`, 10, 'normal', 5);
+      if (e.method) { line(`${p('wdMethod')}:`, 9, 'bold', 4.5, [90, 96, 104]); line(e.method, 10, 'normal', 5); }
+    });
+    if (d.control) { y += 2; line(p('wdControl'), 11, 'bold', 5.5); line(d.control, 10, 'normal', 5.5); }
+    if (d.conclusion) { y += 2; line(p('wdConclusion'), 11, 'bold', 5.5); line(d.conclusion, 10, 'normal', 5.5); }
+    if (rows && rows.length) {
+      const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
+      if (y > 250) { doc.addPage(); y = margin; }
+      y += 4; doc.setDrawColor(204, 31, 42); doc.line(margin, y, margin + maxW, y); y += 6;
+      line(p('addPhotos'), 12, 'bold', 6);
+      const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
+      for (const ph of rows) {
+        const { data: signed } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
+        if (!signed?.signedUrl) continue;
+        let dataUrl = '';
+        try { const blob = await (await fetch(signed.signedUrl)).blob(); dataUrl = await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }); } catch (e) { continue; }
+        if (y + rowH + 8 > 285) { doc.addPage(); y = margin; col = 0; }
+        const x = margin + col * (colW + 6);
+        try { doc.addImage(dataUrl, 'JPEG', x, y, colW, rowH); } catch (e) { /* */ }
+        doc.setDrawColor(220); doc.rect(x, y, colW, rowH);
+        const cap = `${ph.entry_ref ? '[' + ph.entry_ref + '] ' : ''}${ph.phase ? '[' + phaseName(ph.phase) + '] ' : ''}${ph.caption || ''}`;
+        if (cap.trim()) { doc.setFontSize(8); doc.setTextColor(80); doc.text(doc.splitTextToSize(cap, colW), x, y + rowH + 3.5); doc.setTextColor(20, 23, 28); }
+        if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
+      }
+    }
+    await deliverPdf(doc, `Dekmar_Arbeidsdokumentasjon_${projName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${p('workdocNav')} – ${projName || ''}`);
   }
 
   // ---------- HMS-håndbok (artikler) ----------

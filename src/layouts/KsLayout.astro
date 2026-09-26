@@ -35,6 +35,7 @@ const tri = (k: string) => ksUi[k];
           <a href="/portal/" class:list={[{ active: active === 'portal' }]} data-no="Portal" data-pl="Portal" data-en="Portal">Portal</a>
           <a href="/ks/sjekkliste/" class:list={[{ active: active === 'checklist' }]} data-no={tri('checklist').no} data-pl={tri('checklist').pl} data-en={tri('checklist').en}>{tri('checklist').no}</a>
           <a href="/ks/avvik/" class:list={[{ active: active === 'deviation' }]} data-no={tri('deviation').no} data-pl={tri('deviation').pl} data-en={tri('deviation').en}>{tri('deviation').no}</a>
+          <a href="/portal/?view=workdoc" data-no="Dokumentasjon" data-pl="Dokumentacja" data-en="Documentation">Dokumentasjon</a>
         </nav>
 
         <div class="ks-lang" role="group" aria-label="Språk / Language">
