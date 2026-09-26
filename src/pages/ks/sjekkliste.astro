@@ -14,6 +14,7 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
     <form id="ks-form" class="ks-card-box">
       <div class="ks-meta">
         <label><span {...d(t('project'))}>{t('project').no}</span>
+          <select id="p_project_sel" style="display:none"></select>
           <input id="p_project" type="text" {...dph({no:'F.eks. WTG57 Takrehabilitering', pl:'Np. WTG57 Remont dachu', en:'E.g. WTG57 Roof rehabilitation'})} /></label>
         <label><span {...d(t('address'))}>{t('address').no}</span>
           <input id="p_address" type="text" {...dph({no:'Adresse', pl:'Adres', en:'Address'})} /></label>
@@ -64,7 +65,7 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
   .ks-meta { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 26px; }
   @media (min-width: 620px) { .ks-meta { grid-template-columns: 1fr 1fr; } }
   .ks-meta label { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; }
-  .ks-meta input { font: inherit; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; }
+  .ks-meta input, .ks-meta select { font: inherit; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
   .ks-section { border: 0; border-top: 2px solid var(--line); padding: 20px 0 4px; margin: 0; }
   .ks-section legend { font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; color: var(--brand); padding: 0; }
   .ks-item { padding: 14px 0; border-bottom: 1px solid var(--line); }
@@ -87,6 +88,7 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
 
 <script>
   import { jsPDF } from 'jspdf';
+  import { supabase } from '../../lib/ksSupabase';
 
   const dataEl = document.getElementById('ks-data');
   const KS = JSON.parse(dataEl!.textContent || '{}');
@@ -171,5 +173,34 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
     doc.save(fn + '.pdf');
   });
 
+  // ---- Aktive prosjekter som nedtrekksmeny (deler oekt med portalen; fritekst som fallback) ----
+  async function initProjectPicker() {
+    const sel = document.getElementById('p_project_sel') as HTMLSelectElement | null;
+    const inp = document.getElementById('p_project') as HTMLInputElement | null;
+    if (!sel || !inp) return;
+    let projects: any[] = [];
+    try { const { data } = await supabase.from('projects').select('id,name,status').or('status.is.null,status.neq.delivered').order('name'); projects = data || []; } catch (_e) { projects = []; }
+    if (!projects.length) { sel.style.display = 'none'; inp.style.display = ''; return; }
+    const L = lang();
+    const chooseLbl = L === 'pl' ? 'Wybierz projekt…' : L === 'en' ? 'Choose project…' : 'Velg prosjekt…';
+    const otherLbl = L === 'pl' ? 'Inny (wpisz)…' : L === 'en' ? 'Other (type)…' : 'Annet (skriv selv)…';
+    const opt = (v: string, label: string) => { const o = document.createElement('option'); o.value = v; o.textContent = label; return o; };
+    sel.innerHTML = '';
+    sel.appendChild(opt('', chooseLbl));
+    projects.forEach((pr: any) => sel.appendChild(opt(pr.name, pr.name)));
+    sel.appendChild(opt('__other', otherLbl));
+    sel.style.display = '';
+    const cur = inp.value.trim();
+    if (cur && projects.some((pr: any) => pr.name === cur)) { sel.value = cur; inp.style.display = 'none'; }
+    else if (cur) { sel.value = '__other'; inp.style.display = ''; }
+    else { sel.value = ''; inp.style.display = 'none'; }
+    sel.addEventListener('change', () => {
+      if (sel.value === '__other') { inp.style.display = ''; inp.value = ''; inp.focus(); }
+      else { inp.value = sel.value; inp.style.display = 'none'; }
+      save();
+    });
+  }
+
   load();
+  initProjectPicker();
 </script>
