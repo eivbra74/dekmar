@@ -478,6 +478,10 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     wdConclusion: { no: 'Konklusjon / overlevering', pl: 'Wnioski / przekazanie', en: 'Conclusion / handover' },
     wdEntryLabel: { no: 'Arbeidspunkt', pl: 'Punkt pracy', en: 'Work item' },
     wdRemove: { no: 'Fjern', pl: 'Usuń', en: 'Remove' },
+    wdRemoveWithPhotos: { no: 'Punktet har {n} bilde(r). De slettes også når du lagrer. Fjerne punktet?', pl: 'Ten punkt ma {n} zdjęć. Zostaną usunięte po zapisaniu. Usunąć punkt?', en: 'This item has {n} photo(s). They will be deleted when you save. Remove the item?' },
+    wdPhotos: { no: 'Bilder', pl: 'Zdjęcia', en: 'Photos' },
+    wdOtherPhotos: { no: 'Øvrige bilder', pl: 'Pozostałe zdjęcia', en: 'Other photos' },
+    confirmDeletePhoto: { no: 'Slette dette bildet?', pl: 'Usunąć to zdjęcie?', en: 'Delete this photo?' },
     wdSaveFirst: { no: 'Lagre dokumentet først, så kan du laste opp bilder.', pl: 'Najpierw zapisz dokument, potem dodaj zdjęcia.', en: 'Save the document first, then you can upload photos.' },
     wdChooseProject: { no: 'Velg prosjekt', pl: 'Wybierz projekt', en: 'Choose project' },
     wdGeneral: { no: 'Generelt', pl: 'Ogólne', en: 'General' },
@@ -2576,7 +2580,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         <span class="p-muted" id="jd-msg" style="margin-left:10px"></span>
       </details>`;
     secEl.querySelectorAll<HTMLElement>('[data-photodel]').forEach((b) => b.addEventListener('click', async () => {
-      if (!confirm(p('confirmDelete'))) return;
+      if (!confirm(p('confirmDeletePhoto'))) return;
       await supabase.storage.from(KS_PHOTO_BUCKET).remove([b.dataset.path!]);
       await supabase.from('photos').delete().eq('id', b.dataset.photodel); renderJobDoc(projectId);
     }));
@@ -2746,8 +2750,17 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       </div>`;
     document.getElementById('wd-back')!.addEventListener('click', renderWorkDocs);
     const entriesEl = document.getElementById('wd-entries')!;
-    const bindEntryDel = () => entriesEl.querySelectorAll<HTMLElement>('.wd-del-entry').forEach((b) => b.onclick = () => {
-      if (entriesEl.querySelectorAll('.wd-entry').length > 1) b.closest('.wd-entry')!.remove();
+    // Fjernede punkter: bildene deres slettes (fil + rad) foerst ved vellykket lagring.
+    const removedEids = new Set<string>();
+    const bindEntryDel = () => entriesEl.querySelectorAll<HTMLElement>('.wd-del-entry').forEach((b) => b.onclick = async () => {
+      if (entriesEl.querySelectorAll('.wd-entry').length <= 1) return;
+      const card = b.closest('.wd-entry') as HTMLElement; const eid = card.dataset.eid!;
+      if (currentId) {
+        const { count } = await supabase.from('photos').select('id', { count: 'exact', head: true }).eq('work_doc_id', currentId).eq('entry_ref', eid);
+        if (count && !confirm(p('wdRemoveWithPhotos').replace('{n}', String(count)))) return;
+        if (count) removedEids.add(eid);
+      }
+      card.remove();
     });
     bindEntryDel();
     document.getElementById('wd-add-entry')!.addEventListener('click', () => {
@@ -2755,19 +2768,23 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       bindEntryDel();
       renderAllEntryPhotos();
     });
-    const collectEntries = () => Array.from(entriesEl.querySelectorAll('.wd-entry')).map((c: any) => ({
+    // Tomme punkter droppes ved lagring, men ikke hvis de har bilder (da ville bildene mistet punktet sitt).
+    const entryHasPhotos = (c: HTMLElement) => Number((c.querySelector('.wd-entry-photos') as HTMLElement | null)?.dataset.n || 0) > 0;
+    const collectEntries = () => Array.from(entriesEl.querySelectorAll<HTMLElement>('.wd-entry')).map((c: any) => ({
       id: (c as HTMLElement).dataset.eid,
       location: (c.querySelector('.wd-loc') as HTMLInputElement).value.trim(),
       work: (c.querySelector('.wd-work') as HTMLTextAreaElement).value.trim(),
       materials: (c.querySelector('.wd-mat') as HTMLInputElement).value.trim(),
       method: (c.querySelector('.wd-method') as HTMLTextAreaElement).value.trim(),
-    })).filter((e: any) => e.location || e.work || e.materials || e.method);
+      _keep: entryHasPhotos(c),
+    })).filter((e: any) => e.location || e.work || e.materials || e.method || e._keep).map(({ _keep, ...e }: any) => e);
 
     // Bilder per arbeidspunkt: egne opplastere (Før/Under/Etter) i hvert punkt.
     const phaseNm = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
     async function renderEntryPhotos(container: HTMLElement, eid: string) {
       if (!currentId) { container.innerHTML = `<p class="p-muted" style="font-size:.85rem">${esc(p('wdSaveFirst'))}</p>`; return; }
       const { data: rows } = await supabase.from('photos').select('*').eq('work_doc_id', currentId).eq('entry_ref', eid).order('created_at');
+      container.dataset.n = String((rows || []).length);
       const thumbs = await Promise.all((rows || []).map(async (ph: any) => {
         const { data: s } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
         return `<div style="position:relative;width:92px"><img src="${s?.signedUrl || ''}" loading="lazy" style="width:92px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"><span class="p-chip" style="position:absolute;left:3px;top:3px;font-size:10px">${esc(phaseNm(ph.phase))}</span><button data-wpdel="${esc(ph.id)}" data-path="${esc(ph.storage_path)}" title="${esc(p('deletePhoto'))}" style="position:absolute;right:2px;top:2px;width:20px;height:20px;border:0;border-radius:50%;background:rgba(20,23,28,.8);color:#fff;cursor:pointer;line-height:1">×</button></div>`;
@@ -2781,7 +2798,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           <span class="p-muted wd-ep-msg" style="font-size:.8rem"></span>
         </div>`;
       container.querySelectorAll<HTMLElement>('[data-wpdel]').forEach((b) => b.addEventListener('click', async () => {
-        if (!confirm(p('confirmDelete'))) return;
+        if (!confirm(p('confirmDeletePhoto'))) return;
         await supabase.storage.from(KS_PHOTO_BUCKET).remove([b.dataset.path!]);
         await supabase.from('photos').delete().eq('id', b.dataset.wpdel); renderEntryPhotos(container, eid);
       }));
@@ -2844,6 +2861,15 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       else { payload.created_by = u.user?.id; const r = await supabase.from('work_docs').insert(payload).select().single(); err = r.error; if (!err) { currentId = r.data.id; doc = r.data; } }
       btn.disabled = false;
       if (err) { msg.textContent = err.message; msg.style.color = '#cc1f2a'; return; }
+      const gone = [...removedEids].filter((id) => !entries.some((e: any) => e.id === id));
+      if (currentId && gone.length) {
+        const { data: ph } = await supabase.from('photos').select('id, storage_path').eq('work_doc_id', currentId).in('entry_ref', gone);
+        if (ph && ph.length) {
+          await supabase.storage.from(KS_PHOTO_BUCKET).remove(ph.map((x: any) => x.storage_path));
+          await supabase.from('photos').delete().in('id', ph.map((x: any) => x.id));
+        }
+      }
+      removedEids.clear();
       msg.style.color = ''; msg.textContent = p('wdSaved');
       wdExportBtn.disabled = false;
       renderAllEntryPhotos();
@@ -2883,22 +2909,35 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     const dConcl = wdI18nVal(d, 'conclusion'); if (dConcl) { y += 2; line(p('wdConclusion'), 11, 'bold', 5.5); line(dConcl, 10, 'normal', 5.5); }
     if (rows && rows.length) {
       const phaseName = (ph: string) => ph === 'before' ? p('phaseBefore') : ph === 'during' ? p('phaseDuring') : ph === 'after' ? p('phaseAfter') : '';
+      // Bilder gruppert per arbeidspunkt (Foer -> Under -> Etter); bilder uten gyldig punkt samles til slutt.
+      const phaseOrd: any = { before: 0, during: 1, after: 2 };
+      const byPhase = (a: any, b: any) => (phaseOrd[a.phase] ?? 3) - (phaseOrd[b.phase] ?? 3);
+      const ents: any[] = d.entries || [];
+      const groups = ents.map((e: any, i: number) => ({ head: `${i + 1}. ${wdI18nVal(e, 'location') || p('wdEntryLabel')}`, photos: rows.filter((ph: any) => ph.entry_ref === e.id).sort(byPhase) }));
+      const rest = rows.filter((ph: any) => !ents.some((e: any) => e.id === ph.entry_ref));
+      if (rest.length) groups.push({ head: p('wdOtherPhotos'), photos: rest.sort(byPhase) });
       if (y > 250) { doc.addPage(); y = margin; }
       y += 4; doc.setDrawColor(204, 31, 42); doc.line(margin, y, margin + maxW, y); y += 6;
-      line(p('addPhotos'), 12, 'bold', 6);
-      const colW = (maxW - 6) / 2, rowH = colW * 0.72; let col = 0;
-      for (const ph of rows) {
-        const { data: signed } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
-        if (!signed?.signedUrl) continue;
-        let dataUrl = '';
-        try { const blob = await (await fetch(signed.signedUrl)).blob(); dataUrl = await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }); } catch (e) { continue; }
-        if (y + rowH + 8 > 285) { doc.addPage(); y = margin; col = 0; }
-        const x = margin + col * (colW + 6);
-        try { doc.addImage(dataUrl, 'JPEG', x, y, colW, rowH); } catch (e) { /* */ }
-        doc.setDrawColor(220); doc.rect(x, y, colW, rowH);
-        const cap = `${ph.entry_ref ? '[' + ph.entry_ref + '] ' : ''}${ph.phase ? '[' + phaseName(ph.phase) + '] ' : ''}${ph.caption || ''}`;
-        if (cap.trim()) { doc.setFontSize(8); doc.setTextColor(80); doc.text(doc.splitTextToSize(cap, colW), x, y + rowH + 3.5); doc.setTextColor(20, 23, 28); }
-        if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
+      line(p('wdPhotos'), 12, 'bold', 6);
+      const colW = (maxW - 6) / 2, rowH = colW * 0.72;
+      for (const g of groups.filter((g) => g.photos.length)) {
+        if (y + rowH + 16 > 285) { doc.addPage(); y = margin; }
+        y += 2; line(g.head, 10.5, 'bold', 5.5);
+        let col = 0;
+        for (const ph of g.photos) {
+          const { data: signed } = await supabase.storage.from(KS_PHOTO_BUCKET).createSignedUrl(ph.storage_path, 300);
+          if (!signed?.signedUrl) continue;
+          let dataUrl = '';
+          try { const blob = await (await fetch(signed.signedUrl)).blob(); dataUrl = await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }); } catch (e) { continue; }
+          if (y + rowH + 8 > 285) { doc.addPage(); y = margin; col = 0; }
+          const x = margin + col * (colW + 6);
+          try { doc.addImage(dataUrl, 'JPEG', x, y, colW, rowH); } catch (e) { /* */ }
+          doc.setDrawColor(220); doc.rect(x, y, colW, rowH);
+          const cap = [ph.phase ? phaseName(ph.phase) : '', ph.caption || ''].filter(Boolean).join(' · ');
+          if (cap) { doc.setFontSize(8); doc.setTextColor(80); doc.text(doc.splitTextToSize(cap, colW), x, y + rowH + 3.5); doc.setTextColor(20, 23, 28); }
+          if (col === 1) { y += rowH + 12; col = 0; } else col = 1;
+        }
+        if (col === 1) y += rowH + 12;
       }
     }
     await deliverPdf(doc, `Dekmar_Arbeidsdokumentasjon_${projName || ''}.pdf`.replace(/[^a-z0-9]+/gi, '_'), `${p('workdocNav')} – ${projName || ''}`);
