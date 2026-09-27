@@ -10,6 +10,10 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
   <div class="container ks-narrow">
     <h1 {...d(t('deviation'))}>{t('deviation').no}</h1>
     <p class="lead" {...d(t('toContractor'))}>{t('toContractor').no}</p>
+    <p class="ks-localnote">
+      <span data-no="Denne siden lagrer bare på denne enheten, og avviket havner ikke i avviksregisteret." data-pl="Ta strona zapisuje tylko na tym urządzeniu – niezgodność nie trafia do rejestru." data-en="This page only saves on this device – the deviation does not reach the deviation register.">Denne siden lagrer bare på denne enheten, og avviket havner ikke i avviksregisteret.</span>
+      <a href="/portal/?view=deviation-new" data-no="Meld avviket i portalen i stedet →" data-pl="Zgłoś w portalu →" data-en="Report it in the portal instead →">Meld avviket i portalen i stedet →</a>
+    </p>
 
     <form id="av-form" class="ks-card-box">
       <div class="ks-grid">

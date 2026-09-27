@@ -10,6 +10,10 @@ const dph = (o: any) => ({ 'data-no-ph': o.no, 'data-pl-ph': o.pl, 'data-en-ph':
   <div class="container ks-narrow">
     <h1 {...d(t('checklist'))}>{t('checklist').no}</h1>
     <p class="lead" {...d(t('ksIntro'))}>{t('ksIntro').no}</p>
+    <p class="ks-localnote">
+      <span data-no="Denne siden lagrer bare på denne enheten, og sjekklisten havner ikke på prosjektet i portalen." data-pl="Ta strona zapisuje tylko na tym urządzeniu – lista nie trafia do projektu w portalu." data-en="This page only saves on this device – the checklist does not reach the project in the portal.">Denne siden lagrer bare på denne enheten, og sjekklisten havner ikke på prosjektet i portalen.</span>
+      <a href="/portal/?view=checklist-new" data-no="Fyll ut i portalen i stedet →" data-pl="Wypełnij w portalu →" data-en="Fill it in in the portal instead →">Fyll ut i portalen i stedet →</a>
+    </p>
 
     <form id="ks-form" class="ks-card-box">
       <div class="ks-meta">

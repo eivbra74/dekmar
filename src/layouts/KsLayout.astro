@@ -14,7 +14,7 @@ const tri = (k: string) => ksUi[k];
 <html lang="no">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/png" href="/images/brand/dekmar-logo.png" />
     <title>{title ? `${title} – Dekmar HMS- og KS-system` : 'Dekmar HMS- og KS-system'}</title>
@@ -23,7 +23,7 @@ const tri = (k: string) => ksUi[k];
       rel="stylesheet"
     />
   </head>
-  <body>
+  <body class:list={[{ 'is-portal': active === 'portal' }]}>
     <header class="ks-header">
       <div class="container ks-header__inner">
         <a class="ks-brand" href="/ks/">
@@ -33,9 +33,11 @@ const tri = (k: string) => ksUi[k];
 
         <nav class="ks-nav" aria-label="KS">
           <a href="/portal/" class:list={[{ active: active === 'portal' }]} data-no="Portal" data-pl="Portal" data-en="Portal">Portal</a>
-          <a href="/ks/sjekkliste/" class:list={[{ active: active === 'checklist' }]} data-no={tri('checklist').no} data-pl={tri('checklist').pl} data-en={tri('checklist').en}>{tri('checklist').no}</a>
-          <a href="/ks/avvik/" class:list={[{ active: active === 'deviation' }]} data-no={tri('deviation').no} data-pl={tri('deviation').pl} data-en={tri('deviation').en}>{tri('deviation').no}</a>
-          <a href="/portal/?view=workdoc" data-no="Dokumentasjon" data-pl="Dokumentacja" data-en="Documentation">Dokumentasjon</a>
+          <!-- Sjekkliste og avvik går til portalens flyt, som lagrer i registeret (de frittstående
+               /ks-sidene lagret bare på telefonen). -->
+          <a href="/portal/?view=checklist-new" class:list={[{ active: active === 'checklist' }]} data-no={tri('checklist').no} data-pl={tri('checklist').pl} data-en={tri('checklist').en}>{tri('checklist').no}</a>
+          <a href="/portal/?view=deviation-new" class:list={[{ active: active === 'deviation' }]} data-no="Meld avvik" data-pl="Zgłoś niezgodność" data-en="Report deviation">Meld avvik</a>
+          <a href="/portal/?view=workdoc" data-no="Dokumentasjon på utført arbeid" data-pl="Dokumentacja wykonanych prac" data-en="Work documentation">Dokumentasjon på utført arbeid</a>
         </nav>
 
         <div class="ks-lang" role="group" aria-label="Språk / Language">
@@ -53,7 +55,7 @@ const tri = (k: string) => ksUi[k];
     <footer class="ks-footer">
       <div class="container">
         <span>© {new Date().getFullYear()} Dekmar AS · HMS- og KS-system</span>
-        <a href="/">dekmar.no →</a>
+        <a href="/" class="ks-footer-link">dekmar.no <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
       </div>
     </footer>
 
@@ -129,8 +131,26 @@ const tri = (k: string) => ksUi[k];
         cursor: pointer;
       }
       .ks-lang button.active { background: var(--brand); color: #fff; }
+      .ks-lang button { min-height: 40px; }
+      .ks-lang button:focus-visible, .ks-nav a:focus-visible { outline: 2.5px solid #ff8a91; outline-offset: 2px; }
+      /* I portalen på telefon: én lav rad (logo + språk). Portalen har egen meny og knapperad
+         nederst, så lenkene her ble bare tre rader (182 px) med dobbel navigasjon. */
+      /* Inne i portalen er sidemenyen (og knapperaden på telefon) eneste navigasjon. */
+      .is-portal .ks-nav { display: none; }
+      .is-portal .ks-header__inner { justify-content: space-between; }
+      .ks-footer-link { display: inline-flex; align-items: center; gap: 4px; }
+      @media (max-width: 860px) {
+        .is-portal .ks-header { position: static; }
+        .is-portal .ks-header__inner { min-height: 56px; flex-wrap: nowrap; justify-content: space-between; }
+        .is-portal .ks-brand img { height: 30px; }
+        .is-portal .ks-main { padding-block: 12px 24px; }
+        .is-portal .ks-footer { display: none; }
+      }
       .ks-flag { width: 20px; height: 14px; border-radius: 2px; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(255,255,255,0.25); display: block; }
       .ks-main { padding-block: clamp(24px, 4vw, 44px); min-height: 60vh; }
+      /* Varsel på de frittstående /ks-sidene som bare lagrer lokalt. */
+      .ks-main :global(.ks-localnote) { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; background: #fff7e0; border: 1px solid #e8c766; color: #5c4400; border-radius: 10px; padding: 12px 14px; font-size: .95rem; margin: 0 0 18px; }
+      .ks-main :global(.ks-localnote a) { font-weight: 700; color: var(--brand-dark); }
       .ks-footer {
         border-top: 1px solid var(--line);
         padding-block: 20px;
