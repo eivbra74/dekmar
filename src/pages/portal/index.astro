@@ -1092,6 +1092,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     makingPdf: { no: 'Lager PDF …', pl: 'Tworzenie PDF …', en: 'Creating PDF …' },
     // Felt-visning (rolle ansatt)
     fieldHello: { no: 'Hei, {name}', pl: 'Cześć, {name}', en: 'Hi, {name}' },
+    fieldHelloNoName: { no: 'Hei!', pl: 'Cześć!', en: 'Hi!' },
     fieldToday: { no: 'I dag', pl: 'Dzisiaj', en: 'Today' },
     fieldNoJobToday: { no: 'Du er ikke satt opp på noen jobb i ressursplanen i dag. Velg prosjektet du jobber på:', pl: 'Nie masz dziś przydzielonej pracy w planie zasobów. Wybierz projekt, nad którym pracujesz:', en: 'You are not assigned to a job in the resource plan today. Choose the project you are working on:' },
     fieldWorkingOn: { no: 'Jeg jobber på', pl: 'Pracuję na', en: 'I am working on' },
@@ -1325,7 +1326,9 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       }
       // Rad finnes, men uten rolle: da ER hun ansatt.
       ME.role = (pr as any)?.role || 'ansatt';
-      ME.name = String((pr as any)?.full_name || '').trim();
+      // Noen profiler har e-postadressen som navn (opprettet via invitasjon/sett passord): da regnes det som uten navn.
+      const fullName = String((pr as any)?.full_name || '').trim();
+      ME.name = fullName.includes('@') ? '' : fullName;
       // Sesjoner varer i uker, så «sist innlogget» alene ville vist en gammel
       // dato for en som bruker portalen daglig. Dette er det andre tallet.
       void supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', u.user.id);
@@ -1890,7 +1893,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   // ---------- Felles for felt: dagens dato, valgt prosjekt, avviksnummer ----------
   const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
   const longDate = () => new Date().toLocaleDateString(lang() === 'en' ? 'en-GB' : lang() === 'pl' ? 'pl-PL' : 'nb-NO', { weekday: 'long', day: 'numeric', month: 'long' });
-  const firstName = () => (ME.name || ME.email.split('@')[0] || '').split(/\s+/)[0];
+  const firstName = () => (ME.name || '').split(/\s+/)[0];
   // Prosjektet håndverkeren jobber på huskes på telefonen, så avvik/sjekkliste/bilder
   // alltid starter med riktig prosjekt valgt.
   const FIELD_KEY = 'dekmar-field-project';
@@ -2008,7 +2011,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     root.innerHTML = `
       <div class="fh">
         <header class="fh-hello">
-          <h1>${esc(fill(p('fieldHello'), { name: firstName() }))}</h1>
+          <h1>${esc(firstName() ? fill(p('fieldHello'), { name: firstName() }) : p('fieldHelloNoName'))}</h1>
           <p class="p-muted">${esc(longDate())}</p>
         </header>
         <section class="fh-today" aria-labelledby="fh-today-h">
