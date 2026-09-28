@@ -440,6 +440,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
   .fh-job-go { display: inline-flex; width: 20px; height: 20px; color: var(--muted); }
   .fh-job-go svg { width: 100%; height: 100%; }
   .p-dangerzone { margin-top: 14px; display: flex; justify-content: flex-end; }
+  .p-namerow { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
   details.fh-other { margin-top: 2px; }
   details.fh-other > summary { cursor: pointer; color: var(--muted); font-weight: 500; font-size: .95rem; min-height: 44px; display: flex; align-items: center; list-style: none; }
   details.fh-other > summary::before { content: ''; display: inline-block; flex: 0 0 14px; width: 14px; height: 14px; margin-right: 8px; background: currentColor; -webkit-mask: var(--p-chev) center / contain no-repeat; mask: var(--p-chev) center / contain no-repeat; transition: transform .15s; }
@@ -1021,6 +1022,12 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
     lastAdminBlock: { no: 'Det må alltid være minst én administrator. Gjør en annen bruker til administrator før du endrer denne rollen.', pl: 'Zawsze musi być co najmniej jeden administrator. Najpierw nadaj innej osobie rolę administratora.', en: 'There must always be at least one administrator. Make another user an administrator before changing this role.' },
     roleHelp: { no: 'Ansatt ser drift. Leder ser i tillegg tilbud, kalkyle, kunder og kontrakter. Administrator ser alt.', pl: 'Pracownik widzi operacje. Kierownik dodatkowo oferty, kalkulacje, klientów i umowy. Administrator widzi wszystko.', en: 'Employee sees operations. Manager also sees quotes, calculations, customers and contracts. Administrator sees everything.' },
     youLabel: { no: 'deg', pl: 'ty', en: 'you' },
+    nameLabel: { no: 'Navn', pl: 'Imię i nazwisko', en: 'Name' },
+    namePlaceholder: { no: 'Fornavn Etternavn', pl: 'Imię Nazwisko', en: 'First name Last name' },
+    saveName: { no: 'Lagre navn', pl: 'Zapisz imię i nazwisko', en: 'Save name' },
+    nameSaved: { no: 'Navn lagret', pl: 'Zapisano imię i nazwisko', en: 'Name saved' },
+    personNameRequired: { no: 'Skriv inn fullt navn (ikke e-post).', pl: 'Wpisz imię i nazwisko (nie e-mail).', en: 'Enter the full name (not an email).' },
+    nameHelp: { no: 'Navnet brukes i hilsenen, som avviksmelder og til å finne «dagens jobb» i ressursplanen. Bruk samme navn som i ressursplanen.', pl: 'Imię i nazwisko jest używane w powitaniu, jako zgłaszający i do znalezienia „dzisiejszej pracy” w planie zasobów. Użyj tej samej nazwy co w planie zasobów.', en: 'The name is used in the greeting, as the reporter and to find “today’s job” in the resource plan. Use the same name as in the resource plan.' },
     // Glemt passord
     forgotPw: { no: 'Glemt passord?', pl: 'Nie pamiętasz hasła?', en: 'Forgot your password?' },
     forgotTitle: { no: 'Tilbakestill passord', pl: 'Zresetuj hasło', en: 'Reset password' },
@@ -4371,6 +4378,14 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       const roleCtrl = admin
         ? `<label class="p-field" style="margin:0;min-width:160px"><span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span><select data-role-for="${esc(pr.id)}">${opts}</select></label>`
         : `<div class="p-field" style="margin:0;min-width:120px"><span class="p-muted" style="font-size:12px">${esc(p('roleLabel'))}</span><span style="font-weight:600">${esc(roleName(pr.role))}</span></div>`;
+      // Navn: e-post i navnefeltet (fra invitasjon/sett passord) regnes som uten navn.
+      const realName = pr.full_name && !String(pr.full_name).includes('@') ? String(pr.full_name) : '';
+      // Admin kan sette navn på alle, alle kan sette sitt eget (RLS: profiles_update + profiles_admin_update).
+      const nameBlock = (admin || isMe) ? `
+        <div class="p-namerow">
+          <label class="p-field" style="margin:0;flex:1;min-width:200px"><span class="p-muted" style="font-size:12px">${esc(p('nameLabel'))}</span><input type="text" data-name-for="${esc(pr.id)}" value="${esc(realName)}" placeholder="${esc(p('namePlaceholder'))}" autocomplete="${isMe ? 'name' : 'off'}"></label>
+          <button class="btn btn--ghost" type="button" data-name-set="${esc(pr.id)}">${esc(p('saveName'))}</button>
+        </div>` : '';
       const pwBlock = admin ? `
         <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
           <label class="p-field" style="margin:0;flex:1;min-width:200px">
@@ -4384,8 +4399,9 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       <li class="p-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:12px">
         <div style="display:flex;gap:12px;align-items:flex-start">
           <div style="flex:1">
-            <h3>${esc(pr.email || pr.full_name || '—')}${isMe ? ` <span class="p-muted" style="font-weight:400">(${esc(p('youLabel'))})</span>` : ''}</h3>
+            <h3>${esc(realName || pr.email || '—')}${isMe ? ` <span class="p-muted" style="font-weight:400">(${esc(p('youLabel'))})</span>` : ''}</h3>
             <p>
+              ${realName && pr.email ? `${esc(pr.email)}<br>` : ''}
               ${esc(p('lastSignIn'))}: ${esc(since(pr.last_sign_in_at))}
               &nbsp;·&nbsp; ${esc(p('lastSeen'))}: ${esc(isMe ? p('lastSeenNow') : (pr.last_seen_at ? since(pr.last_seen_at) : '—'))}
               &nbsp;·&nbsp; ${esc(p('createdAt'))} ${esc(fmt(pr.created_at))}
@@ -4393,6 +4409,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
           </div>
           ${roleCtrl}
         </div>
+        ${nameBlock}
         ${pwBlock}
       </li>`;
     }).join('');
@@ -4409,7 +4426,7 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
       </div>` : ''}
       <div class="p-section">
         <h2>${esc(p('members'))}</h2>
-        <p class="p-muted p-intro" style="margin-top:-4px">${esc(p('roleHelp'))}</p>
+        <p class="p-muted p-intro" style="margin-top:-4px">${esc(p('roleHelp'))} ${esc(p('nameHelp'))}</p>
         <span class="p-muted" id="role-msg"></span>
         ${rows ? `<ul class="p-list">${rows}</ul>` : ''}
       </div>`;
@@ -4448,6 +4465,23 @@ import { nsStandards, contractDefaults } from '../../data/ksContracts';
         if (id === ME.id) { await loadMe(); paintShellChrome(); }
       });
     });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-name-set]').forEach((btn) => btn.addEventListener('click', async () => {
+      const id = btn.dataset.nameSet!;
+      const inp = document.querySelector<HTMLInputElement>(`[data-name-for="${id}"]`)!;
+      const name = inp.value.trim().replace(/\s+/g, ' ');
+      if (!name || name.includes('@')) { toast(p('personNameRequired'), 'err'); inp.focus(); return; }
+      btn.disabled = true;
+      // .select() gjør at en oppdatering RLS stopper (0 rader) blir synlig i stedet for å se ut som suksess.
+      const { data, error } = await supabase.from('profiles').update({ full_name: name }).eq('id', id).select('id');
+      btn.disabled = false;
+      if (error) { toastError(error); return; }
+      if (!data || !data.length) { toast(p('errPermission'), 'err'); return; }
+      markClean(root);
+      toast(p('nameSaved'));
+      if (id === ME.id) { ME.name = name; const ue = document.getElementById('app-user'); if (ue) ue.textContent = name; }
+      await renderTeam();
+    }));
 
     // Admin setter/endrer passord for en bruker (edge-funksjon med service-role, admin-sjekk på server).
     document.querySelectorAll<HTMLButtonElement>('[data-pw-set]').forEach((btn) => {
