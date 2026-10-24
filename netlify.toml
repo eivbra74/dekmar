@@ -3,6 +3,22 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "24"
 
 # Astro genererer statiske filer – ingen ekstra plugin nødvendig.
+
+# Sikkerhetsheadere for hele nettstedet og portalen.
+# CSP: portalen snakker bare med eget domene og Supabase-prosjektet (REST, auth,
+# storage og edge-funksjonene tripletex, translate, send-report osv.).
+# Google Fonts lastes fra fonts.googleapis.com/fonts.gstatic.com.
+# 'unsafe-inline' trengs fordi Astro legger små <script type="module"> og
+# style-attributter rett i HTML-en; ekstern kode fra andre domener blokkeres.
+# Bilder: blob:/data: brukes til forhåndsvisning av foto og PDF-generering.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://lqubxffanaxstpghiedp.supabase.co; connect-src 'self' https://lqubxffanaxstpghiedp.supabase.co wss://lqubxffanaxstpghiedp.supabase.co; worker-src 'self' blob:; form-action 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
